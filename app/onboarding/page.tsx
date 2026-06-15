@@ -1,13 +1,15 @@
 'use client'
 /* eslint-disable @next/next/no-img-element */
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { ArrowRight, ArrowLeft, Check } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/context/AuthContext'
+import { useUserPreferences } from '@/hooks/useUserPreferences'
+import { useGenres } from '@/hooks/useGenres'
 import { SpotlightWordmark } from '@/components/ui/SpotlightLogo'
-import { genres } from '@/lib/mock-data/genres'
+import { genres as mockGenres } from '@/lib/mock-data/genres'
 import { creators } from '@/lib/mock-data/creators'
 
 const ease = [0.16, 1, 0.3, 1] as const
@@ -15,7 +17,6 @@ const ease = [0.16, 1, 0.3, 1] as const
 const STEPS = ['welcome', 'genres', 'creators', 'generating'] as const
 type Step = typeof STEPS[number]
 
-// Show a curated subset of creators for initial pick
 const ONBOARDING_TICKERS = [
   'APDHILLON', 'MRBEAST', 'KAICENAT', 'SABRINA', 'LILNASX',
   'TYLERTC', 'NEWJEANS', 'PESOPLUMA', 'CHARLI', 'DOJACAT',
@@ -32,18 +33,25 @@ const LOADING_STEPS = [
 
 export default function OnboardingPage() {
   const router = useRouter()
-  const { updateInterests, currentUser } = useAuth()
+  const { currentUser, isSupabaseMode } = useAuth()
+  const { completeOnboarding } = useUserPreferences()
+  const { genres: supabaseGenres, loading: genresLoading } = useGenres()
 
   const [step, setStep] = useState<Step>('welcome')
-  const [selectedGenres, setSelectedGenres] = useState<string[]>([])
+  const [selectedGenreSlugs, setSelectedGenreSlugs] = useState<string[]>([])
   const [selectedCreators, setSelectedCreators] = useState<string[]>([])
   const [loadStep, setLoadStep] = useState(0)
 
+  // Use Supabase genres when available, fall back to mock genres
+  const displayGenres = isSupabaseMode && supabaseGenres.length > 0
+    ? supabaseGenres
+    : mockGenres.map(g => ({ id: g.id, slug: g.id, name: g.label, category: g.label, description: g.description, created_at: '' }))
+
   const onboardingCreators = creators.filter(c => ONBOARDING_TICKERS.includes(c.ticker))
 
-  function toggleGenre(id: string) {
-    setSelectedGenres(prev =>
-      prev.includes(id) ? prev.filter(g => g !== id) : [...prev, id]
+  function toggleGenre(slug: string) {
+    setSelectedGenreSlugs(prev =>
+      prev.includes(slug) ? prev.filter(s => s !== slug) : [...prev, slug]
     )
   }
 
@@ -55,13 +63,17 @@ export default function OnboardingPage() {
 
   async function startGenerating() {
     setStep('generating')
-    if (selectedGenres.length > 0) {
-      updateInterests(selectedGenres)
-    }
+
+    // Animate loading steps while saving in background
+    const savePromise = completeOnboarding(selectedGenreSlugs)
+
     for (let i = 0; i < LOADING_STEPS.length; i++) {
       await new Promise(r => setTimeout(r, 900))
       setLoadStep(i + 1)
     }
+
+    // Ensure save completes before redirecting
+    await savePromise
     await new Promise(r => setTimeout(r, 400))
     router.replace('/')
   }
@@ -82,15 +94,18 @@ export default function OnboardingPage() {
 
   const progress = (STEPS.indexOf(step) / (STEPS.length - 1)) * 100
 
+  // Categorized genre display for Supabase mode
+  const genreCategories = isSupabaseMode
+    ? [...new Set(supabaseGenres.map(g => g.category))]
+    : []
+
   return (
     <div className="relative min-h-screen bg-[#0A0A0A] flex flex-col overflow-hidden">
-      {/* Gold ambient */}
       <div
         className="absolute inset-0 pointer-events-none"
         style={{ background: 'radial-gradient(ellipse 55% 35% at 50% 0%, rgba(201,168,76,0.12) 0%, transparent 60%)' }}
       />
 
-      {/* Progress bar */}
       {step !== 'generating' && (
         <div className="absolute top-0 left-0 right-0 h-[2px] z-20">
           <motion.div
@@ -101,7 +116,6 @@ export default function OnboardingPage() {
         </div>
       )}
 
-      {/* Back button */}
       {step !== 'welcome' && step !== 'generating' && (
         <div className="relative z-10 px-6 pt-8">
           <button
@@ -115,7 +129,6 @@ export default function OnboardingPage() {
 
       <AnimatePresence mode="wait">
 
-        {/* ── STEP: Welcome ──────────────────────────────────────────────── */}
         {step === 'welcome' && (
           <motion.div
             key="welcome"
@@ -146,7 +159,6 @@ export default function OnboardingPage() {
           </motion.div>
         )}
 
-        {/* ── STEP: Genres ───────────────────────────────────────────────── */}
         {step === 'genres' && (
           <motion.div
             key="genres"
@@ -162,34 +174,69 @@ export default function OnboardingPage() {
               <p className="text-white/40 text-sm">Pick genres you care about. Select as many as you like.</p>
             </div>
 
-            <div className="grid grid-cols-2 gap-2.5">
-              {genres.map(genre => {
-                const selected = selectedGenres.includes(genre.id)
-                return (
-                  <button
-                    key={genre.id}
-                    onClick={() => toggleGenre(genre.id)}
-                    className={`relative overflow-hidden rounded-2xl p-4 text-left transition-all duration-200 border ${
-                      selected
-                        ? 'border-hype-gold bg-hype-gold/10'
-                        : 'border-white/10 bg-white/[0.04] hover:border-white/20'
-                    }`}
-                  >
-                    {selected && (
-                      <div className="absolute top-2.5 right-2.5 w-5 h-5 rounded-full bg-hype-gold flex items-center justify-center">
-                        <Check size={11} className="text-[#0A0A0A]" />
-                      </div>
-                    )}
-                    <span className="text-2xl mb-2 block">{genre.emoji}</span>
-                    <p className="text-white text-xs font-bold leading-tight">{genre.label}</p>
-                  </button>
-                )
-              })}
-            </div>
+            {genresLoading && isSupabaseMode ? (
+              <div className="flex items-center justify-center py-12">
+                <div className="w-6 h-6 rounded-full border-2 border-white/20 border-t-hype-gold animate-spin" />
+              </div>
+            ) : isSupabaseMode && genreCategories.length > 0 ? (
+              // Supabase mode: show categories grouped
+              <div className="space-y-6">
+                {genreCategories.map(category => (
+                  <div key={category}>
+                    <p className="text-white/30 text-[10px] font-bold uppercase tracking-widest mb-2">{category}</p>
+                    <div className="flex flex-wrap gap-2">
+                      {supabaseGenres.filter(g => g.category === category).map(genre => {
+                        const selected = selectedGenreSlugs.includes(genre.slug)
+                        return (
+                          <button
+                            key={genre.id}
+                            onClick={() => toggleGenre(genre.slug)}
+                            className={`px-3.5 py-2 rounded-full text-xs font-semibold transition-all duration-200 border ${
+                              selected
+                                ? 'border-hype-gold bg-hype-gold/15 text-hype-gold'
+                                : 'border-white/10 bg-white/[0.04] text-white/60 hover:border-white/20'
+                            }`}
+                          >
+                            {selected && <Check size={10} className="inline mr-1" />}
+                            {genre.name}
+                          </button>
+                        )
+                      })}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              // Mock mode: 2-column card grid
+              <div className="grid grid-cols-2 gap-2.5">
+                {displayGenres.map(genre => {
+                  const selected = selectedGenreSlugs.includes(genre.slug)
+                  const mockGenre = mockGenres.find(m => m.id === genre.slug)
+                  return (
+                    <button
+                      key={genre.id}
+                      onClick={() => toggleGenre(genre.slug)}
+                      className={`relative overflow-hidden rounded-2xl p-4 text-left transition-all duration-200 border ${
+                        selected
+                          ? 'border-hype-gold bg-hype-gold/10'
+                          : 'border-white/10 bg-white/[0.04] hover:border-white/20'
+                      }`}
+                    >
+                      {selected && (
+                        <div className="absolute top-2.5 right-2.5 w-5 h-5 rounded-full bg-hype-gold flex items-center justify-center">
+                          <Check size={11} className="text-[#0A0A0A]" />
+                        </div>
+                      )}
+                      <span className="text-2xl mb-2 block">{mockGenre?.emoji ?? '🎵'}</span>
+                      <p className="text-white text-xs font-bold leading-tight">{genre.name}</p>
+                    </button>
+                  )
+                })}
+              </div>
+            )}
           </motion.div>
         )}
 
-        {/* ── STEP: Creators ─────────────────────────────────────────────── */}
         {step === 'creators' && (
           <motion.div
             key="creators"
@@ -234,7 +281,6 @@ export default function OnboardingPage() {
           </motion.div>
         )}
 
-        {/* ── STEP: Generating ───────────────────────────────────────────── */}
         {step === 'generating' && (
           <motion.div
             key="generating"
@@ -243,7 +289,6 @@ export default function OnboardingPage() {
             transition={{ duration: 0.6 }}
             className="flex-1 flex flex-col items-center justify-center px-8 text-center"
           >
-            {/* Pulsing logo orb */}
             <motion.div
               className="relative mb-10"
               animate={{ scale: [1, 1.06, 1] }}
@@ -291,7 +336,6 @@ export default function OnboardingPage() {
 
       </AnimatePresence>
 
-      {/* Fixed CTA bottom — genres and creators steps */}
       {(step === 'genres' || step === 'creators') && (
         <div className="fixed bottom-0 left-0 right-0 px-5 py-4 bg-gradient-to-t from-[#0A0A0A] via-[#0A0A0A]/95 to-transparent">
           <button
@@ -306,7 +350,7 @@ export default function OnboardingPage() {
           </button>
           <p className="text-center text-white/20 text-xs mt-2">
             {step === 'genres'
-              ? selectedGenres.length > 0 ? `${selectedGenres.length} genres selected` : 'Skip to use defaults'
+              ? selectedGenreSlugs.length > 0 ? `${selectedGenreSlugs.length} genres selected` : 'Skip to use defaults'
               : selectedCreators.length > 0 ? `${selectedCreators.length} creators selected` : 'Skip this step'
             }
           </p>

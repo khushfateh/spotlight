@@ -5,13 +5,13 @@ import { useState } from 'react'
 import { motion } from 'framer-motion'
 import { ArrowRight, Eye, EyeOff } from 'lucide-react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { useAuth } from '@/context/AuthContext'
 import { SpotlightWordmark } from '@/components/ui/SpotlightLogo'
 import { mockUsers } from '@/lib/mock-data/users'
 
 const ease = [0.16, 1, 0.3, 1] as const
 
-// Background creator collage (editorial imagery behind the login)
 const BG_IMAGES = [
   'https://images.unsplash.com/photo-1493225457124-a3eb4598d050?auto=format&fit=crop&w=400&q=60',
   'https://images.unsplash.com/photo-1508214751196-bcfd4ca60f91?auto=format&fit=crop&w=400&q=60',
@@ -22,27 +22,38 @@ const BG_IMAGES = [
 ]
 
 export default function LoginPage() {
-  const { login } = useAuth()
+  const router = useRouter()
+  const { signIn, login, isSupabaseMode } = useAuth()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [showPw, setShowPw] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
+  const [authError, setAuthError] = useState<string | null>(null)
 
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault()
     setIsLoading(true)
-    await new Promise(r => setTimeout(r, 900))
-    login('khush')
+    setAuthError(null)
+    const { error } = await signIn(email, password)
+    if (error) {
+      setAuthError(error)
+      setIsLoading(false)
+      return
+    }
+    router.replace('/')
   }
 
   function handleDemoUser(userId: string) {
     setIsLoading(true)
-    setTimeout(() => login(userId), 600)
+    setTimeout(() => {
+      login(userId)
+      router.replace('/')
+    }, 600)
   }
 
   return (
     <div className="relative min-h-screen flex flex-col overflow-hidden">
-      {/* ── Background: editorial collage ──────────────────────────────── */}
+      {/* Background collage */}
       <div className="absolute inset-0 grid grid-cols-3 gap-0 opacity-20">
         {BG_IMAGES.map((url, i) => (
           <div key={i} className="relative overflow-hidden">
@@ -51,22 +62,15 @@ export default function LoginPage() {
         ))}
       </div>
 
-      {/* Deep gradient overlays */}
       <div className="absolute inset-0 bg-gradient-to-t from-[#0A0A0A] via-[#0A0A0A]/90 to-[#0A0A0A]/70" />
       <div className="absolute inset-0 bg-gradient-to-r from-[#0A0A0A]/60 via-transparent to-[#0A0A0A]/60" />
-
-      {/* Gold spotlight beam from top */}
       <div
         className="absolute inset-0 pointer-events-none"
-        style={{
-          background: 'radial-gradient(ellipse 50% 40% at 50% 0%, rgba(201,168,76,0.18) 0%, transparent 65%)',
-        }}
+        style={{ background: 'radial-gradient(ellipse 50% 40% at 50% 0%, rgba(201,168,76,0.18) 0%, transparent 65%)' }}
       />
 
-      {/* ── Content ────────────────────────────────────────────────────── */}
       <div className="relative z-10 flex flex-col items-center justify-center min-h-screen px-6 py-12">
 
-        {/* Logo */}
         <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -76,7 +80,6 @@ export default function LoginPage() {
           <SpotlightWordmark />
         </motion.div>
 
-        {/* Headline */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -91,7 +94,6 @@ export default function LoginPage() {
           </p>
         </motion.div>
 
-        {/* Login form */}
         <motion.div
           initial={{ opacity: 0, y: 24 }}
           animate={{ opacity: 1, y: 0 }}
@@ -125,6 +127,10 @@ export default function LoginPage() {
               </button>
             </div>
 
+            {authError && (
+              <p className="text-red-400 text-xs pl-1">{authError}</p>
+            )}
+
             <button
               type="submit"
               disabled={isLoading}
@@ -138,33 +144,35 @@ export default function LoginPage() {
             </button>
           </form>
 
-          <div className="flex items-center gap-3 mb-4">
-            <div className="flex-1 h-px bg-white/10" />
-            <span className="text-white/25 text-xs">or try a demo user</span>
-            <div className="flex-1 h-px bg-white/10" />
-          </div>
+          {/* Demo user switcher — only shown in mock mode */}
+          {!isSupabaseMode && (
+            <>
+              <div className="flex items-center gap-3 mb-4">
+                <div className="flex-1 h-px bg-white/10" />
+                <span className="text-white/25 text-xs">or try a demo user</span>
+                <div className="flex-1 h-px bg-white/10" />
+              </div>
 
-          {/* Demo user switcher */}
-          <div className="grid grid-cols-2 gap-2 mb-6">
-            {mockUsers.map(user => (
-              <button
-                key={user.id}
-                onClick={() => handleDemoUser(user.id)}
-                disabled={isLoading}
-                className="flex items-center gap-2 px-3 py-2.5 rounded-xl bg-white/[0.05] border border-white/10 hover:border-white/20 hover:bg-white/[0.08] transition-all text-left disabled:opacity-50"
-              >
-                <div
-                  className={`w-8 h-8 rounded-xl bg-gradient-to-br ${user.coverColor} flex items-center justify-center text-white text-xs font-black flex-shrink-0`}
-                >
-                  {user.initials}
-                </div>
-                <div className="min-w-0">
-                  <p className="text-white text-xs font-semibold truncate">{user.name.split(' ')[0]}</p>
-                  <p className="text-white/35 text-[9px] truncate">{user.interests[0].replace('-', ' ')}</p>
-                </div>
-              </button>
-            ))}
-          </div>
+              <div className="grid grid-cols-2 gap-2 mb-6">
+                {mockUsers.map(user => (
+                  <button
+                    key={user.id}
+                    onClick={() => handleDemoUser(user.id)}
+                    disabled={isLoading}
+                    className="flex items-center gap-2 px-3 py-2.5 rounded-xl bg-white/[0.05] border border-white/10 hover:border-white/20 hover:bg-white/[0.08] transition-all text-left disabled:opacity-50"
+                  >
+                    <div className={`w-8 h-8 rounded-xl bg-gradient-to-br ${user.coverColor} flex items-center justify-center text-white text-xs font-black flex-shrink-0`}>
+                      {user.initials}
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-white text-xs font-semibold truncate">{user.name.split(' ')[0]}</p>
+                      <p className="text-white/35 text-[9px] truncate">{user.interests[0]?.replace('-', ' ') ?? 'Demo'}</p>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </>
+          )}
 
           <p className="text-center text-white/25 text-xs">
             No account?{' '}

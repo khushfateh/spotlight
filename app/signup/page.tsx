@@ -1,43 +1,51 @@
 'use client'
 
 import { useState } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
+import { motion } from 'framer-motion'
 import { ArrowRight, ArrowLeft } from 'lucide-react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
+import { useAuth } from '@/context/AuthContext'
 import { SpotlightWordmark } from '@/components/ui/SpotlightLogo'
 
 const ease = [0.16, 1, 0.3, 1] as const
 
 export default function SignupPage() {
   const router = useRouter()
+  const { signUp } = useAuth()
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [isLoading, setIsLoading] = useState(false)
+  const [authError, setAuthError] = useState<string | null>(null)
 
   async function handleSignup(e: React.FormEvent) {
     e.preventDefault()
     if (!name || !email || !password) return
     setIsLoading(true)
-    await new Promise(r => setTimeout(r, 800))
+    setAuthError(null)
+    const { error } = await signUp(email, password, name)
+    if (error) {
+      setAuthError(error)
+      setIsLoading(false)
+      return
+    }
     router.push('/onboarding')
   }
 
   return (
     <div className="relative min-h-screen flex flex-col overflow-hidden bg-[#0A0A0A]">
-      {/* Gold spotlight */}
       <div
         className="absolute inset-0 pointer-events-none"
-        style={{
-          background: 'radial-gradient(ellipse 60% 45% at 50% 0%, rgba(201,168,76,0.14) 0%, transparent 65%)',
-        }}
+        style={{ background: 'radial-gradient(ellipse 60% 45% at 50% 0%, rgba(201,168,76,0.14) 0%, transparent 65%)' }}
       />
 
       <div className="relative z-10 flex flex-col min-h-screen px-6 py-12">
-        {/* Back */}
         <div className="flex items-center gap-3 mb-10">
-          <Link href="/login" className="w-9 h-9 rounded-full bg-white/[0.07] border border-white/10 flex items-center justify-center text-white/50 hover:text-white transition-colors">
+          <Link
+            href="/login"
+            className="w-9 h-9 rounded-full bg-white/[0.07] border border-white/10 flex items-center justify-center text-white/50 hover:text-white transition-colors"
+          >
             <ArrowLeft size={16} />
           </Link>
         </div>
@@ -113,6 +121,10 @@ export default function SignupPage() {
                 className="w-full px-4 py-3.5 rounded-2xl bg-white/[0.07] border border-white/10 text-white placeholder-white/25 text-sm focus:outline-none focus:border-hype-gold/50 transition-all"
               />
             </div>
+
+            {authError && (
+              <p className="text-red-400 text-xs pl-1">{authError}</p>
+            )}
 
             <div className="pt-2">
               <button

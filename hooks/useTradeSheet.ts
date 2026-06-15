@@ -2,6 +2,8 @@
 
 import { useState } from 'react'
 import type { Creator, TradeOrder } from '@/types'
+import { supabase } from '@/lib/supabase/client'
+import { logSpot, removeSpot } from '@/lib/services/spotService'
 
 type TradeStep = 'form' | 'confirm' | 'success' | 'error'
 
@@ -45,6 +47,20 @@ export function useTradeSheet() {
 
   async function confirmOrder() {
     setIsSubmitting(true)
+
+    // Persist to Supabase (fire and forget — never blocks the UX)
+    if (supabase && creator) {
+      supabase.auth.getSession().then(({ data }) => {
+        const uid = data.session?.user?.id
+        if (!uid) return
+        if (tradeType === 'buy') {
+          logSpot(uid, creator.ticker).catch(() => {})
+        } else {
+          removeSpot(uid, creator.ticker).catch(() => {})
+        }
+      })
+    }
+
     await new Promise(r => setTimeout(r, 1500))
     setIsSubmitting(false)
     setStep('success')
