@@ -8,53 +8,37 @@ import { AuthProvider, useAuth } from '@/context/AuthContext'
 import { UserProvider } from '@/context/UserContext'
 import { SpotlightCursor } from '@/components/effects/SpotlightCursor'
 
-// Auth flow routes — never get app chrome
-const AUTH_ONLY_ROUTES = ['/login', '/signup', '/onboarding']
-// Always accessible without login
-const ALWAYS_PUBLIC = ['/', ...AUTH_ONLY_ROUTES]
+// These routes render without app chrome (no TopBar / BottomNav)
+const AUTH_FLOW_ROUTES = ['/login', '/signup', '/onboarding']
 
 // Inner shell — rendered inside the providers so it can read auth state
 function InnerShell({ children }: { children: ReactNode }) {
   const pathname = usePathname()
   const router = useRouter()
   const { isAuthenticated, isLoading } = useAuth()
-  const isAuthOnlyRoute = AUTH_ONLY_ROUTES.some(r => pathname.startsWith(r))
-  const isAlwaysPublic = ALWAYS_PUBLIC.some(r =>
-    r === '/' ? pathname === '/' : pathname.startsWith(r)
-  )
+  const isAuthFlow = AUTH_FLOW_ROUTES.some(r => pathname.startsWith(r))
+  const isHome = pathname === '/'
 
   useEffect(() => {
     if (isLoading) return
-    // Unauthenticated on a protected page → home (landing)
-    if (!isAuthenticated && !isAlwaysPublic) {
+    // Unauthenticated on a protected page (not home, not auth-flow) → redirect home
+    if (!isAuthenticated && !isHome && !isAuthFlow) {
       router.replace('/')
     }
-    // Authenticated on login/signup → home (they're already in)
-    if (isAuthenticated && isAuthOnlyRoute) {
+    // Authenticated on login/signup/onboarding → go home
+    if (isAuthenticated && isAuthFlow) {
       router.replace('/')
     }
-  }, [isAuthenticated, isLoading, isAlwaysPublic, isAuthOnlyRoute, router])
+  }, [isAuthenticated, isLoading, isHome, isAuthFlow, router])
 
-  // Auth flow routes never get app chrome
-  if (isAuthOnlyRoute) {
-    return (
-      <div className="min-h-screen bg-hype-bg">
-        {children}
-      </div>
-    )
+  // Auth-flow pages (login / signup / onboarding) — no chrome
+  if (isAuthFlow) {
+    return <div className="min-h-screen bg-hype-bg">{children}</div>
   }
 
-  // / with no auth → page.tsx renders LandingView itself (no chrome needed)
-  if (!isAuthenticated && pathname === '/') {
-    return (
-      <div className="min-h-screen bg-hype-bg">
-        {children}
-      </div>
-    )
-  }
-
-  // Loading / not yet authenticated on a protected page — spinner to avoid flash
-  if (isLoading || !isAuthenticated) {
+  // Home is public — always render with chrome (TopBar adapts based on auth state)
+  // Protected routes: show spinner while auth resolves, then redirect if still unauthed
+  if (!isHome && (isLoading || !isAuthenticated)) {
     return (
       <div className="min-h-screen bg-hype-bg flex items-center justify-center">
         <div className="w-8 h-8 rounded-full border-2 border-hype-gold/30 border-t-hype-gold animate-spin" />
