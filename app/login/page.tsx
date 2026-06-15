@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { motion } from 'framer-motion'
-import { ArrowRight, Eye, EyeOff } from 'lucide-react'
+import { ArrowLeft, ArrowRight, Eye, EyeOff } from 'lucide-react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/context/AuthContext'
@@ -282,14 +282,14 @@ export default function LoginPage() {
       setIsLoading(false)
       return
     }
-    router.replace('/home')
+    router.replace('/')
   }
 
   function handleDemoUser(userId: string) {
     setIsLoading(true)
     setTimeout(() => {
       login(userId)
-      router.replace('/home')
+      router.replace('/')
     }, 600)
   }
 
@@ -319,6 +319,14 @@ export default function LoginPage() {
 
       {/* ── Form content ──────────────────────────────────────────────── */}
       <div className="relative z-10 flex flex-col items-center justify-center min-h-screen px-6 py-12">
+
+        {/* Back to home */}
+        <Link
+          href="/"
+          className="absolute top-5 left-5 w-9 h-9 rounded-full bg-white/[0.07] border border-white/10 flex items-center justify-center text-white/50 hover:text-white hover:bg-white/[0.12] transition-all"
+        >
+          <ArrowLeft size={16} />
+        </Link>
 
         {/* Logo */}
         <motion.div

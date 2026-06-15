@@ -8,36 +8,35 @@ import { AuthProvider, useAuth } from '@/context/AuthContext'
 import { UserProvider } from '@/context/UserContext'
 import { SpotlightCursor } from '@/components/effects/SpotlightCursor'
 
-// Routes that render without auth and without the app chrome
-const PUBLIC_ROUTES = ['/', '/login', '/signup', '/onboarding']
+// Auth flow routes — never get app chrome
+const AUTH_ONLY_ROUTES = ['/login', '/signup', '/onboarding']
+// Always accessible without login
+const ALWAYS_PUBLIC = ['/', ...AUTH_ONLY_ROUTES]
 
 // Inner shell — rendered inside the providers so it can read auth state
 function InnerShell({ children }: { children: ReactNode }) {
   const pathname = usePathname()
   const router = useRouter()
   const { isAuthenticated, isLoading } = useAuth()
-  const isPublicRoute = PUBLIC_ROUTES.some(r =>
+  const isAuthOnlyRoute = AUTH_ONLY_ROUTES.some(r => pathname.startsWith(r))
+  const isAlwaysPublic = ALWAYS_PUBLIC.some(r =>
     r === '/' ? pathname === '/' : pathname.startsWith(r)
   )
 
   useEffect(() => {
     if (isLoading) return
-    // Unauthenticated on a protected page → landing
-    if (!isAuthenticated && !isPublicRoute) {
+    // Unauthenticated on a protected page → home (landing)
+    if (!isAuthenticated && !isAlwaysPublic) {
       router.replace('/')
     }
-    // Authenticated on login/signup/onboarding → app
-    if (isAuthenticated && (pathname === '/login' || pathname === '/signup')) {
-      router.replace('/home')
+    // Authenticated on login/signup → home (they're already in)
+    if (isAuthenticated && isAuthOnlyRoute) {
+      router.replace('/')
     }
-    // Authenticated on landing → app
-    if (isAuthenticated && pathname === '/') {
-      router.replace('/home')
-    }
-  }, [isAuthenticated, isLoading, isPublicRoute, pathname, router])
+  }, [isAuthenticated, isLoading, isAlwaysPublic, isAuthOnlyRoute, router])
 
-  // No chrome for public pages (landing + auth flows)
-  if (isPublicRoute) {
+  // Auth flow routes never get app chrome
+  if (isAuthOnlyRoute) {
     return (
       <div className="min-h-screen bg-hype-bg">
         {children}
@@ -45,7 +44,16 @@ function InnerShell({ children }: { children: ReactNode }) {
     )
   }
 
-  // Loading / not yet authenticated — show nothing to avoid flash
+  // / with no auth → page.tsx renders LandingView itself (no chrome needed)
+  if (!isAuthenticated && pathname === '/') {
+    return (
+      <div className="min-h-screen bg-hype-bg">
+        {children}
+      </div>
+    )
+  }
+
+  // Loading / not yet authenticated on a protected page — spinner to avoid flash
   if (isLoading || !isAuthenticated) {
     return (
       <div className="min-h-screen bg-hype-bg flex items-center justify-center">
@@ -98,7 +106,7 @@ function DesktopSidebar() {
   const pathname = usePathname()
 
   const links = [
-    { href: '/home', label: 'Home' },
+    { href: '/', label: 'Home' },
     { href: '/explore', label: 'Discover' },
     { href: '/spotlight', label: 'Spotlight', highlight: true },
     { href: '/portfolio', label: 'Discoveries' },
@@ -109,7 +117,7 @@ function DesktopSidebar() {
     <div className="hidden md:flex md:flex-col md:w-56 md:fixed md:left-0 md:top-14 md:bottom-0 md:border-r md:border-hype-border md:bg-hype-bg md:py-6 md:px-4">
       <nav className="space-y-0.5">
         {links.map(({ href, label, highlight }) => {
-          const isActive = href === '/home' ? pathname === '/home' : pathname.startsWith(href)
+          const isActive = href === '/' ? pathname === '/' : pathname.startsWith(href)
           return (
             <a
               key={href}

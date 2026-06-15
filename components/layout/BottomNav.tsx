@@ -18,7 +18,7 @@ export default function BottomNav() {
   const { userMode } = useUser()
 
   const investorNav: NavItem[] = [
-    { href: '/home', label: 'Home', icon: <Home size={20} /> },
+    { href: '/', label: 'Home', icon: <Home size={20} /> },
     { href: '/explore', label: 'Discover', icon: <Compass size={20} /> },
     { href: '/spotlight', label: 'Spotlight', icon: <Star size={20} />, isCenter: true },
     { href: '/portfolio', label: 'Discoveries', icon: <PieChart size={20} /> },
@@ -26,7 +26,7 @@ export default function BottomNav() {
   ]
 
   const creatorNav: NavItem[] = [
-    { href: '/home', label: 'Home', icon: <Home size={20} /> },
+    { href: '/', label: 'Home', icon: <Home size={20} /> },
     { href: '/explore', label: 'Discover', icon: <Compass size={20} /> },
     { href: '/launch', label: 'Launch', icon: <Plus size={20} />, isCenter: true },
     { href: '/dashboard', label: 'Dashboard', icon: <LayoutDashboard size={20} /> },
@@ -43,8 +43,8 @@ export default function BottomNav() {
         <div className="bg-hype-bg/98 backdrop-blur-md border-t border-hype-border">
           <div className="max-w-lg mx-auto flex items-center justify-around h-[56px] px-2">
             {navItems.map((item) => {
-              const isActive = item.href === '/home'
-                ? pathname === '/home'
+              const isActive = item.href === '/'
+                ? pathname === '/'
                 : pathname.startsWith(item.href)
 
               if (item.isCenter) {
