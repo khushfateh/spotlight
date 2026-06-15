@@ -13,6 +13,8 @@ import { getCreatorByTicker } from '@/lib/mock-data'
 import { communityPosts } from '@/lib/mock-data'
 import { cn } from '@/lib/utils'
 import { getMomentum, getMomentumTier } from '@/lib/mock-data'
+import { getMomentumDrivers, driverCategoryLabel } from '@/lib/mock-data/momentum-drivers'
+import { getEarlySpotters } from '@/lib/mock-data/spots'
 
 type Tab = 'Overview' | 'Community' | 'Updates'
 
@@ -41,6 +43,16 @@ export default function CreatorProfilePage({ params }: { params: Promise<{ ticke
   const isDeltaUp = delta >= 0
   const firstName = creator.name.split(' ')[0]
   const creatorPosts = communityPosts.filter(p => p.creatorId === creator.id)
+  const drivers = getMomentumDrivers(creator.ticker)
+  const spotters = getEarlySpotters(creator.ticker, 5)
+
+  const DRIVER_COLORS: Record<string, string> = {
+    growth: 'text-emerald-400',
+    community: 'text-blue-400',
+    catalysts: 'text-hype-gold',
+    discussion: 'text-purple-400',
+    events: 'text-orange-400',
+  }
 
   return (
     <>
@@ -176,6 +188,65 @@ export default function CreatorProfilePage({ params }: { params: Promise<{ ticke
                     <p className="text-hype-gold text-[10px] font-bold uppercase tracking-wider">Why They&apos;re Moving</p>
                   </div>
                   <p className="text-hype-secondary text-sm leading-relaxed">{creator.story}</p>
+                </div>
+              )}
+
+              {/* Momentum Drivers */}
+              {drivers.length > 0 && (
+                <div className="premium-card rounded-2xl p-4">
+                  <div className="flex items-center gap-1.5 mb-4">
+                    <TrendingUp size={13} className="text-hype-gold" />
+                    <p className="text-hype-text font-semibold text-sm">What&apos;s Driving Momentum</p>
+                  </div>
+                  <div className="space-y-3">
+                    {drivers.map((driver, i) => (
+                      <div key={i} className="flex items-start justify-between gap-3 pb-3 border-b border-hype-border/50 last:border-0 last:pb-0">
+                        <div className="flex-1 min-w-0">
+                          <p className="text-hype-text text-xs font-medium">{driver.label}</p>
+                          <p className={cn('text-[9px] font-bold uppercase tracking-wider mt-0.5', DRIVER_COLORS[driver.category] ?? 'text-white/40')}>
+                            {driverCategoryLabel[driver.category]}
+                          </p>
+                        </div>
+                        <div className="text-right flex-shrink-0">
+                          {driver.value && <p className="text-hype-text text-xs font-bold">{driver.value}</p>}
+                          {driver.delta && (
+                            <p className={cn('text-[10px] font-semibold', driver.isPositive ? 'text-hype-green' : 'text-hype-red')}>
+                              {driver.delta}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Early Spotters */}
+              {spotters.length > 0 && (
+                <div className="premium-card rounded-2xl p-4">
+                  <div className="flex items-center gap-1.5 mb-4">
+                    <Users size={13} className="text-hype-gold" />
+                    <p className="text-hype-text font-semibold text-sm">Early Spotters</p>
+                    <span className="ml-auto text-hype-dim text-[10px]">Who was here first</span>
+                  </div>
+                  <div className="space-y-3">
+                    {spotters.map((spotter, i) => (
+                      <div key={i} className="flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-full bg-white/10 border border-white/10 flex items-center justify-center text-white text-[10px] font-bold flex-shrink-0">
+                          {spotter.userAvatar}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-hype-text text-xs font-semibold">{spotter.userName}</p>
+                          {spotter.badge && (
+                            <span className="inline-block px-1.5 py-0.5 rounded text-[8px] bg-hype-gold/15 text-hype-gold font-bold mt-0.5">
+                              {spotter.badge}
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-hype-dim text-[10px] flex-shrink-0">{spotter.daysAgo}d ago</p>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               )}
 

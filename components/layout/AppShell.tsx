@@ -1,56 +1,87 @@
 'use client'
 
-import { type ReactNode } from 'react'
-import { usePathname } from 'next/navigation'
+import { useEffect, type ReactNode } from 'react'
+import { usePathname, useRouter } from 'next/navigation'
 import TopBar from './TopBar'
 import BottomNav from './BottomNav'
+import { AuthProvider, useAuth } from '@/context/AuthContext'
 import { UserProvider } from '@/context/UserContext'
 import { SpotlightCursor } from '@/components/effects/SpotlightCursor'
 
-type AppShellProps = {
-  children: ReactNode
-}
+const AUTH_ROUTES = ['/login', '/signup', '/onboarding']
 
-export default function AppShell({ children }: AppShellProps) {
-  return (
-    <UserProvider>
+// Inner shell — rendered inside the providers so it can read auth state
+function InnerShell({ children }: { children: ReactNode }) {
+  const pathname = usePathname()
+  const router = useRouter()
+  const { isAuthenticated, isLoading } = useAuth()
+  const isAuthRoute = AUTH_ROUTES.some(r => pathname.startsWith(r))
+
+  useEffect(() => {
+    if (isLoading) return
+    if (!isAuthenticated && !isAuthRoute) {
+      router.replace('/login')
+    }
+    if (isAuthenticated && isAuthRoute) {
+      router.replace('/')
+    }
+  }, [isAuthenticated, isLoading, isAuthRoute, router])
+
+  // Minimal shell for auth pages — no chrome
+  if (isAuthRoute) {
+    return (
       <div className="min-h-screen bg-hype-bg">
-        {/* Global ambient — very slow, almost imperceptible depth */}
-        <div aria-hidden className="pointer-events-none fixed inset-0 overflow-hidden z-0">
-          <div
-            className="absolute ambient-orb-1"
-            style={{
-              width: 700, height: 700,
-              borderRadius: '50%',
-              background: 'radial-gradient(circle, #C9A84C 0%, transparent 65%)',
-              filter: 'blur(100px)',
-              top: '-200px', left: '30%',
-            }}
-          />
-          <div
-            className="absolute ambient-orb-2"
-            style={{
-              width: 500, height: 500,
-              borderRadius: '50%',
-              background: 'radial-gradient(circle, #6366F1 0%, transparent 65%)',
-              filter: 'blur(120px)',
-              bottom: '10%', right: '-10%',
-            }}
-          />
-        </div>
-        <SpotlightCursor />
-        <TopBar />
-        <main className="pt-14 relative z-10">
-          <div className="md:flex md:min-h-screen">
-            <DesktopSidebar />
-            <div className="flex-1 md:ml-56 max-w-2xl md:max-w-none">
-              {children}
-            </div>
-          </div>
-        </main>
-        <BottomNav />
+        {children}
       </div>
-    </UserProvider>
+    )
+  }
+
+  // Loading / not yet authenticated — show nothing to avoid flash
+  if (isLoading || !isAuthenticated) {
+    return (
+      <div className="min-h-screen bg-hype-bg flex items-center justify-center">
+        <div className="w-8 h-8 rounded-full border-2 border-hype-gold/30 border-t-hype-gold animate-spin" />
+      </div>
+    )
+  }
+
+  return (
+    <div className="min-h-screen bg-hype-bg">
+      {/* Global ambient — very slow, almost imperceptible depth */}
+      <div aria-hidden className="pointer-events-none fixed inset-0 overflow-hidden z-0">
+        <div
+          className="absolute ambient-orb-1"
+          style={{
+            width: 700, height: 700,
+            borderRadius: '50%',
+            background: 'radial-gradient(circle, #C9A84C 0%, transparent 65%)',
+            filter: 'blur(100px)',
+            top: '-200px', left: '30%',
+          }}
+        />
+        <div
+          className="absolute ambient-orb-2"
+          style={{
+            width: 500, height: 500,
+            borderRadius: '50%',
+            background: 'radial-gradient(circle, #6366F1 0%, transparent 65%)',
+            filter: 'blur(120px)',
+            bottom: '10%', right: '-10%',
+          }}
+        />
+      </div>
+      <SpotlightCursor />
+      <TopBar />
+      <main className="pt-14 relative z-10">
+        <div className="md:flex md:min-h-screen">
+          <DesktopSidebar />
+          <div className="flex-1 md:ml-56 max-w-2xl md:max-w-none">
+            {children}
+          </div>
+        </div>
+      </main>
+      <BottomNav />
+    </div>
   )
 }
 
@@ -59,8 +90,8 @@ function DesktopSidebar() {
 
   const links = [
     { href: '/', label: 'Home' },
-    { href: '/explore', label: 'Explore' },
-    { href: '/ipos', label: 'Debuts', highlight: true },
+    { href: '/explore', label: 'Discover' },
+    { href: '/spotlight', label: 'Spotlight', highlight: true },
     { href: '/portfolio', label: 'Discoveries' },
     { href: '/profile', label: 'Profile' },
   ]
@@ -95,7 +126,7 @@ function DesktopSidebar() {
       <div className="mt-auto">
         <div className="rounded-xl border border-hype-border p-3">
           <p className="text-hype-dim text-[10px] leading-relaxed">
-            Mock trading only. Not financial advice. For demonstration purposes.
+            Cultural discovery platform. Not financial advice.
           </p>
         </div>
       </div>
@@ -105,4 +136,14 @@ function DesktopSidebar() {
 
 function cn(...classes: (string | boolean | undefined)[]) {
   return classes.filter(Boolean).join(' ')
+}
+
+export default function AppShell({ children }: { children: ReactNode }) {
+  return (
+    <AuthProvider>
+      <UserProvider>
+        <InnerShell>{children}</InnerShell>
+      </UserProvider>
+    </AuthProvider>
+  )
 }

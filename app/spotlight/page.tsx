@@ -1,0 +1,320 @@
+'use client'
+/* eslint-disable @next/next/no-img-element */
+
+import { motion, useScroll, useTransform } from 'framer-motion'
+import { TrendingUp, TrendingDown, ChevronDown, Users, Zap } from 'lucide-react'
+import Link from 'next/link'
+import { creators } from '@/lib/mock-data/creators'
+import { getMomentum, getMomentumTier } from '@/lib/mock-data/momentum'
+import { getMomentumDrivers } from '@/lib/mock-data/momentum-drivers'
+import { getEarlySpotters } from '@/lib/mock-data/spots'
+import { getGenresForCreator } from '@/lib/mock-data/genres'
+import TradeSheet from '@/components/trading/TradeSheet'
+import { useTradeSheet } from '@/hooks/useTradeSheet'
+
+// Today's Spotlight creator — in production this would come from a daily editorial API
+const SPOTLIGHT_TICKER = 'APDHILLON'
+
+const EDITORIAL_IMAGE = 'https://images.unsplash.com/photo-1493225457124-a3eb4598d050?auto=format&fit=crop&w=1200&q=85'
+
+const WHY_CARDS = [
+  {
+    heading: 'Bridging worlds.',
+    body: 'AP Dhillon is doing something no one has done before — taking the soul of Punjabi music and scaling it to global pop audiences without losing an ounce of its identity.',
+  },
+  {
+    heading: 'The numbers don\'t lie.',
+    body: 'From 2M to 14M followers in 18 months. His Spotify monthly listeners have grown 340% since his first viral track. This isn\'t a moment. It\'s a movement.',
+  },
+  {
+    heading: 'The West Coast effect.',
+    body: 'Growing up in Canada gave Dhillon the cultural fluency to fuse Punjabi R&B with production that feels native to the Billboard Hot 100. That dual citizenship — cultural and sonic — is his superpower.',
+  },
+]
+
+const DRIVER_CATEGORY_COLORS: Record<string, string> = {
+  growth: 'text-emerald-400',
+  community: 'text-blue-400',
+  catalysts: 'text-hype-gold',
+  discussion: 'text-purple-400',
+  events: 'text-orange-400',
+}
+
+export default function SpotlightPage() {
+  const trade = useTradeSheet()
+  const { scrollY } = useScroll()
+
+  const heroOpacity = useTransform(scrollY, [0, 280], [1, 0])
+  const heroScale = useTransform(scrollY, [0, 280], [1, 1.08])
+  const heroY = useTransform(scrollY, [0, 280], [0, -60])
+
+  const creator = creators.find(c => c.ticker === SPOTLIGHT_TICKER)
+  if (!creator) return null
+
+  const { score, delta } = getMomentum(creator.ticker)
+  const tier = getMomentumTier(score)
+  const isDeltaUp = delta >= 0
+  const firstName = creator.name.split(' ')[0]
+  const drivers = getMomentumDrivers(creator.ticker)
+  const spotters = getEarlySpotters(creator.ticker, 5)
+  const genres = getGenresForCreator(creator.ticker)
+
+  function openSpot() { trade.openBuy(creator!) }
+  function openRelease() { trade.openSell(creator!) }
+
+  return (
+    <div className="min-h-screen bg-hype-bg relative">
+
+      {/* ── HERO ─────────────────────────────────────────────────────────── */}
+      <div className="relative h-[92vh] max-h-[700px] overflow-hidden">
+        {/* Parallax image */}
+        <motion.div
+          className="absolute inset-0"
+          style={{ scale: heroScale, y: heroY }}
+        >
+          <img
+            src={EDITORIAL_IMAGE}
+            alt={creator.name}
+            className="w-full h-full object-cover object-top"
+          />
+        </motion.div>
+
+        {/* Overlays */}
+        <div className="absolute inset-0 bg-gradient-to-t from-hype-bg via-hype-bg/40 to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-r from-hype-bg/50 via-transparent to-hype-bg/30" />
+
+        {/* Hero content */}
+        <motion.div
+          className="absolute inset-0 flex flex-col justify-end px-5 pb-8"
+          style={{ opacity: heroOpacity }}
+        >
+          {/* Date editorial badge */}
+          <div className="mb-4">
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-hype-gold/20 border border-hype-gold/30 text-hype-gold text-[10px] font-bold uppercase tracking-widest">
+              <Zap size={9} /> Today&apos;s Spotlight
+            </span>
+          </div>
+
+          <h1 className="text-white font-black text-5xl tracking-tight leading-none mb-2">
+            {creator.name}
+          </h1>
+
+          {/* Genre tags */}
+          <div className="flex items-center gap-2 mb-4 flex-wrap">
+            {genres.slice(0, 3).map(g => (
+              <span key={g.id} className="text-white/50 text-xs">
+                {g.label}
+              </span>
+            ))}
+          </div>
+
+          {/* Momentum strip */}
+          <div className="flex items-center gap-4 mb-6">
+            <div>
+              <p className="text-white/40 text-[10px] uppercase tracking-widest mb-0.5">Momentum</p>
+              <p className="text-white font-black text-4xl leading-none">{score}</p>
+            </div>
+            <div className="h-10 w-px bg-white/15" />
+            <div>
+              <p className="text-white/40 text-[10px] uppercase tracking-widest mb-0.5">This week</p>
+              <p className={`font-bold text-lg flex items-center gap-1 ${isDeltaUp ? 'text-emerald-400' : 'text-red-400'}`}>
+                {isDeltaUp ? <TrendingUp size={16} /> : <TrendingDown size={16} />}
+                {isDeltaUp ? '+' : ''}{delta} pts
+              </p>
+            </div>
+            <div className="h-10 w-px bg-white/15" />
+            <div>
+              <p className="text-white/40 text-[10px] uppercase tracking-widest mb-0.5">Status</p>
+              <p className="text-hype-gold font-bold text-sm">{tier}</p>
+            </div>
+          </div>
+
+          {/* CTA buttons */}
+          <div className="flex gap-3">
+            <button
+              onClick={openSpot}
+              className="flex-1 h-12 rounded-2xl bg-hype-gold text-[#0A0A0A] font-bold text-sm shadow-[0_4px_20px_rgba(201,168,76,0.35)] hover:bg-hype-gold-dim transition-all active:scale-[0.98]"
+            >
+              Spot {firstName}
+            </button>
+            <button
+              onClick={() => {}}
+              className="px-5 h-12 rounded-2xl border border-white/20 text-white text-sm font-medium hover:border-white/40 transition-all"
+            >
+              Follow
+            </button>
+          </div>
+        </motion.div>
+
+        {/* Scroll indicator */}
+        <motion.div
+          className="absolute bottom-4 left-1/2 -translate-x-1/2"
+          animate={{ y: [0, 6, 0] }}
+          transition={{ duration: 1.5, repeat: Infinity }}
+          style={{ opacity: heroOpacity }}
+        >
+          <ChevronDown size={20} className="text-white/30" />
+        </motion.div>
+      </div>
+
+      {/* ── EDITORIAL BODY ───────────────────────────────────────────────── */}
+      <div className="px-5 pb-32">
+
+        {/* Editorial teaser */}
+        <div className="py-8 border-b border-hype-border">
+          <p className="text-white/40 text-[10px] font-semibold uppercase tracking-widest mb-3">
+            Why they matter
+          </p>
+          <p className="text-white/85 text-lg font-medium leading-relaxed">
+            {creator.bio}
+          </p>
+        </div>
+
+        {/* Why They're Rising — editorial sections */}
+        <div className="py-8 border-b border-hype-border">
+          <p className="text-white/40 text-[10px] font-semibold uppercase tracking-widest mb-6">
+            The story
+          </p>
+          <div className="space-y-8">
+            {WHY_CARDS.map((card, i) => (
+              <motion.div
+                key={i}
+                initial={{ opacity: 0, y: 16 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true, margin: '-40px' }}
+                transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1], delay: i * 0.08 }}
+              >
+                <h3 className="text-hype-gold font-black text-lg mb-2">{card.heading}</h3>
+                <p className="text-white/60 text-sm leading-relaxed">{card.body}</p>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+
+        {/* Momentum Drivers */}
+        {drivers.length > 0 && (
+          <div className="py-8 border-b border-hype-border">
+            <p className="text-white/40 text-[10px] font-semibold uppercase tracking-widest mb-5">
+              What&apos;s driving momentum
+            </p>
+            <div className="space-y-3">
+              {drivers.map((driver, i) => (
+                <motion.div
+                  key={i}
+                  initial={{ opacity: 0, x: -10 }}
+                  whileInView={{ opacity: 1, x: 0 }}
+                  viewport={{ once: true, margin: '-20px' }}
+                  transition={{ duration: 0.4, delay: i * 0.05 }}
+                  className="flex items-start justify-between gap-4 py-3 border-b border-hype-border/60 last:border-0"
+                >
+                  <div className="flex-1 min-w-0">
+                    <p className="text-white text-sm font-medium">{driver.label}</p>
+                    <p className={`text-[10px] font-semibold uppercase tracking-wider mt-0.5 ${DRIVER_CATEGORY_COLORS[driver.category] ?? 'text-white/40'}`}>
+                      {driver.category}
+                    </p>
+                  </div>
+                  <div className="text-right flex-shrink-0">
+                    {driver.value && (
+                      <p className="text-white font-bold text-sm">{driver.value}</p>
+                    )}
+                    {driver.delta && (
+                      <p className={`text-xs font-semibold ${driver.isPositive ? 'text-emerald-400' : 'text-red-400'}`}>
+                        {driver.delta}
+                      </p>
+                    )}
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Early Spotters */}
+        {spotters.length > 0 && (
+          <div className="py-8 border-b border-hype-border">
+            <div className="flex items-center gap-2 mb-5">
+              <Users size={12} className="text-white/40" />
+              <p className="text-white/40 text-[10px] font-semibold uppercase tracking-widest">
+                Early spotters
+              </p>
+            </div>
+            <div className="space-y-3">
+              {spotters.map((spotter, i) => (
+                <div key={i} className="flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-full bg-white/10 border border-white/10 flex items-center justify-center text-white text-xs font-bold flex-shrink-0">
+                    {spotter.userAvatar}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-white text-sm font-medium">{spotter.userName}</p>
+                    {spotter.badge && (
+                      <span className="inline-block px-1.5 py-0.5 rounded text-[9px] bg-hype-gold/15 text-hype-gold font-bold">
+                        {spotter.badge}
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-white/35 text-xs flex-shrink-0">{spotter.daysAgo}d ago</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Stats row */}
+        <div className="py-8 border-b border-hype-border">
+          <p className="text-white/40 text-[10px] font-semibold uppercase tracking-widest mb-4">Creator stats</p>
+          <div className="grid grid-cols-3 gap-4">
+            <div className="rounded-2xl bg-hype-surface border border-hype-border p-4 text-center">
+              <p className="text-white font-black text-xl">{creator.followers}</p>
+              <p className="text-white/35 text-[10px] uppercase tracking-wider mt-1">Followers</p>
+            </div>
+            <div className="rounded-2xl bg-hype-surface border border-hype-border p-4 text-center">
+              <p className="text-white font-black text-xl">{creator.creatorScore}</p>
+              <p className="text-white/35 text-[10px] uppercase tracking-wider mt-1">Creator Score</p>
+            </div>
+            <div className="rounded-2xl bg-hype-surface border border-hype-border p-4 text-center">
+              <p className="text-hype-gold font-black text-sm">{tier}</p>
+              <p className="text-white/35 text-[10px] uppercase tracking-wider mt-1">Tier</p>
+            </div>
+          </div>
+        </div>
+
+        {/* CTA */}
+        <div className="pt-8">
+          <p className="text-white/40 text-[10px] font-semibold uppercase tracking-widest mb-4 text-center">
+            You spotted it first.
+          </p>
+          <div className="flex gap-3">
+            <button
+              onClick={openSpot}
+              className="flex-1 h-13 py-3.5 rounded-2xl bg-hype-gold text-[#0A0A0A] font-bold text-sm shadow-[0_4px_20px_rgba(201,168,76,0.3)] hover:bg-hype-gold-dim transition-all"
+            >
+              Spot {firstName}
+            </button>
+            <Link
+              href={`/creator/${creator.ticker.toLowerCase()}`}
+              className="px-5 h-13 py-3.5 rounded-2xl border border-white/20 text-white text-sm font-medium hover:border-white/40 transition-all flex items-center justify-center"
+            >
+              Full profile
+            </Link>
+          </div>
+          <p className="text-center text-white/20 text-[10px] mt-3">
+            Add to your Discoveries · Early access, not ownership · Mock only
+          </p>
+        </div>
+      </div>
+
+      <TradeSheet
+        isOpen={trade.isOpen}
+        creator={trade.creator}
+        tradeType={trade.tradeType}
+        step={trade.step as 'form' | 'confirm' | 'success' | 'error'}
+        pendingOrder={trade.pendingOrder}
+        isSubmitting={trade.isSubmitting}
+        onClose={trade.close}
+        onSubmitOrder={trade.submitOrder}
+        onConfirmOrder={trade.confirmOrder}
+        onReset={trade.reset}
+      />
+    </div>
+  )
+}

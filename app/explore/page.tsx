@@ -3,91 +3,46 @@
 
 import { useState, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Search, X, ArrowRight, ChevronRight, Layers } from 'lucide-react'
+import { Search, X, Layers, TrendingUp, Gem, Zap, Star, Flame } from 'lucide-react'
 import Link from 'next/link'
-import PriceChart from '@/components/market/PriceChart'
 import TradeSheet from '@/components/trading/TradeSheet'
 import { useTradeSheet } from '@/hooks/useTradeSheet'
 import {
   getCreatorsByCategory,
   getTrendingCreators,
   getTopGainers,
+  getMomentum,
+  getMomentumTier,
 } from '@/lib/mock-data'
+import { genres } from '@/lib/mock-data/genres'
+import { getCreatorsInGenre } from '@/lib/mock-data/genres'
 import { cn } from '@/lib/utils'
-import { getMomentum, getMomentumTier } from '@/lib/mock-data'
-import { fadeUp, reveal, sectionReveal, ease } from '@/lib/motion'
 import { DiscoverStack } from '@/components/effects/DiscoverStack'
 import type { Creator, CreatorCategory } from '@/types'
 
-// ── Editorial sections ────────────────────────────────────────────────────────
+const ease = [0.16, 1, 0.3, 1] as const
 
-// Horizontal portrait card — compact, editorial
-function MiniPortraitCard({
-  creator,
-  onBuy,
-  delay = 0,
-}: {
-  creator: Creator
-  onBuy: (c: Creator) => void
-  delay?: number
-}) {
-  const { score, delta } = getMomentum(creator.ticker)
-  const tier = getMomentumTier(score)
-  const isDeltaUp = delta >= 0
+// ── Discovery Lens ─────────────────────────────────────────────────────────────
 
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 16 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true }}
-      transition={{ duration: 0.45, ease, delay }}
-      className="flex-shrink-0 group cursor-pointer"
-      style={{ width: 140 }}
-    >
-      <Link href={`/creator/${creator.ticker.toLowerCase()}`}>
-        <div className="relative rounded-2xl overflow-hidden" style={{ height: 200 }}>
-          {creator.imageUrl ? (
-            <img
-              src={creator.imageUrl}
-              alt={creator.name}
-              className="absolute inset-0 w-full h-full object-cover object-top transition-transform duration-500 group-hover:scale-105"
-            />
-          ) : (
-            <div className={cn('absolute inset-0 bg-gradient-to-br', creator.coverColor)} />
-          )}
-          <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/20 to-transparent" />
-          <button
-            onClick={e => { e.preventDefault(); onBuy(creator) }}
-            className="absolute top-2 right-2 px-2 py-0.5 bg-hype-gold text-[#0A0A0A] text-[9px] font-bold rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
-          >
-            Spot
-          </button>
-          <div className="absolute bottom-0 left-0 right-0 p-3">
-            <p className="text-white font-bold text-[13px] leading-tight">{creator.name}</p>
-            <div className="flex items-center gap-1.5 mt-1">
-              <p className="text-white/80 text-sm font-black tabular">{score}</p>
-              <p className="text-hype-gold text-[8px] font-semibold uppercase tracking-wider">{tier}</p>
-            </div>
-            <p className={cn('text-[10px] font-semibold tabular mt-0.5', isDeltaUp ? 'text-hype-green' : 'text-hype-red')}>
-              {isDeltaUp ? '+' : ''}{delta} pts
-            </p>
-          </div>
-        </div>
-      </Link>
-    </motion.div>
-  )
+type Lens = {
+  id: string
+  label: string
+  icon: React.ReactNode
+  description: string
+  color: string
 }
 
-// List row — for the full creator list below the fold
-function CreatorListRow({
-  creator,
-  rank,
-  onBuy,
-}: {
-  creator: Creator
-  rank: number
-  onBuy: (c: Creator) => void
-}) {
+const LENSES: Lens[] = [
+  { id: 'trending',    label: 'Trending',      icon: <Flame size={14} />,     description: 'Highest momentum right now',     color: 'text-orange-400 border-orange-400/30 bg-orange-400/10' },
+  { id: 'rising',     label: 'Rising Fast',   icon: <TrendingUp size={14} />, description: 'Biggest score gains this week',   color: 'text-emerald-400 border-emerald-400/30 bg-emerald-400/10' },
+  { id: 'breakout',   label: 'Near Breakout', icon: <Zap size={14} />,        description: 'About to cross to next tier',     color: 'text-hype-gold border-hype-gold/30 bg-hype-gold/10' },
+  { id: 'gems',       label: 'Hidden Gems',   icon: <Gem size={14} />,        description: 'Under the radar, accelerating',   color: 'text-blue-400 border-blue-400/30 bg-blue-400/10' },
+  { id: 'editors',    label: "Editor's Picks", icon: <Star size={14} />,      description: 'Curated by the SPOTLIGHT team',   color: 'text-purple-400 border-purple-400/30 bg-purple-400/10' },
+]
+
+// ── Creator list row ───────────────────────────────────────────────────────────
+
+function CreatorListRow({ creator, rank, onBuy }: { creator: Creator; rank: number; onBuy: (c: Creator) => void }) {
   const { score, delta } = getMomentum(creator.ticker)
   const tier = getMomentumTier(score)
   const isDeltaUp = delta >= 0
@@ -95,14 +50,14 @@ function CreatorListRow({
   return (
     <Link href={`/creator/${creator.ticker.toLowerCase()}`}>
       <div className="flex items-center gap-3 px-4 py-3.5 hover:bg-hype-surface-2 transition-colors group">
-        <span className="text-hype-dim text-[11px] font-mono w-4 flex-shrink-0">{rank}</span>
+        <span className="text-hype-dim text-[11px] font-mono w-5 flex-shrink-0 text-center">{rank}</span>
 
         {creator.imageUrl ? (
-          <div className="w-9 h-9 rounded-xl overflow-hidden flex-shrink-0">
+          <div className="w-10 h-10 rounded-xl overflow-hidden flex-shrink-0">
             <img src={creator.imageUrl} alt="" className="w-full h-full object-cover object-top" />
           </div>
         ) : (
-          <div className={cn('w-9 h-9 rounded-xl bg-gradient-to-br flex-shrink-0', creator.coverColor)} />
+          <div className={cn('w-10 h-10 rounded-xl bg-gradient-to-br flex-shrink-0', creator.coverColor)} />
         )}
 
         <div className="flex-1 min-w-0">
@@ -110,7 +65,7 @@ function CreatorListRow({
           <p className="text-hype-muted text-[10px] font-mono">${creator.ticker} · {creator.category}</p>
         </div>
 
-        <div className="text-right flex-shrink-0 w-20">
+        <div className="text-right flex-shrink-0">
           <div className="flex items-baseline justify-end gap-1.5">
             <p className="text-hype-text text-sm font-black tabular">{score}</p>
             <p className="text-hype-gold text-[8px] font-semibold uppercase tracking-wider">{tier}</p>
@@ -122,7 +77,7 @@ function CreatorListRow({
 
         <button
           onClick={e => { e.preventDefault(); onBuy(creator) }}
-          className="flex-shrink-0 px-2.5 py-1.5 bg-hype-gold/0 border border-hype-border text-hype-muted text-[10px] font-semibold rounded-lg opacity-0 group-hover:opacity-100 group-hover:bg-hype-gold group-hover:text-[#0A0A0A] group-hover:border-hype-gold transition-all"
+          className="flex-shrink-0 px-2.5 py-1.5 border border-hype-border text-hype-muted text-[10px] font-semibold rounded-lg opacity-0 group-hover:opacity-100 group-hover:bg-hype-gold group-hover:text-[#0A0A0A] group-hover:border-hype-gold transition-all"
         >
           Spot
         </button>
@@ -131,260 +86,319 @@ function CreatorListRow({
   )
 }
 
+// ── Genre pill card ────────────────────────────────────────────────────────────
+
+function GenreCard({ genre, onSelect }: { genre: typeof genres[0]; onSelect: (id: string) => void }) {
+  return (
+    <button
+      onClick={() => onSelect(genre.id)}
+      className="flex-shrink-0 relative rounded-2xl overflow-hidden text-left"
+      style={{ width: 120, height: 80 }}
+    >
+      {genre.imageUrl ? (
+        <img src={genre.imageUrl} alt="" className="absolute inset-0 w-full h-full object-cover" />
+      ) : (
+        <div className={cn('absolute inset-0 bg-gradient-to-br', genre.coverColor)} />
+      )}
+      <div className="absolute inset-0 bg-black/60" />
+      <div className="absolute inset-0 p-3 flex flex-col justify-end">
+        <span className="text-lg">{genre.emoji}</span>
+        <p className="text-white text-[11px] font-bold leading-tight mt-0.5">{genre.label}</p>
+      </div>
+    </button>
+  )
+}
+
 // ── Page ──────────────────────────────────────────────────────────────────────
-
-const categories = ['All', 'Music', 'Gaming', 'Content', 'Sports', 'Lifestyle'] as const
-type CategoryFilter = typeof categories[number]
-
-const sortOptions = ['Trending', 'Rising', 'Cooling', 'Reach'] as const
-type SortOption = typeof sortOptions[number]
 
 export default function ExplorePage() {
   const [query, setQuery] = useState('')
-  const [category, setCategory] = useState<CategoryFilter>('All')
-  const [sort, setSort] = useState<SortOption>('Trending')
-  const [searchOpen, setSearchOpen] = useState(false)
+  const [activeLens, setActiveLens] = useState<string | null>(null)
+  const [activeGenre, setActiveGenre] = useState<string | null>(null)
   const [discoverMode, setDiscoverMode] = useState(false)
   const [discoverCreators, setDiscoverCreators] = useState<Creator[]>([])
   const trade = useTradeSheet()
 
   function openDiscover() {
     const all = getCreatorsByCategory('All' as CreatorCategory)
-    const shuffled = [...all].sort(() => Math.random() - 0.5)
-    setDiscoverCreators(shuffled)
+    setDiscoverCreators([...all].sort((a, b) => getMomentum(b.ticker).delta - getMomentum(a.ticker).delta))
     setDiscoverMode(true)
   }
 
-  const trending = getTrendingCreators(8)
-  const gainers = getTopGainers(5)
-  const featuredStory = trending[0]
+  function handleGenreSelect(genreId: string) {
+    setActiveGenre(activeGenre === genreId ? null : genreId)
+    setActiveLens(null)
+  }
 
-  const allCreators = useMemo(() => {
-    let list = getCreatorsByCategory(category === 'All' ? 'All' : (category as CreatorCategory))
+  function handleLensSelect(lensId: string) {
+    setActiveLens(activeLens === lensId ? null : lensId)
+    setActiveGenre(null)
+  }
+
+  const allCreators = getCreatorsByCategory('All' as CreatorCategory)
+  const gainers = getTopGainers(5)
+
+  const filteredCreators = useMemo(() => {
+    let list = allCreators
+
     if (query.trim()) {
       const q = query.toLowerCase()
-      list = list.filter(c =>
-        c.name.toLowerCase().includes(q) ||
-        c.ticker.toLowerCase().includes(q)
-      )
+      list = list.filter(c => c.name.toLowerCase().includes(q) || c.ticker.toLowerCase().includes(q))
+    } else if (activeGenre) {
+      const tickers = getCreatorsInGenre(activeGenre)
+      list = list.filter(c => tickers.includes(c.ticker))
+    } else if (activeLens) {
+      switch (activeLens) {
+        case 'trending':
+          list = [...list].sort((a, b) => getMomentum(b.ticker).score - getMomentum(a.ticker).score)
+          break
+        case 'rising':
+          list = [...list].sort((a, b) => getMomentum(b.ticker).delta - getMomentum(a.ticker).delta).filter(c => getMomentum(c.ticker).delta > 0)
+          break
+        case 'breakout':
+          list = [...list].filter(c => { const s = getMomentum(c.ticker).score; return s >= 65 && s < 80 }).sort((a, b) => getMomentum(b.ticker).delta - getMomentum(a.ticker).delta)
+          break
+        case 'gems':
+          list = [...list].filter(c => getMomentum(c.ticker).score < 70 && getMomentum(c.ticker).delta > 5).sort((a, b) => getMomentum(b.ticker).delta - getMomentum(a.ticker).delta)
+          break
+        case 'editors':
+          list = getTrendingCreators(8)
+          break
+      }
+    } else {
+      list = [...list].sort((a, b) => getMomentum(b.ticker).score - getMomentum(a.ticker).score)
     }
-    switch (sort) {
-      case 'Rising': return [...list].sort((a, b) => (getMomentum(b.ticker).delta) - (getMomentum(a.ticker).delta))
-      case 'Cooling': return [...list].sort((a, b) => (getMomentum(a.ticker).delta) - (getMomentum(b.ticker).delta))
-      case 'Reach': return [...list].sort((a, b) => b.marketCap - a.marketCap)
-      default: return [...list].sort((a, b) => getMomentum(b.ticker).score - getMomentum(a.ticker).score)
-    }
-  }, [query, category, sort])
+
+    return list
+  }, [query, activeLens, activeGenre, allCreators])
+
+  const activeLensData = LENSES.find(l => l.id === activeLens)
+  const activeGenreData = genres.find(g => g.id === activeGenre)
 
   return (
     <>
       <div className="pb-32">
 
-        {/* ── Hero ──────────────────────────────────────────────────────── */}
+        {/* ── Search hero ───────────────────────────────────────────────── */}
         <div className="px-5 pt-8 pb-6">
-          <motion.p {...fadeUp(0)} className="section-label text-hype-gold mb-3">
-            Spotlight Daily
-          </motion.p>
-          <motion.h1 {...fadeUp(0.07)} className="page-headline text-hype-text mb-2">
-            DISCOVER
-          </motion.h1>
-          <motion.p {...fadeUp(0.13)} className="text-hype-muted text-sm mb-5">
-            Culture moves fast. We move faster.
-          </motion.p>
-          <motion.div {...fadeUp(0.18)}>
+          <motion.div
+            initial={{ opacity: 0, y: -8 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, ease }}
+          >
+            <p className="text-white/30 text-[10px] font-semibold uppercase tracking-widest mb-3">
+              Discovery Engine
+            </p>
+            <h1 className="text-white font-black text-4xl tracking-tight leading-none mb-6">
+              Who&apos;s next?
+            </h1>
+
+            {/* Large search bar */}
+            <div className="relative mb-4">
+              <Search size={17} className="absolute left-4 top-1/2 -translate-y-1/2 text-white/30" />
+              <input
+                type="text"
+                value={query}
+                onChange={e => { setQuery(e.target.value); setActiveLens(null); setActiveGenre(null) }}
+                placeholder="Search creators, genres, tickers…"
+                className="w-full bg-white/[0.07] border border-white/10 rounded-2xl pl-11 pr-11 py-4 text-white text-sm placeholder:text-white/25 outline-none focus:border-hype-gold/40 focus:bg-white/[0.09] transition-all"
+              />
+              {query && (
+                <button
+                  onClick={() => setQuery('')}
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-white/30 hover:text-white/60 transition-colors"
+                >
+                  <X size={15} />
+                </button>
+              )}
+            </div>
+
+            {/* Discover Mode button */}
             <button
               onClick={openDiscover}
-              className="flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-hype-gold/10 border border-hype-gold/30 text-hype-gold text-xs font-bold hover:bg-hype-gold/15 transition-colors"
+              className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/[0.05] border border-white/10 text-white/50 text-xs font-medium hover:border-white/20 hover:text-white/70 transition-all"
             >
-              <Layers size={13} />
-              Discover Mode — swipe to back
+              <Layers size={12} />
+              Swipe Mode — discover by feel
             </button>
           </motion.div>
         </div>
 
-        {/* ── Today's Feature — editorial spotlight ─────────────────────── */}
-        {featuredStory && (
-          <motion.section {...reveal(0.1)} className="px-5 mb-10">
-            <div className="flex items-center gap-2 mb-4">
-              <div className="w-1 h-1 rounded-full bg-hype-gold" />
-              <span className="section-label text-hype-gold">Today&apos;s Feature</span>
+        {/* ── Discovery Lenses ──────────────────────────────────────────── */}
+        {!query && (
+          <motion.section
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.5, delay: 0.1 }}
+            className="mb-6"
+          >
+            <div className="px-5 mb-3">
+              <p className="text-white/30 text-[10px] font-semibold uppercase tracking-widest">
+                Discovery Lens
+              </p>
             </div>
-            <Link href={`/creator/${featuredStory.ticker.toLowerCase()}`}>
-              <div className="relative rounded-3xl overflow-hidden" style={{ minHeight: 280 }}>
-                {featuredStory.imageUrl ? (
-                  <img
-                    src={featuredStory.imageUrl}
-                    alt=""
-                    className="absolute inset-0 w-full h-full object-cover object-top"
-                  />
-                ) : (
-                  <div className={cn('absolute inset-0 bg-gradient-to-br', featuredStory.coverColor)} />
-                )}
-                <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/40 to-black/10" />
-                <div className="absolute inset-0 bg-gradient-to-r from-black/60 to-transparent" />
-
-                <div className="absolute bottom-0 left-0 right-0 p-6">
-                  <p className="text-white/50 text-[9px] tracking-widest uppercase mb-2">
-                    {featuredStory.category} · #{featuredStory.ticker}
-                  </p>
-                  <h2 className="text-white font-black text-3xl tracking-tight leading-tight mb-2">
-                    {featuredStory.name}
-                  </h2>
-                  {featuredStory.story && (
-                    <p className="text-white/60 text-sm leading-relaxed mb-4 max-w-[260px]">
-                      {featuredStory.story}
-                    </p>
+            <div className="flex gap-2 pl-5 overflow-x-auto hide-scrollbar pb-1" style={{ paddingRight: 20 }}>
+              {LENSES.map(lens => (
+                <button
+                  key={lens.id}
+                  onClick={() => handleLensSelect(lens.id)}
+                  className={cn(
+                    'flex-shrink-0 flex items-center gap-1.5 px-3.5 py-2 rounded-full border text-xs font-semibold transition-all',
+                    activeLens === lens.id ? lens.color : 'border-white/10 text-white/40 bg-white/[0.03] hover:border-white/20 hover:text-white/60',
                   )}
-                  <div className="flex items-center justify-between">
-                    <button
-                      onClick={e => { e.preventDefault(); trade.openBuy(featuredStory) }}
-                      className="flex items-center gap-1.5 px-4 py-2.5 rounded-2xl bg-hype-gold text-[#0A0A0A] font-bold text-[12px] hover:bg-hype-gold-dim transition-colors"
-                    >
-                      Spot {featuredStory.name.split(' ')[0]} <ArrowRight size={12} />
-                    </button>
-                    <div className="text-right">
-                      <p className="text-white font-black text-xl tabular">
-                        {getMomentum(featuredStory.ticker).score}
-                      </p>
-                      <p className="text-hype-gold text-xs font-bold uppercase tracking-wider">
-                        {getMomentumTier(getMomentum(featuredStory.ticker).score)}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </Link>
+                >
+                  {lens.icon}
+                  {lens.label}
+                </button>
+              ))}
+            </div>
+
+            {/* Active lens description */}
+            <AnimatePresence>
+              {activeLensData && (
+                <motion.p
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: 'auto' }}
+                  exit={{ opacity: 0, height: 0 }}
+                  className="px-5 mt-2 text-white/35 text-xs"
+                >
+                  {activeLensData.description}
+                </motion.p>
+              )}
+            </AnimatePresence>
           </motion.section>
         )}
 
-        {/* ── Breaking Out ──────────────────────────────────────────────── */}
-        <motion.section {...sectionReveal} className="mb-10">
-          <div className="px-5 mb-5 flex items-center justify-between">
-            <div>
-              <p className="text-hype-text font-black text-xl leading-none tracking-tight">Breaking Out</p>
-              <p className="text-hype-muted text-xs mt-1">Biggest moves in 24h</p>
+        {/* ── Genre browsing grid ───────────────────────────────────────── */}
+        {!query && !activeLens && (
+          <motion.section
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.15 }}
+            className="mb-8"
+          >
+            <div className="px-5 mb-3 flex items-center justify-between">
+              <p className="text-white/30 text-[10px] font-semibold uppercase tracking-widest">
+                Browse by genre
+              </p>
+              {activeGenre && (
+                <button onClick={() => setActiveGenre(null)} className="text-hype-gold text-[10px] font-medium hover:underline">
+                  Clear
+                </button>
+              )}
             </div>
-            <ChevronRight size={16} className="text-hype-dim" />
-          </div>
-          <div className="flex gap-3 pl-5 overflow-x-auto hide-scrollbar pb-1" style={{ paddingRight: 20 }}>
-            {trending.slice(0, 5).map((c, i) => (
-              <MiniPortraitCard key={c.id} creator={c} onBuy={trade.openBuy} delay={i * 0.05} />
-            ))}
-          </div>
-        </motion.section>
-
-        {/* ── Before They Blow Up ───────────────────────────────────────── */}
-        <motion.section {...sectionReveal} className="mb-10">
-          <div className="px-5 mb-5">
-            <p className="text-hype-text font-black text-xl leading-none tracking-tight">
-              Before They Blow Up
-            </p>
-            <p className="text-hype-muted text-xs mt-1">Early stage, high potential</p>
-          </div>
-          <div className="flex gap-3 pl-5 overflow-x-auto hide-scrollbar pb-1" style={{ paddingRight: 20 }}>
-            {gainers.slice(0, 5).map((c, i) => (
-              <MiniPortraitCard key={c.id} creator={c} onBuy={trade.openBuy} delay={i * 0.05} />
-            ))}
-          </div>
-        </motion.section>
-
-        {/* ── All Creators / Search ─────────────────────────────────────── */}
-        <motion.section {...sectionReveal} className="px-5">
-          <div className="flex items-center justify-between mb-5">
-            <div>
-              <p className="text-hype-text font-black text-xl leading-none tracking-tight">All Creators</p>
-              <p className="text-hype-muted text-xs mt-1">{allCreators.length} on the market</p>
+            <div className="flex gap-2.5 pl-5 overflow-x-auto hide-scrollbar pb-2" style={{ paddingRight: 20 }}>
+              {genres.map(genre => (
+                <div key={genre.id} className={cn('transition-all', activeGenre === genre.id ? 'ring-2 ring-hype-gold rounded-2xl' : '')}>
+                  <GenreCard genre={genre} onSelect={handleGenreSelect} />
+                </div>
+              ))}
             </div>
-            <button
-              onClick={() => setSearchOpen(s => !s)}
-              className="w-8 h-8 rounded-full border border-hype-border flex items-center justify-center text-hype-muted hover:text-hype-secondary transition-colors"
-            >
-              {searchOpen ? <X size={14} /> : <Search size={14} />}
-            </button>
-          </div>
+            {activeGenreData && (
+              <p className="px-5 mt-2 text-white/35 text-xs">{activeGenreData.description}</p>
+            )}
+          </motion.section>
+        )}
 
-          {/* Search bar — only shows when toggled */}
-          {searchOpen && (
-            <motion.div
-              initial={{ opacity: 0, y: -8, height: 0 }}
-              animate={{ opacity: 1, y: 0, height: 'auto' }}
-              exit={{ opacity: 0, y: -8, height: 0 }}
-              className="mb-4"
-            >
-              <div className="relative">
-                <Search size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-hype-muted" />
-                <input
-                  type="text"
-                  value={query}
-                  onChange={e => setQuery(e.target.value)}
-                  placeholder="Search creators..."
-                  autoFocus
-                  className="w-full bg-hype-surface border border-hype-border rounded-2xl pl-9 pr-4 py-3 text-hype-text text-sm placeholder:text-hype-muted outline-none focus:border-hype-border-light transition-colors"
-                />
-              </div>
-            </motion.div>
-          )}
+        {/* ── Near Breakout picks (when no filter active) ───────────────── */}
+        {!query && !activeLens && !activeGenre && (
+          <motion.section
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.2 }}
+            className="mb-8"
+          >
+            <div className="px-5 mb-4">
+              <p className="text-hype-text font-black text-lg leading-none tracking-tight flex items-center gap-2">
+                <Zap size={16} className="text-hype-gold" />
+                Near Breakout
+              </p>
+              <p className="text-hype-muted text-xs mt-1">Approaching their next momentum tier</p>
+            </div>
+            <div className="flex gap-3 pl-5 overflow-x-auto hide-scrollbar pb-1" style={{ paddingRight: 20 }}>
+              {gainers.slice(0, 5).map((c, i) => {
+                const { score, delta } = getMomentum(c.ticker)
+                const tier = getMomentumTier(score)
+                return (
+                  <motion.div
+                    key={c.id}
+                    initial={{ opacity: 0, y: 12 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.4, ease, delay: i * 0.05 }}
+                    className="flex-shrink-0"
+                    style={{ width: 130 }}
+                  >
+                    <Link href={`/creator/${c.ticker.toLowerCase()}`}>
+                      <div className="relative rounded-2xl overflow-hidden" style={{ height: 190 }}>
+                        {c.imageUrl ? (
+                          <img src={c.imageUrl} alt="" className="absolute inset-0 w-full h-full object-cover object-top" />
+                        ) : (
+                          <div className={cn('absolute inset-0 bg-gradient-to-br', c.coverColor)} />
+                        )}
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/20 to-transparent" />
+                        <div className="absolute top-2 left-2">
+                          <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full bg-hype-gold/20 text-hype-gold text-[8px] font-bold">
+                            <TrendingUp size={7} /> +{delta}
+                          </span>
+                        </div>
+                        <div className="absolute bottom-0 p-3">
+                          <p className="text-white font-bold text-[12px] leading-tight">{c.name}</p>
+                          <p className="text-white font-black text-sm tabular mt-0.5">{score}</p>
+                          <p className="text-hype-gold text-[7px] font-bold uppercase tracking-wider">{tier}</p>
+                        </div>
+                      </div>
+                    </Link>
+                  </motion.div>
+                )
+              })}
+            </div>
+          </motion.section>
+        )}
 
-          {/* Category + sort */}
-          <div className="flex gap-2 overflow-x-auto hide-scrollbar mb-3">
-            {categories.map(cat => (
+        {/* ── Creator list: filtered or full ────────────────────────────── */}
+        <section className="px-5">
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <p className="text-hype-text font-black text-lg leading-none tracking-tight">
+                {query ? `Results for "${query}"` :
+                  activeGenreData ? activeGenreData.label :
+                  activeLensData ? activeLensData.label :
+                  'All Creators'}
+              </p>
+              <p className="text-hype-muted text-xs mt-0.5">{filteredCreators.length} creators</p>
+            </div>
+            {(activeLens || activeGenre) && (
               <button
-                key={cat}
-                onClick={() => setCategory(cat)}
-                className={cn(
-                  'flex-shrink-0 px-3.5 py-1.5 rounded-full text-xs font-medium transition-all',
-                  category === cat
-                    ? 'bg-hype-surface-2 text-hype-text border border-hype-border-light'
-                    : 'text-hype-muted border border-hype-border hover:text-hype-secondary',
-                )}
+                onClick={() => { setActiveLens(null); setActiveGenre(null) }}
+                className="text-white/30 text-[10px] font-medium hover:text-white/50 flex items-center gap-1"
               >
-                {cat}
+                <X size={10} /> Clear
               </button>
-            ))}
+            )}
           </div>
 
-          <div className="flex gap-1 mb-4">
-            {sortOptions.map(s => (
-              <button
-                key={s}
-                onClick={() => setSort(s)}
-                className={cn(
-                  'px-2.5 py-1 rounded-lg text-[10px] font-medium transition-all',
-                  sort === s
-                    ? 'bg-hype-surface-2 text-hype-text border border-hype-border'
-                    : 'text-hype-muted hover:text-hype-secondary',
-                )}
-              >
-                {s}
-              </button>
-            ))}
-          </div>
-
-          {/* Creator list */}
-          {allCreators.length > 0 ? (
+          {filteredCreators.length > 0 ? (
             <div className="premium-card rounded-2xl overflow-hidden divide-y divide-hype-border/60">
-              {allCreators.map((c, i) => (
+              {filteredCreators.map((c, i) => (
                 <CreatorListRow key={c.id} creator={c} rank={i + 1} onBuy={trade.openBuy} />
               ))}
             </div>
           ) : (
             <div className="py-12 text-center">
-              <p className="text-hype-text font-semibold mb-1">No creators found</p>
-              <button
-                onClick={() => { setQuery(''); setCategory('All') }}
-                className="text-hype-gold text-sm font-medium hover:underline mt-1"
-              >
-                Clear filters
+              <p className="text-white/50 font-semibold mb-2">No creators found</p>
+              <button onClick={() => { setQuery(''); setActiveLens(null); setActiveGenre(null) }} className="text-hype-gold text-sm font-medium hover:underline">
+                Reset filters
               </button>
             </div>
           )}
-        </motion.section>
+        </section>
 
         <div className="text-center mt-10 px-5">
           <p className="text-hype-dim text-[10px]">Mock data only · Not financial advice</p>
         </div>
       </div>
 
+      {/* Discover Stack */}
       <AnimatePresence>
         {discoverMode && (
           <DiscoverStack

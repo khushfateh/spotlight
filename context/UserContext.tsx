@@ -2,6 +2,7 @@
 
 import { createContext, useContext, useState, type ReactNode } from 'react'
 import type { UserMode } from '@/types'
+import { useAuth } from './AuthContext'
 
 type UserContextType = {
   userMode: UserMode
@@ -24,18 +25,26 @@ function getInitialMode(): UserMode {
 
 export function UserProvider({ children }: { children: ReactNode }) {
   const [userMode, setUserModeState] = useState<UserMode>(getInitialMode)
+  const { currentUser } = useAuth()
 
   function setUserMode(mode: UserMode) {
     setUserModeState(mode)
     localStorage.setItem('spotlight_user_mode', mode)
   }
 
-  const user = {
-    name: 'Khush Fateh',
-    username: '@khushfateh',
-    avatar: 'KF',
-    bio: 'Early investor in emerging talent 🚀 | Music & Gaming | Portfolio +140%',
-  }
+  const user = currentUser
+    ? {
+        name: currentUser.name,
+        username: currentUser.username,
+        avatar: currentUser.initials,
+        bio: currentUser.bio,
+      }
+    : {
+        name: 'Guest',
+        username: '@guest',
+        avatar: 'G',
+        bio: '',
+      }
 
   return (
     <UserContext.Provider value={{ userMode, setUserMode, user }}>

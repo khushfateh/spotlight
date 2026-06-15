@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Home, Compass, Rocket, PieChart, User, LayoutDashboard, Plus } from 'lucide-react'
+import { Home, Compass, Star, PieChart, User, LayoutDashboard, Plus } from 'lucide-react'
 import { useUser } from '@/context/UserContext'
 import { cn } from '@/lib/utils'
 
@@ -19,15 +19,15 @@ export default function BottomNav() {
 
   const investorNav: NavItem[] = [
     { href: '/', label: 'Home', icon: <Home size={20} /> },
-    { href: '/explore', label: 'Explore', icon: <Compass size={20} /> },
-    { href: '/ipos', label: 'Debuts', icon: <Rocket size={20} />, isCenter: true },
+    { href: '/explore', label: 'Discover', icon: <Compass size={20} /> },
+    { href: '/spotlight', label: 'Spotlight', icon: <Star size={20} />, isCenter: true },
     { href: '/portfolio', label: 'Discoveries', icon: <PieChart size={20} /> },
     { href: '/profile', label: 'Profile', icon: <User size={20} /> },
   ]
 
   const creatorNav: NavItem[] = [
     { href: '/', label: 'Home', icon: <Home size={20} /> },
-    { href: '/explore', label: 'Explore', icon: <Compass size={20} /> },
+    { href: '/explore', label: 'Discover', icon: <Compass size={20} /> },
     { href: '/launch', label: 'Launch', icon: <Plus size={20} />, isCenter: true },
     { href: '/dashboard', label: 'Dashboard', icon: <LayoutDashboard size={20} /> },
     { href: '/profile', label: 'Profile', icon: <User size={20} /> },
