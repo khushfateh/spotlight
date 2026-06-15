@@ -75,7 +75,7 @@ export default function OnboardingPage() {
     // Ensure save completes before redirecting
     await savePromise
     await new Promise(r => setTimeout(r, 400))
-    router.replace('/')
+    router.replace('/home')
   }
 
   function next() {

@@ -282,14 +282,14 @@ export default function LoginPage() {
       setIsLoading(false)
       return
     }
-    router.replace('/')
+    router.replace('/home')
   }
 
   function handleDemoUser(userId: string) {
     setIsLoading(true)
     setTimeout(() => {
       login(userId)
-      router.replace('/')
+      router.replace('/home')
     }, 600)
   }
 

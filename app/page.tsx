@@ -1,579 +1,401 @@
 'use client'
-/* eslint-disable @next/next/no-img-element */
 
-import { useRef, type ReactNode } from 'react'
-import {
-  motion,
-  useScroll,
-  useTransform,
-  useMotionValue,
-  useSpring,
-} from 'framer-motion'
-import { ArrowRight, ChevronRight, Info, Zap } from 'lucide-react'
+import { motion } from 'framer-motion'
 import Link from 'next/link'
-import IPOCard from '@/components/ipo/IPOCard'
-import PostCard from '@/components/community/PostCard'
-import TradeSheet from '@/components/trading/TradeSheet'
-import { useTradeSheet } from '@/hooks/useTradeSheet'
-import { useAuth } from '@/context/AuthContext'
-import {
-  getTrendingCreators,
-  ipoCreators,
-  communityPosts,
-  holdings,
-  getMomentum,
-  getMomentumTier,
-  getCreatorsByTickers,
-} from '@/lib/mock-data'
-import { getHomeSections, reasonTypeLabel, type HomeSection } from '@/lib/mock-data/recommendations'
-import { cn } from '@/lib/utils'
-import type { Creator } from '@/types'
+import { ArrowRight, TrendingUp, Users, Zap } from 'lucide-react'
+import { SpotlightWordmark } from '@/components/ui/SpotlightLogo'
 
 const ease = [0.16, 1, 0.3, 1] as const
 
-const sectionReveal = {
-  initial: { opacity: 0, y: 32 },
-  whileInView: { opacity: 1 as number, y: 0 as number },
-  viewport: { once: true, margin: '-50px' },
-  transition: { duration: 0.65, ease },
-}
-
-// ── Tilt card — cursor-reactive on desktop ────────────────────────────────────
-
-function TiltCard({ children, className }: { children: ReactNode; className?: string }) {
-  const cardRef = useRef<HTMLDivElement>(null)
-  const x = useMotionValue(0)
-  const y = useMotionValue(0)
-  const springX = useSpring(x, { stiffness: 200, damping: 25 })
-  const springY = useSpring(y, { stiffness: 200, damping: 25 })
-  const rotateX = useTransform(springY, [-0.5, 0.5], [5, -5])
-  const rotateY = useTransform(springX, [-0.5, 0.5], [-5, 5])
-
+// ─── Grand Piano (perspective view, premium line-art) ────────────────────────
+function GrandPiano() {
+  const g = 'rgba(201,168,76,'
   return (
-    <motion.div
-      ref={cardRef}
-      style={{ rotateX, rotateY, transformPerspective: 600 }}
-      onMouseMove={e => {
-        const rect = cardRef.current?.getBoundingClientRect()
-        if (!rect) return
-        x.set((e.clientX - rect.left) / rect.width - 0.5)
-        y.set((e.clientY - rect.top) / rect.height - 0.5)
-      }}
-      onMouseLeave={() => { x.set(0); y.set(0) }}
-      className={className}
-    >
-      {children}
-    </motion.div>
+    <svg viewBox="0 0 420 310" fill="none" xmlns="http://www.w3.org/2000/svg">
+      {/* Lid open */}
+      <path
+        d={`M60,220 L60,80 Q62,48 98,38 L295,22 Q345,20 354,58 Q362,88 350,118
+            Q338,146 315,158 Q288,170 258,162 L185,148`}
+        stroke={`${g}0.55)`} strokeWidth="2.2" strokeLinejoin="round"
+      />
+      <path d={`M295,22 L390,-18 M185,148 L292,100`}
+        stroke={`${g}0.42)`} strokeWidth="1.8" strokeLinecap="round" />
+      <path d="M228,22 L295,2" stroke={`${g}0.25)`} strokeWidth="1.2" strokeDasharray="6,5" strokeLinecap="round" />
+      {/* Body curved side */}
+      <path
+        d={`M60,80 Q30,90 22,130 Q14,168 28,204 Q44,240 80,252 L185,262 L185,148`}
+        stroke={`${g}0.50)`} strokeWidth="2.2" fill="none"
+      />
+      <line x1="60" y1="80" x2="60" y2="220" stroke={`${g}0.50)`} strokeWidth="2.2" />
+      <path d="M28,252 Q56,268 80,270 L185,278 L185,262" stroke={`${g}0.45)`} strokeWidth="2" />
+      {/* Keyboard housing */}
+      <rect x="22" y="252" width="142" height="22" rx="3" stroke={`${g}0.48)`} strokeWidth="1.6" />
+      {Array.from({ length: 14 }).map((_, i) => (
+        <line key={i} x1={30 + i * 10} y1="252" x2={30 + i * 10} y2="274"
+          stroke={`${g}0.28)`} strokeWidth="0.8" />
+      ))}
+      {[0,1,3,4,5,7,8,10,11,12].map(i => (
+        <rect key={i} x={26 + i * 10} y="252" width="7" height="13" rx="1.5"
+          stroke={`${g}0.40)`} strokeWidth="1" />
+      ))}
+      {/* Pedals */}
+      <ellipse cx="80"  cy="310" rx="8" ry="4" stroke={`${g}0.30)`} strokeWidth="1.2" />
+      <ellipse cx="105" cy="310" rx="8" ry="4" stroke={`${g}0.30)`} strokeWidth="1.2" />
+      <ellipse cx="130" cy="310" rx="8" ry="4" stroke={`${g}0.30)`} strokeWidth="1.2" />
+      <line x1="80"  y1="274" x2="80"  y2="310" stroke={`${g}0.28)`} strokeWidth="1.8" />
+      <line x1="105" y1="274" x2="105" y2="310" stroke={`${g}0.28)`} strokeWidth="1.8" />
+      <line x1="130" y1="274" x2="130" y2="310" stroke={`${g}0.28)`} strokeWidth="1.8" />
+      {/* Legs */}
+      <line x1="36"  y1="274" x2="30"  y2="308" stroke={`${g}0.40)`} strokeWidth="3" strokeLinecap="round" />
+      <line x1="164" y1="274" x2="168" y2="308" stroke={`${g}0.40)`} strokeWidth="3" strokeLinecap="round" />
+      <line x1="272" y1="168" x2="280" y2="200" stroke={`${g}0.40)`} strokeWidth="3" strokeLinecap="round" />
+      {/* Body sheen */}
+      <path d="M40,100 Q25,140 32,200" stroke={`${g}0.15)`} strokeWidth="1" strokeLinecap="round" />
+    </svg>
   )
 }
 
-// ── Cinematic hero ────────────────────────────────────────────────────────────
-
-function CinematicHero({
-  featured,
-  onBuy,
-  discoveryCount,
-  avgMomentum,
-}: {
-  featured: Creator
-  onBuy: (c: Creator) => void
-  discoveryCount: number
-  avgMomentum: number
-}) {
-  const heroRef = useRef<HTMLElement>(null)
-  const { scrollYProgress } = useScroll({
-    target: heroRef,
-    offset: ['start start', 'end start'],
-  })
-
-  const bgScale = useTransform(scrollYProgress, [0, 1], [1, 1.08])
-  const contentY = useTransform(scrollYProgress, [0, 0.7], [0, -70])
-  const contentOpacity = useTransform(scrollYProgress, [0, 0.5], [1, 0])
-  const { score: featuredScore, delta: featuredDelta } = getMomentum(featured.ticker)
-  const featuredTier = getMomentumTier(featuredScore)
-  const isFeaturedUp = featuredDelta >= 0
-
+// ─── Alto Saxophone ───────────────────────────────────────────────────────────
+function Saxophone() {
+  const g = 'rgba(201,168,76,'
   return (
-    <section
-      ref={heroRef}
-      className="-mt-14 relative overflow-hidden"
-      style={{ height: '100svh' }}
-    >
-      <motion.div className="absolute inset-0" style={{ scale: bgScale }}>
-        {featured.imageUrl ? (
-          <img
-            src={featured.imageUrl}
-            alt={featured.name}
-            className="w-full h-full object-cover object-top"
-            draggable={false}
-          />
-        ) : (
-          <div className={cn('w-full h-full bg-gradient-to-br', featured.coverColor)} />
-        )}
-      </motion.div>
-
-      <div className="absolute inset-0 bg-gradient-to-t from-black via-black/50 to-black/20" />
-      <div className="absolute inset-0 bg-gradient-to-r from-black/75 via-black/20 to-transparent" />
-      <div
-        className="absolute inset-0 pointer-events-none"
-        style={{ background: 'radial-gradient(ellipse 55% 35% at 58% 8%, rgba(201,168,76,0.13) 0%, transparent 70%)' }}
+    <svg viewBox="0 0 190 420" fill="none" xmlns="http://www.w3.org/2000/svg">
+      {/* Mouthpiece + neck */}
+      <path d={`M148,12 Q162,10 168,22 L158,36 Q152,28 142,32 L130,48`}
+        stroke={`${g}0.52)`} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+      <path d={`M130,48 Q118,60 112,78`}
+        stroke={`${g}0.52)`} strokeWidth="2.5" strokeLinecap="round" fill="none" />
+      {/* Main body — outer */}
+      <path
+        d={`M112,78 Q108,100 104,138 Q100,178 98,220 Q96,268 98,306
+            Q102,340 120,360 Q148,380 168,368 Q190,354 192,328 Q194,300 178,276`}
+        stroke={`${g}0.55)`} strokeWidth="2.4" fill="none" strokeLinecap="round"
       />
+      {/* Body — inner */}
+      <path
+        d={`M104,90 Q100,128 96,176 Q92,230 94,284 Q96,320 112,344 Q136,368 158,360`}
+        stroke={`${g}0.30)`} strokeWidth="1.4" fill="none" strokeLinecap="round"
+      />
+      {/* Bell */}
+      <path
+        d={`M178,276 Q168,260 150,258 Q126,256 108,268 Q88,282 86,306
+            Q84,330 100,346 Q116,362 142,362`}
+        stroke={`${g}0.52)`} strokeWidth="2.2" fill="none"
+      />
+      <path d={`M86,300 Q84,318 92,332 Q106,354 134,360 Q156,364 172,354`}
+        stroke={`${g}0.32)`} strokeWidth="1.2" fill="none" />
+      {/* Keys — left column */}
+      {[100,126,154,182,210,238,264].map((y, i) => (
+        <g key={i}>
+          <line x1="104" y1={y} x2="88" y2={y + 4} stroke={`${g}0.35)`} strokeWidth="1" />
+          <ellipse cx="80" cy={y + 5} rx="10" ry="7" stroke={`${g}0.42)`} strokeWidth="1.2" />
+          <ellipse cx="80" cy={y + 5} rx="5" ry="3.5" stroke={`${g}0.22)`} strokeWidth="0.7" />
+        </g>
+      ))}
+      {/* Keys — right column */}
+      {[108,148,196,244].map((y, i) => (
+        <g key={i}>
+          <line x1="110" y1={y} x2="126" y2={y + 2} stroke={`${g}0.30)`} strokeWidth="1" />
+          <ellipse cx="134" cy={y + 3} rx="8" ry="5.5" stroke={`${g}0.36)`} strokeWidth="1.1" />
+        </g>
+      ))}
+      {/* Register key + thumb rest */}
+      <ellipse cx="122" cy="65" rx="7" ry="5" stroke={`${g}0.38)`} strokeWidth="1.2" />
+      <line x1="116" y1="65" x2="108" y2="74" stroke={`${g}0.30)`} strokeWidth="1" />
+      <rect x="114" y="200" width="16" height="8" rx="3" stroke={`${g}0.32)`} strokeWidth="1.1" />
+      <path d="M109,92 Q106,150 103,230" stroke={`${g}0.14)`} strokeWidth="1" strokeLinecap="round" />
+    </svg>
+  )
+}
 
+// ─── Violin ───────────────────────────────────────────────────────────────────
+function Violin() {
+  const g = 'rgba(201,168,76,'
+  return (
+    <svg viewBox="0 0 128 340" fill="none" xmlns="http://www.w3.org/2000/svg">
+      {/* Scroll */}
+      <path d={`M56,12 Q68,4 76,16 Q84,28 72,36 Q61,42 52,30 Q44,18 57,12`}
+        stroke={`${g}0.50)`} strokeWidth="1.6" fill="none" />
+      <circle cx="62" cy="20" r="5" stroke={`${g}0.38)`} strokeWidth="1.2" />
+      {/* Pegbox */}
+      <rect x="50" y="36" width="28" height="50" rx="4" stroke={`${g}0.52)`} strokeWidth="1.8" />
+      <line x1="50" y1="48" x2="36" y2="44" stroke={`${g}0.45)`} strokeWidth="2.2" strokeLinecap="round" />
+      <line x1="50" y1="64" x2="36" y2="60" stroke={`${g}0.45)`} strokeWidth="2.2" strokeLinecap="round" />
+      <line x1="78" y1="48" x2="92" y2="44" stroke={`${g}0.45)`} strokeWidth="2.2" strokeLinecap="round" />
+      <line x1="78" y1="64" x2="92" y2="60" stroke={`${g}0.45)`} strokeWidth="2.2" strokeLinecap="round" />
+      {/* Nut + Neck */}
+      <line x1="50" y1="86" x2="78" y2="86" stroke={`${g}0.55)`} strokeWidth="2.5" strokeLinecap="round" />
+      <line x1="50" y1="86" x2="44" y2="116" stroke={`${g}0.48)`} strokeWidth="1.8" />
+      <line x1="78" y1="86" x2="84" y2="116" stroke={`${g}0.48)`} strokeWidth="1.8" />
+      {/* Upper bout */}
+      <path d={`M44,116 Q12,128 10,156 Q10,178 64,182`} stroke={`${g}0.55)`} strokeWidth="2" fill="none" />
+      <path d={`M84,116 Q116,128 118,156 Q118,178 64,182`} stroke={`${g}0.55)`} strokeWidth="2" fill="none" />
+      {/* C-bouts */}
+      <path d={`M10,156 Q20,174 10,192`} stroke={`${g}0.55)`} strokeWidth="2" fill="none" />
+      <path d={`M118,156 Q108,174 118,192`} stroke={`${g}0.55)`} strokeWidth="2" fill="none" />
+      {/* Lower bout */}
+      <path d={`M10,192 Q8,238 64,244`} stroke={`${g}0.55)`} strokeWidth="2" fill="none" />
+      <path d={`M118,192 Q120,238 64,244`} stroke={`${g}0.55)`} strokeWidth="2" fill="none" />
+      <path d={`M18,244 Q64,258 110,244`} stroke={`${g}0.50)`} strokeWidth="2" />
+      {/* F-holes */}
+      <path d={`M38,144 Q30,158 34,172`} stroke={`${g}0.48)`} strokeWidth="1.8" strokeLinecap="round" />
+      <path d={`M90,144 Q98,158 94,172`} stroke={`${g}0.48)`} strokeWidth="1.8" strokeLinecap="round" />
+      <circle cx="32" cy="146" r="3.5" stroke={`${g}0.42)`} strokeWidth="1.4" />
+      <circle cx="32" cy="174" r="3.5" stroke={`${g}0.42)`} strokeWidth="1.4" />
+      <circle cx="96" cy="146" r="3.5" stroke={`${g}0.42)`} strokeWidth="1.4" />
+      <circle cx="96" cy="174" r="3.5" stroke={`${g}0.42)`} strokeWidth="1.4" />
+      {/* Bridge */}
+      <path d={`M40,210 Q64,200 88,210`} stroke={`${g}0.50)`} strokeWidth="1.8" strokeLinecap="round" />
+      <line x1="42" y1="210" x2="46" y2="220" stroke={`${g}0.40)`} strokeWidth="1.5" />
+      <line x1="86" y1="210" x2="82" y2="220" stroke={`${g}0.40)`} strokeWidth="1.5" />
+      {/* Tailpiece */}
+      <path d={`M44,242 L84,242 L80,256 L48,256 Z`} stroke={`${g}0.42)`} strokeWidth="1.5" />
+      <path d={`M44,250 Q64,260 84,250 Q86,264 64,268 Q42,264 44,250`} stroke={`${g}0.35)`} strokeWidth="1.2" />
+      {/* Strings */}
+      {[55,60,68,73].map(x => (
+        <line key={x} x1={x} y1="86" x2={x} y2="256" stroke={`${g}0.20)`} strokeWidth="0.9" />
+      ))}
+      <circle cx="64" cy="260" r="4" stroke={`${g}0.38)`} strokeWidth="1.3" />
+    </svg>
+  )
+}
+
+// ─── Flute ────────────────────────────────────────────────────────────────────
+function Flute() {
+  const g = 'rgba(201,168,76,'
+  const keys = [92, 118, 144, 170, 198, 224, 252, 280, 308, 336, 364, 392]
+  return (
+    <svg viewBox="0 0 440 68" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <line x1="22" y1="20" x2="414" y2="20" stroke={`${g}0.55)`} strokeWidth="2.2" />
+      <line x1="22" y1="36" x2="414" y2="36" stroke={`${g}0.55)`} strokeWidth="2.2" />
+      <path d={`M22,18 Q8,18 8,28 Q8,40 22,40`} stroke={`${g}0.52)`} strokeWidth="2" fill="none" strokeLinecap="round" />
+      <path d={`M414,19 Q428,19 432,28 Q428,39 414,39`} stroke={`${g}0.45)`} strokeWidth="1.8" fill="none" strokeLinecap="round" />
+      {/* Embouchure */}
+      <rect x="44" y="16" width="30" height="22" rx="4" stroke={`${g}0.44)`} strokeWidth="1.4" />
+      <ellipse cx="59" cy="28" rx="9" ry="6" stroke={`${g}0.52)`} strokeWidth="1.6" />
+      <ellipse cx="59" cy="28" rx="5" ry="3" stroke={`${g}0.28)`} strokeWidth="0.8" />
+      {/* Rods */}
+      <line x1="92" y1="16" x2="392" y2="16" stroke={`${g}0.20)`} strokeWidth="0.9" />
+      <line x1="92" y1="40" x2="392" y2="40" stroke={`${g}0.20)`} strokeWidth="0.9" />
+      {/* Keys */}
+      {keys.map((x, i) => (
+        <g key={i}>
+          <line x1={x} y1="20" x2={x} y2="13" stroke={`${g}0.38)`} strokeWidth="1.2" />
+          <line x1={x} y1="36" x2={x} y2="43" stroke={`${g}0.38)`} strokeWidth="1.2" />
+          <circle cx={x} cy="28" r="8.5" stroke={`${g}0.46)`} strokeWidth="1.4" />
+          <circle cx={x} cy="28" r="4.5" stroke={`${g}0.26)`} strokeWidth="0.8" />
+          <circle cx={x} cy="28" r="1.5" stroke={`${g}0.30)`} strokeWidth="0.7" />
+        </g>
+      ))}
+      {/* Section joints */}
+      <line x1="148" y1="17" x2="148" y2="39" stroke={`${g}0.35)`} strokeWidth="2.2" />
+      <line x1="152" y1="17" x2="152" y2="39" stroke={`${g}0.22)`} strokeWidth="1" />
+      <line x1="285" y1="17" x2="285" y2="39" stroke={`${g}0.35)`} strokeWidth="2.2" />
+      <line x1="289" y1="17" x2="289" y2="39" stroke={`${g}0.22)`} strokeWidth="1" />
+    </svg>
+  )
+}
+
+// ─── Instrument backdrop ──────────────────────────────────────────────────────
+function InstrumentBackdrop() {
+  return (
+    <div className="absolute inset-0 overflow-hidden pointer-events-none select-none" aria-hidden>
+
+      {/* Grand Piano — bottom-left, massive */}
       <motion.div
-        className="absolute inset-0 flex flex-col"
-        style={{ y: contentY, opacity: contentOpacity }}
+        className="absolute"
+        style={{ bottom: '-8%', left: '-8%', width: 460 }}
+        animate={{ y: [-4, 5, -4], rotate: ['-4deg', '-3deg', '-4deg'] }}
+        transition={{ duration: 11, repeat: Infinity, ease: 'easeInOut', delay: 0 }}
       >
-        <div className="flex justify-end px-5 pt-[72px]">
-          <Link href="/portfolio">
-            <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-black/40 backdrop-blur-md border border-white/10 hover:border-white/20 transition-colors">
-              <div className="w-1.5 h-1.5 rounded-full flex-shrink-0 bg-hype-gold" />
-              <span className="text-white text-[11px] font-semibold tabular">
-                {discoveryCount} spotted
-              </span>
-              <span className="text-hype-gold text-[10px] font-medium tabular">
-                avg {avgMomentum}
-              </span>
-            </div>
-          </Link>
-        </div>
-
-        <div className="flex-1" />
-
-        <div className="px-5 pb-28">
-          <div className="flex items-center gap-2 mb-5">
-            <div className="w-1 h-1 rounded-full bg-hype-gold" />
-            <p className="section-label text-hype-gold">
-              Featured this week · {featured.category}
-            </p>
-          </div>
-
-          <h1
-            className="text-white font-black tracking-tight leading-none mb-5"
-            style={{ fontSize: 'clamp(2.6rem, 12vw, 5.5rem)' }}
-          >
-            {featured.name.split(' ').map((word, i) => (
-              <span key={i} className="block">{word}</span>
-            ))}
-          </h1>
-
-          {featured.story && (
-            <p className="text-white/55 text-sm leading-relaxed mb-6 max-w-[300px]">
-              {featured.story}
-            </p>
-          )}
-
-          <div className="flex items-center gap-4">
-            <button
-              onClick={() => onBuy(featured)}
-              className="flex items-center gap-2 px-6 py-3.5 rounded-2xl bg-hype-gold text-[#0A0A0A] font-bold text-[13px] hover:bg-hype-gold-dim transition-all active:scale-[0.99] shadow-[0_4px_24px_rgba(201,168,76,0.3)]"
-            >
-              Spot {featured.name.split(' ')[0]} <ArrowRight size={14} />
-            </button>
-            <div className="text-right">
-              <p className="text-white font-black text-xl tabular tracking-tight leading-none">
-                {featuredScore}
-              </p>
-              <p className={cn('text-xs font-semibold tabular mt-1', isFeaturedUp ? 'text-hype-green' : 'text-hype-red')}>
-                {isFeaturedUp ? '+' : ''}{featuredDelta} pts · {featuredTier}
-              </p>
-            </div>
-          </div>
-        </div>
+        <div className="absolute pointer-events-none" style={{
+          top: '-90%', left: '-10%', width: '120%', height: '180%',
+          background: 'radial-gradient(ellipse 55% 50% at 50% 0%, rgba(201,168,76,0.12) 0%, transparent 65%)',
+        }} />
+        <GrandPiano />
       </motion.div>
-    </section>
-  )
-}
 
-// ── Creator portrait card ─────────────────────────────────────────────────────
+      {/* Saxophone — right edge, center-right */}
+      <motion.div
+        className="absolute"
+        style={{ top: '10%', right: '3%', width: 152 }}
+        animate={{ y: [-5, 6, -5], rotate: ['4deg', '5.5deg', '4deg'] }}
+        transition={{ duration: 13, repeat: Infinity, ease: 'easeInOut', delay: 2.8 }}
+      >
+        <div className="absolute pointer-events-none" style={{
+          top: '-80%', left: '-40%', width: '180%', height: '160%',
+          background: 'radial-gradient(ellipse 60% 45% at 50% 0%, rgba(201,168,76,0.10) 0%, transparent 65%)',
+        }} />
+        <Saxophone />
+      </motion.div>
 
-function CreatorPortraitCard({
-  creator,
-  onBuy,
-  delay = 0,
-}: {
-  creator: Creator
-  onBuy: (c: Creator) => void
-  delay?: number
-}) {
-  const { score, delta } = getMomentum(creator.ticker)
-  const tier = getMomentumTier(score)
-  const isUp = delta >= 0
+      {/* Violin — upper-right, slightly tilted */}
+      <motion.div
+        className="absolute"
+        style={{ top: '5%', right: '22%', width: 94 }}
+        animate={{ y: [-3, 5, -3], rotate: ['-10deg', '-8.5deg', '-10deg'] }}
+        transition={{ duration: 9.5, repeat: Infinity, ease: 'easeInOut', delay: 1.4 }}
+      >
+        <div className="absolute pointer-events-none" style={{
+          top: '-70%', left: '-50%', width: '200%', height: '140%',
+          background: 'radial-gradient(ellipse 65% 50% at 50% 0%, rgba(201,168,76,0.09) 0%, transparent 65%)',
+        }} />
+        <Violin />
+      </motion.div>
 
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true }}
-      transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1], delay }}
-      className="flex-shrink-0"
-      style={{ width: 176 }}
-    >
-      <TiltCard>
-        <div className="relative group cursor-pointer">
-          <Link href={`/creator/${creator.ticker.toLowerCase()}`}>
-            <div className="relative rounded-3xl overflow-hidden" style={{ height: 264 }}>
-              {creator.imageUrl ? (
-                <img
-                  src={creator.imageUrl}
-                  alt={creator.name}
-                  className="absolute inset-0 w-full h-full object-cover object-top transition-transform duration-700 group-hover:scale-[1.04]"
-                />
-              ) : (
-                <div className={cn('absolute inset-0 bg-gradient-to-br', creator.coverColor)} />
-              )}
-              <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/25 to-black/5" />
+      {/* Flute — upper area, diagonal sweep */}
+      <motion.div
+        className="absolute"
+        style={{ top: '21%', left: '7%', width: 390 }}
+        animate={{ y: [-2, 4, -2], rotate: ['-8deg', '-6.5deg', '-8deg'] }}
+        transition={{ duration: 15, repeat: Infinity, ease: 'easeInOut', delay: 4.2 }}
+      >
+        <div className="absolute pointer-events-none" style={{
+          top: '-120%', left: '-5%', width: '110%', height: '220%',
+          background: 'radial-gradient(ellipse 70% 40% at 50% 0%, rgba(201,168,76,0.07) 0%, transparent 65%)',
+        }} />
+        <Flute />
+      </motion.div>
 
-              <div className="absolute top-4 left-4 opacity-0 group-hover:opacity-100 transition-opacity duration-200 delay-75">
-                <p className="text-white/70 text-[9px] leading-loose">{creator.followers} fans</p>
-                <p className="text-white/50 text-[9px]">Score {creator.creatorScore}/100</p>
-              </div>
-
-              <button
-                onClick={e => { e.preventDefault(); onBuy(creator) }}
-                className="absolute top-3 right-3 px-2.5 py-1 bg-hype-gold text-[#0A0A0A] text-[9px] font-bold rounded-full opacity-0 group-hover:opacity-100 transition-all duration-200 active:scale-95 hover:bg-hype-gold-dim"
-              >
-                Spot
-              </button>
-
-              <div className="absolute bottom-0 left-0 right-0 p-4">
-                <p className="text-white font-bold text-[14px] leading-tight tracking-tight">{creator.name}</p>
-                <p className="text-white/35 text-[9px] font-mono tracking-wider mt-0.5 mb-1.5">${creator.ticker}</p>
-                <div className="flex items-center gap-1.5">
-                  <p className="text-white font-black text-sm tabular">{score}</p>
-                  <p className={cn('text-[10px] font-semibold tabular', isUp ? 'text-hype-green' : 'text-hype-red')}>
-                    {isUp ? '+' : ''}{delta} pts
-                  </p>
-                </div>
-                <p className="text-hype-gold text-[8px] font-bold uppercase tracking-wider mt-0.5">{tier}</p>
-              </div>
-            </div>
-          </Link>
-        </div>
-      </TiltCard>
-    </motion.div>
-  )
-}
-
-// ── Personalized section — horizontal scroll row ──────────────────────────────
-
-function PersonalizedSection({
-  section,
-  onBuy,
-}: {
-  section: HomeSection
-  onBuy: (c: Creator) => void
-}) {
-  const sectionCreators = getCreatorsByTickers(section.tickers)
-  if (sectionCreators.length === 0) return null
-
-  const reasonLabel = section.reasonLabel ?? (section.reasonType ? reasonTypeLabel[section.reasonType] : undefined)
-
-  return (
-    <motion.section
-      initial={{ opacity: 0, y: 24 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true, margin: '-40px' }}
-      transition={{ duration: 0.6, ease }}
-      className="py-6 border-b border-hype-border/50"
-    >
-      {/* Section header */}
-      <div className="px-5 mb-4">
-        <div className="flex items-start justify-between gap-3">
-          <div className="flex-1 min-w-0">
-            <h2 className="text-hype-text font-black text-lg leading-tight tracking-tight">
-              {section.title}
-            </h2>
-            {section.subtitle && (
-              <p className="text-hype-muted text-xs mt-0.5">{section.subtitle}</p>
-            )}
-          </div>
-          <Link href="/explore">
-            <ChevronRight size={16} className="text-hype-dim mt-0.5 hover:text-hype-muted transition-colors" />
-          </Link>
-        </div>
-
-        {/* "Why am I seeing this?" pill */}
-        {reasonLabel && (
-          <div className="flex items-center gap-1.5 mt-2.5">
-            <Info size={10} className="text-hype-gold/60" />
-            <span className="text-hype-gold/70 text-[10px] font-medium">{reasonLabel}</span>
-          </div>
-        )}
-      </div>
-
-      {/* Featured layout — single large card */}
-      {section.layout === 'featured' && sectionCreators[0] && (
-        <div className="px-5">
-          <FeaturedCreatorCard creator={sectionCreators[0]} onBuy={onBuy} />
-        </div>
-      )}
-
-      {/* Horizontal scroll layout */}
-      {section.layout === 'horizontal' && (
-        <div className="flex gap-4 pl-5 overflow-x-auto hide-scrollbar pb-2" style={{ paddingRight: 20 }}>
-          {sectionCreators.map((c, i) => (
-            <CreatorPortraitCard key={c.id} creator={c} onBuy={onBuy} delay={i * 0.05} />
-          ))}
-        </div>
-      )}
-    </motion.section>
-  )
-}
-
-// ── Featured creator card (for hidden gem / single layout) ────────────────────
-
-function FeaturedCreatorCard({ creator, onBuy }: { creator: Creator; onBuy: (c: Creator) => void }) {
-  const { score, delta } = getMomentum(creator.ticker)
-  const tier = getMomentumTier(score)
-  const isUp = delta >= 0
-
-  return (
-    <div className="relative rounded-3xl overflow-hidden border border-hype-border" style={{ height: 220 }}>
-      {creator.imageUrl ? (
-        <img src={creator.imageUrl} alt={creator.name} className="absolute inset-0 w-full h-full object-cover object-top" />
-      ) : (
-        <div className={cn('absolute inset-0 bg-gradient-to-br', creator.coverColor)} />
-      )}
-      <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent" />
-
-      {/* Near breakout badge */}
-      <div className="absolute top-4 left-4">
-        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-hype-gold/20 border border-hype-gold/30 text-hype-gold text-[9px] font-bold uppercase tracking-wider">
-          <Zap size={8} /> {tier}
-        </span>
-      </div>
-
-      <div className="absolute bottom-0 left-0 right-0 p-5 flex items-end justify-between gap-4">
-        <div className="flex-1 min-w-0">
-          <p className="text-white font-black text-2xl leading-tight tracking-tight">{creator.name}</p>
-          <p className="text-white/40 text-[10px] font-mono tracking-wider mt-0.5">${creator.ticker}</p>
-        </div>
-        <div className="text-right flex-shrink-0">
-          <p className="text-white font-black text-3xl leading-none">{score}</p>
-          <p className={cn('text-xs font-semibold mt-0.5', isUp ? 'text-hype-green' : 'text-hype-red')}>
-            {isUp ? '+' : ''}{delta} pts
-          </p>
-        </div>
-      </div>
-
-      <button
-        onClick={() => onBuy(creator)}
-        className="absolute bottom-5 right-5 translate-y-14 group-hover:translate-y-0 transition-transform"
-      />
+      {/* Stage floor */}
+      <div className="absolute bottom-0 left-0 right-0" style={{
+        height: '35%',
+        background: 'linear-gradient(to top, rgba(201,168,76,0.028) 0%, transparent 100%)',
+      }} />
+      <div className="absolute left-0 right-0" style={{
+        bottom: '30%', height: '1px',
+        background: 'linear-gradient(90deg, transparent 0%, rgba(201,168,76,0.10) 25%, rgba(201,168,76,0.14) 50%, rgba(201,168,76,0.10) 75%, transparent 100%)',
+      }} />
     </div>
   )
 }
 
-// ── Page ──────────────────────────────────────────────────────────────────────
-
-export default function HomePage() {
-  const trade = useTradeSheet()
-  const { currentUser } = useAuth()
-  const trending = getTrendingCreators(6)
-  const featured = trending[0]
-  const openIPOs = ipoCreators.filter(i => i.status === 'open').slice(0, 2)
-  const posts = communityPosts.slice(0, 3)
-
-  const discoveryCount = holdings.length
-  const avgMomentum = holdings.length
-    ? Math.round(holdings.reduce((sum, h) => sum + getMomentum(h.ticker).score, 0) / holdings.length)
-    : 0
-
-  const { score: featuredScore } = getMomentum(featured?.ticker ?? '')
-
-  // Personalized sections based on current user
-  const userId = currentUser?.id ?? 'khush'
-  const homeSections = getHomeSections(userId)
-
-  if (!featured) return null
-
+// ─── Stat pill ────────────────────────────────────────────────────────────────
+function StatPill({ icon, value, label }: { icon: React.ReactNode; value: string; label: string }) {
   return (
-    <>
-      {/* ── Cinematic hero ──────────────────────────────────────────────── */}
-      <CinematicHero
-        featured={featured}
-        onBuy={trade.openBuy}
-        discoveryCount={discoveryCount}
-        avgMomentum={avgMomentum}
-      />
-
-      {/* ── Live ticker strip ───────────────────────────────────────────── */}
-      <motion.div
-        {...sectionReveal}
-        className="px-5 py-5 border-b border-hype-border/50"
-      >
-        <div className="flex items-center gap-2 mb-3">
-          <div
-            className="w-1.5 h-1.5 rounded-full bg-hype-green"
-            style={{ boxShadow: '0 0 6px #10B981' }}
-          />
-          <span className="section-label">Live Momentum</span>
-        </div>
-        <div className="flex gap-6 overflow-x-auto hide-scrollbar">
-          {trending.slice(0, 5).map((c, i) => {
-            const { score, delta } = getMomentum(c.ticker)
-            const tier = getMomentumTier(score)
-            const up = delta >= 0
-            return (
-              <Link key={c.id} href={`/creator/${c.ticker.toLowerCase()}`} className="flex-shrink-0 group">
-                <p className="text-hype-dim text-[9px] font-mono tracking-wider mb-0.5">${c.ticker}</p>
-                <p className="text-hype-text text-sm font-black tabular group-hover:text-white transition-colors live-price" style={{ animationDelay: `${i * 0.55}s` }}>
-                  {score}
-                </p>
-                <p className="text-hype-gold text-[8px] font-semibold uppercase tracking-wider">{tier}</p>
-                <p className={cn('text-[10px] font-semibold tabular', up ? 'text-hype-green' : 'text-hype-red')}>
-                  {up ? '+' : ''}{delta} pts
-                </p>
-              </Link>
-            )
-          })}
-        </div>
-      </motion.div>
-
-      {/* ── Daily Briefing header ────────────────────────────────────────── */}
-      <div className="px-5 pt-8 pb-3">
-        <div className="flex items-baseline justify-between">
-          <div>
-            <p className="text-white/30 text-[10px] font-semibold uppercase tracking-widest mb-1">
-              Your Daily Cultural Briefing
-            </p>
-            <h2 className="text-white font-black text-2xl tracking-tight">
-              {currentUser ? `Good morning, ${currentUser.name.split(' ')[0]}.` : 'What to watch today.'}
-            </h2>
-          </div>
-        </div>
+    <div className="flex items-center gap-2 px-4 py-2.5 rounded-2xl"
+      style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}>
+      <span className="text-hype-gold">{icon}</span>
+      <div>
+        <div className="text-white font-bold text-sm leading-none">{value}</div>
+        <div className="text-white/35 text-[10px] mt-0.5">{label}</div>
       </div>
+    </div>
+  )
+}
 
-      {/* ── Personalized sections ────────────────────────────────────────── */}
-      {homeSections.map(section => (
-        <PersonalizedSection
-          key={section.id}
-          section={section}
-          onBuy={trade.openBuy}
-        />
-      ))}
+// ─── Landing page ─────────────────────────────────────────────────────────────
+export default function LandingPage() {
+  return (
+    <div className="relative min-h-screen flex flex-col overflow-hidden bg-[#0A0A0A]">
 
-      {/* ── Featured story card ─────────────────────────────────────────── */}
-      <motion.section
-        {...sectionReveal}
-        className="px-5 py-8 border-b border-hype-border/50"
+      <InstrumentBackdrop />
+
+      {/* Stage top glow */}
+      <div className="absolute inset-0 pointer-events-none" style={{
+        background: 'radial-gradient(ellipse 65% 40% at 50% -5%, rgba(201,168,76,0.16) 0%, transparent 60%)',
+      }} />
+      {/* Vignette */}
+      <div className="absolute inset-0 pointer-events-none" style={{
+        background: 'radial-gradient(ellipse 80% 70% at 50% 60%, transparent 30%, rgba(10,10,10,0.55) 100%)',
+      }} />
+
+      {/* ── Top nav ────────────────────────────────────────────────────── */}
+      <motion.header
+        initial={{ opacity: 0, y: -16 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.7, ease }}
+        className="relative z-20 flex items-center justify-between px-6 py-5"
       >
-        <p className="section-label text-hype-gold mb-4">This Week in Culture</p>
+        <SpotlightWordmark />
 
-        <div className="flex items-start justify-between gap-4 mb-6">
-          <div className="flex-1">
-            <h2 className="text-hype-text font-black text-2xl tracking-tight leading-tight mb-2">
-              {featured.name}
-            </h2>
-            <p className="text-hype-secondary text-sm leading-relaxed">
-              {featured.bio.split('.')[0]}.
-            </p>
-          </div>
-          {featured.imageUrl && (
-            <div className="w-16 h-16 rounded-2xl overflow-hidden flex-shrink-0 border border-hype-border">
-              <img src={featured.imageUrl} alt={featured.name} className="w-full h-full object-cover object-top" />
-            </div>
-          )}
-        </div>
-
-        <div className="grid grid-cols-3 gap-3 mb-5">
-          <div className="inset-surface rounded-2xl p-3">
-            <p className="text-hype-dim text-[9px] uppercase tracking-wider mb-1.5">Momentum</p>
-            <p className="text-hype-text font-black text-lg metric-display tabular">{featuredScore}</p>
-          </div>
-          <div className="inset-surface rounded-2xl p-3">
-            <p className="text-hype-dim text-[9px] uppercase tracking-wider mb-1.5">Score</p>
-            <p className="text-hype-text font-black text-lg metric-display">
-              {featured.creatorScore}<span className="text-hype-dim text-xs font-normal">/100</span>
-            </p>
-          </div>
-          <div className="inset-surface rounded-2xl p-3">
-            <p className="text-hype-dim text-[9px] uppercase tracking-wider mb-1.5">Fans</p>
-            <p className="text-hype-text font-black text-lg metric-display">{featured.followers}</p>
-          </div>
-        </div>
-
-        <button
-          onClick={() => trade.openBuy(featured)}
-          className="w-full flex items-center justify-center gap-2 h-12 rounded-2xl bg-hype-gold text-[#0A0A0A] font-bold text-[13px] hover:bg-hype-gold-dim transition-all active:scale-[0.99] shadow-[0_4px_20px_rgba(201,168,76,0.18)]"
-        >
-          Spot {featured.name.split(' ')[0]}
-          <ArrowRight size={14} />
-        </button>
-      </motion.section>
-
-      {/* ── Culture Picks (Netflix horizontal) ─────────────────────────── */}
-      <motion.section {...sectionReveal} className="py-8">
-        <div className="px-5 mb-6 flex items-center justify-between">
-          <div>
-            <p className="text-hype-text font-black text-xl leading-none tracking-tight">Culture Picks</p>
-            <p className="text-hype-muted text-xs mt-1">Momentum · 24h</p>
-          </div>
-          <Link href="/explore">
-            <span className="text-hype-muted text-xs flex items-center gap-0.5 hover:text-hype-secondary transition-colors">
-              See all <ChevronRight size={12} />
-            </span>
+        <div className="flex items-center gap-2">
+          <Link
+            href="/login"
+            className="px-4 py-2 rounded-xl text-white/65 text-sm font-medium hover:text-white hover:bg-white/[0.06] transition-all"
+          >
+            Log in
+          </Link>
+          <Link
+            href="/signup"
+            className="px-5 py-2 rounded-xl bg-hype-gold text-[#0A0A0A] text-sm font-bold flex items-center gap-1.5 shadow-[0_2px_16px_rgba(201,168,76,0.28)] hover:bg-hype-gold-dim transition-all"
+          >
+            Get started <ArrowRight size={14} />
           </Link>
         </div>
-        <div className="flex gap-4 pl-5 overflow-x-auto hide-scrollbar pb-2" style={{ paddingRight: 20 }}>
-          {trending.map((c, i) => (
-            <CreatorPortraitCard key={c.id} creator={c} onBuy={trade.openBuy} delay={i * 0.06} />
-          ))}
-        </div>
-      </motion.section>
+      </motion.header>
 
-      {/* ── Breaking Through (Debuts) ───────────────────────────────────── */}
-      {openIPOs.length > 0 && (
-        <motion.section {...sectionReveal} className="px-5 py-8 border-t border-hype-border/50">
-          <div className="mb-6 flex items-center justify-between">
-            <div>
-              <p className="text-hype-text font-black text-xl leading-none tracking-tight">Breaking Through</p>
-              <p className="text-hype-muted text-xs mt-1">Discover them first</p>
-            </div>
-            <Link href="/ipos">
-              <span className="text-hype-muted text-xs flex items-center gap-0.5 hover:text-hype-secondary transition-colors">
-                All Debuts <ChevronRight size={12} />
-              </span>
-            </Link>
-          </div>
-          <div className="space-y-4">
-            {openIPOs.map(ipo => (
-              <IPOCard key={ipo.id} ipo={ipo} />
-            ))}
-          </div>
-        </motion.section>
-      )}
+      {/* ── Hero ───────────────────────────────────────────────────────── */}
+      <div className="relative z-10 flex-1 flex flex-col items-center justify-center px-6 pb-20 text-center">
 
-      {/* ── The Conversation ────────────────────────────────────────────── */}
-      <motion.section {...sectionReveal} className="px-5 py-8 border-t border-hype-border/50 pb-32">
-        <div className="mb-6">
-          <p className="text-hype-text font-black text-xl leading-none tracking-tight">The Conversation</p>
-          <p className="text-hype-muted text-xs mt-1">What the community is saying</p>
-        </div>
-        <div className="space-y-3">
-          {posts.map(post => (
-            <PostCard key={post.id} post={post} />
-          ))}
-        </div>
-        <div className="mt-10 text-center">
-          <p className="text-hype-dim text-[10px] leading-relaxed max-w-[280px] mx-auto">
-            SPOTLIGHT is a demonstration platform. Cultural Shares represent discovery participation, not equity ownership. Not investment advice.
-          </p>
-        </div>
-      </motion.section>
+        <motion.div
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.6, ease, delay: 0.15 }}
+          className="mb-6 inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-[11px] font-semibold"
+          style={{
+            background: 'rgba(201,168,76,0.10)',
+            border: '1px solid rgba(201,168,76,0.22)',
+            color: '#C9A84C',
+          }}
+        >
+          <span className="w-1.5 h-1.5 rounded-full bg-hype-gold animate-pulse" />
+          The cultural discovery platform
+        </motion.div>
 
-      <TradeSheet
-        isOpen={trade.isOpen}
-        creator={trade.creator}
-        tradeType={trade.tradeType}
-        step={trade.step as 'form' | 'confirm' | 'success' | 'error'}
-        pendingOrder={trade.pendingOrder}
-        isSubmitting={trade.isSubmitting}
-        onClose={trade.close}
-        onSubmitOrder={trade.submitOrder}
-        onConfirmOrder={trade.confirmOrder}
-        onReset={trade.reset}
-      />
-    </>
+        <motion.h1
+          initial={{ opacity: 0, y: 28 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8, ease, delay: 0.22 }}
+          className="text-white font-black text-5xl sm:text-6xl tracking-tight leading-[1.05] mb-5 max-w-sm"
+        >
+          Spot icons<br />
+          <span style={{ color: '#C9A84C' }}>before the world</span><br />
+          does.
+        </motion.h1>
+
+        <motion.p
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8, ease, delay: 0.32 }}
+          className="text-white/45 text-base leading-relaxed max-w-xs mb-8"
+        >
+          Follow rising artists, musicians, and cultural figures as they break out.
+          Build your reputation as a discoverer.
+        </motion.p>
+
+        <motion.div
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.7, ease, delay: 0.40 }}
+          className="flex flex-col sm:flex-row items-center gap-3 mb-12"
+        >
+          <Link
+            href="/signup"
+            className="w-full sm:w-auto px-8 py-3.5 rounded-2xl bg-hype-gold text-[#0A0A0A] font-bold text-sm flex items-center justify-center gap-2 shadow-[0_4px_28px_rgba(201,168,76,0.35)] hover:bg-hype-gold-dim transition-all active:scale-[0.98]"
+          >
+            Start discovering <ArrowRight size={16} />
+          </Link>
+          <Link
+            href="/login"
+            className="w-full sm:w-auto px-8 py-3.5 rounded-2xl text-white/60 text-sm font-medium flex items-center justify-center gap-2 hover:text-white transition-colors"
+            style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.09)' }}
+          >
+            Already a member
+          </Link>
+        </motion.div>
+
+        <motion.div
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.7, ease, delay: 0.50 }}
+          className="flex items-center gap-3 flex-wrap justify-center"
+        >
+          <StatPill icon={<Users size={14} />} value="12,400+" label="discoverers" />
+          <StatPill icon={<TrendingUp size={14} />} value="340+" label="creators spotted" />
+          <StatPill icon={<Zap size={14} />} value="8.4×" label="avg lead time" />
+        </motion.div>
+      </div>
+    </div>
   )
 }

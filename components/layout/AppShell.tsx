@@ -8,27 +8,36 @@ import { AuthProvider, useAuth } from '@/context/AuthContext'
 import { UserProvider } from '@/context/UserContext'
 import { SpotlightCursor } from '@/components/effects/SpotlightCursor'
 
-const AUTH_ROUTES = ['/login', '/signup', '/onboarding']
+// Routes that render without auth and without the app chrome
+const PUBLIC_ROUTES = ['/', '/login', '/signup', '/onboarding']
 
 // Inner shell — rendered inside the providers so it can read auth state
 function InnerShell({ children }: { children: ReactNode }) {
   const pathname = usePathname()
   const router = useRouter()
   const { isAuthenticated, isLoading } = useAuth()
-  const isAuthRoute = AUTH_ROUTES.some(r => pathname.startsWith(r))
+  const isPublicRoute = PUBLIC_ROUTES.some(r =>
+    r === '/' ? pathname === '/' : pathname.startsWith(r)
+  )
 
   useEffect(() => {
     if (isLoading) return
-    if (!isAuthenticated && !isAuthRoute) {
-      router.replace('/login')
-    }
-    if (isAuthenticated && isAuthRoute) {
+    // Unauthenticated on a protected page → landing
+    if (!isAuthenticated && !isPublicRoute) {
       router.replace('/')
     }
-  }, [isAuthenticated, isLoading, isAuthRoute, router])
+    // Authenticated on login/signup/onboarding → app
+    if (isAuthenticated && (pathname === '/login' || pathname === '/signup')) {
+      router.replace('/home')
+    }
+    // Authenticated on landing → app
+    if (isAuthenticated && pathname === '/') {
+      router.replace('/home')
+    }
+  }, [isAuthenticated, isLoading, isPublicRoute, pathname, router])
 
-  // Minimal shell for auth pages — no chrome
-  if (isAuthRoute) {
+  // No chrome for public pages (landing + auth flows)
+  if (isPublicRoute) {
     return (
       <div className="min-h-screen bg-hype-bg">
         {children}
@@ -89,7 +98,7 @@ function DesktopSidebar() {
   const pathname = usePathname()
 
   const links = [
-    { href: '/', label: 'Home' },
+    { href: '/home', label: 'Home' },
     { href: '/explore', label: 'Discover' },
     { href: '/spotlight', label: 'Spotlight', highlight: true },
     { href: '/portfolio', label: 'Discoveries' },
@@ -100,7 +109,7 @@ function DesktopSidebar() {
     <div className="hidden md:flex md:flex-col md:w-56 md:fixed md:left-0 md:top-14 md:bottom-0 md:border-r md:border-hype-border md:bg-hype-bg md:py-6 md:px-4">
       <nav className="space-y-0.5">
         {links.map(({ href, label, highlight }) => {
-          const isActive = href === '/' ? pathname === '/' : pathname.startsWith(href)
+          const isActive = href === '/home' ? pathname === '/home' : pathname.startsWith(href)
           return (
             <a
               key={href}
