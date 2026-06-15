@@ -1,18 +1,16 @@
 'use client'
 /* eslint-disable @next/next/no-img-element */
 
-import { useRef, useEffect, type ReactNode } from 'react'
+import { useRef, type ReactNode } from 'react'
 import {
   motion,
   useScroll,
   useTransform,
   useMotionValue,
   useSpring,
-  useInView,
 } from 'framer-motion'
 import { ArrowRight, ChevronRight } from 'lucide-react'
 import Link from 'next/link'
-import PriceChart from '@/components/market/PriceChart'
 import IPOCard from '@/components/ipo/IPOCard'
 import PostCard from '@/components/community/PostCard'
 import TradeSheet from '@/components/trading/TradeSheet'
@@ -21,10 +19,11 @@ import {
   getTrendingCreators,
   ipoCreators,
   communityPosts,
-  totalPortfolioValue,
-  totalPnlPercent,
+  holdings,
+  getMomentum,
+  getMomentumTier,
 } from '@/lib/mock-data'
-import { formatPrice, formatPercent, formatLargeNumber, cn } from '@/lib/utils'
+import { cn } from '@/lib/utils'
 import type { Creator } from '@/types'
 
 // ── Constants ─────────────────────────────────────────────────────────────────
@@ -36,32 +35,6 @@ const sectionReveal = {
   whileInView: { opacity: 1 as number, y: 0 as number },
   viewport: { once: true, margin: '-50px' },
   transition: { duration: 0.65, ease },
-}
-
-// ── Animated counter ──────────────────────────────────────────────────────────
-
-function CountUp({ to, className }: { to: number; className?: string }) {
-  const ref = useRef<HTMLSpanElement>(null)
-  const isInView = useInView(ref, { once: true, margin: '-50px' })
-
-  useEffect(() => {
-    if (!isInView || !ref.current) return
-    const el = ref.current
-    const duration = 1400
-    const startTime = performance.now()
-    let rafId: number
-
-    function tick(now: number) {
-      const t = Math.min((now - startTime) / duration, 1)
-      const eased = 1 - Math.pow(1 - t, 3)
-      el.textContent = formatLargeNumber(to * eased)
-      if (t < 1) { rafId = requestAnimationFrame(tick) }
-    }
-    rafId = requestAnimationFrame(tick)
-    return () => cancelAnimationFrame(rafId)
-  }, [isInView, to])
-
-  return <span ref={ref} className={className}>$0</span>
 }
 
 // ── Tilt card — cursor-reactive on desktop ────────────────────────────────────
@@ -98,13 +71,13 @@ function TiltCard({ children, className }: { children: ReactNode; className?: st
 function CinematicHero({
   featured,
   onBuy,
-  portfolioValue,
-  portfolioChange,
+  discoveryCount,
+  avgMomentum,
 }: {
   featured: Creator
   onBuy: (c: Creator) => void
-  portfolioValue: number
-  portfolioChange: number
+  discoveryCount: number
+  avgMomentum: number
 }) {
   const heroRef = useRef<HTMLElement>(null)
   const { scrollYProgress } = useScroll({
@@ -115,8 +88,9 @@ function CinematicHero({
   const bgScale = useTransform(scrollYProgress, [0, 1], [1, 1.08])
   const contentY = useTransform(scrollYProgress, [0, 0.7], [0, -70])
   const contentOpacity = useTransform(scrollYProgress, [0, 0.5], [1, 0])
-  const isPortfolioUp = portfolioChange >= 0
-  const isFeaturedUp = featured.priceChangePercent24h >= 0
+  const { score: featuredScore, delta: featuredDelta } = getMomentum(featured.ticker)
+  const featuredTier = getMomentumTier(featuredScore)
+  const isFeaturedUp = featuredDelta >= 0
 
   return (
     <section
@@ -125,12 +99,16 @@ function CinematicHero({
       style={{ height: '100svh' }}
     >
       {/* Layer 1: Creator editorial photo — parallax zoom */}
-      <motion.div className="absolute inset-0" style={{ scale: bgScale }}>
+      <motion.div
+        className="absolute inset-0"
+        style={{ scale: bgScale }}
+      >
         {featured.imageUrl ? (
           <img
             src={featured.imageUrl}
-            alt=""
+            alt={featured.name}
             className="w-full h-full object-cover object-top"
+            draggable={false}
           />
         ) : (
           <div className={cn('w-full h-full bg-gradient-to-br', featured.coverColor)} />
@@ -154,27 +132,16 @@ function CinematicHero({
         className="absolute inset-0 flex flex-col"
         style={{ y: contentY, opacity: contentOpacity }}
       >
-        {/* Portfolio pill — top right */}
+        {/* Discoveries pill — top right */}
         <div className="flex justify-end px-5 pt-[72px]">
           <Link href="/portfolio">
             <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-black/40 backdrop-blur-md border border-white/10 hover:border-white/20 transition-colors">
-              <div
-                className={cn(
-                  'w-1.5 h-1.5 rounded-full flex-shrink-0',
-                  isPortfolioUp ? 'bg-hype-green' : 'bg-hype-red',
-                )}
-              />
+              <div className="w-1.5 h-1.5 rounded-full flex-shrink-0 bg-hype-gold" />
               <span className="text-white text-[11px] font-semibold tabular">
-                {formatLargeNumber(portfolioValue)}
+                {discoveryCount} spotted
               </span>
-              <span
-                className={cn(
-                  'text-[10px] font-medium tabular',
-                  isPortfolioUp ? 'text-hype-green' : 'text-hype-red',
-                )}
-              >
-                {isPortfolioUp ? '+' : ''}
-                {formatPercent(portfolioChange)}
+              <span className="text-hype-gold text-[10px] font-medium tabular">
+                avg {avgMomentum}
               </span>
             </div>
           </Link>
@@ -192,53 +159,41 @@ function CinematicHero({
             </p>
           </div>
 
-          <h1 className="display-headline text-white mb-5">
-            INVEST IN<br />WHO&apos;S NEXT.
+          <h1
+            className="text-white font-black tracking-tight leading-none mb-5"
+            style={{ fontSize: 'clamp(2.6rem, 12vw, 5.5rem)' }}
+          >
+            {featured.name.split(' ').map((word, i) => (
+              <span key={i} className="block">
+                {word}
+              </span>
+            ))}
           </h1>
 
           {featured.story && (
-            <p className="text-white/60 text-[15px] leading-[1.65] mb-7 max-w-[280px]">
+            <p className="text-white/55 text-sm leading-relaxed mb-6 max-w-[300px]">
               {featured.story}
             </p>
           )}
 
-          <button
-            onClick={() => onBuy(featured)}
-            className="flex items-center gap-2 px-6 py-3.5 rounded-2xl bg-hype-gold text-[#0A0A0A] font-bold text-[13px] hover:bg-hype-gold-dim transition-all active:scale-[0.98] shadow-[0_4px_24px_rgba(201,168,76,0.25)]"
-          >
-            Back {featured.name.split(' ')[0]}
-            <ArrowRight size={14} />
-          </button>
+          <div className="flex items-center gap-4">
+            <button
+              onClick={() => onBuy(featured)}
+              className="flex items-center gap-2 px-6 py-3.5 rounded-2xl bg-hype-gold text-[#0A0A0A] font-bold text-[13px] hover:bg-hype-gold-dim transition-all active:scale-[0.99] shadow-[0_4px_24px_rgba(201,168,76,0.3)]"
+            >
+              Spot {featured.name.split(' ')[0]} <ArrowRight size={14} />
+            </button>
+            <div className="text-right">
+              <p className="text-white font-black text-xl tabular tracking-tight leading-none">
+                {featuredScore}
+              </p>
+              <p className={cn('text-xs font-semibold tabular mt-1', isFeaturedUp ? 'text-hype-green' : 'text-hype-red')}>
+                {isFeaturedUp ? '+' : ''}{featuredDelta} pts · {featuredTier}
+              </p>
+            </div>
+          </div>
         </div>
       </motion.div>
-
-      {/* Layer 4: Creator identity bar — anchored to bottom of section */}
-      <div className="absolute bottom-0 left-0 right-0 px-5 py-5 bg-gradient-to-t from-black/70 to-transparent">
-        <div className="flex items-end justify-between">
-          <div>
-            <p className="text-white/35 text-[9px] tracking-widest uppercase font-medium mb-1">
-              {featured.category}
-            </p>
-            <p className="text-white font-black text-[22px] tracking-tight leading-none">
-              {featured.name}
-            </p>
-          </div>
-          <div className="text-right">
-            <p className="text-white font-black text-[22px] tabular tracking-tight leading-none">
-              {formatPrice(featured.price)}
-            </p>
-            <p
-              className={cn(
-                'text-xs font-semibold tabular mt-1',
-                isFeaturedUp ? 'text-hype-green' : 'text-hype-red',
-              )}
-            >
-              {isFeaturedUp ? '+' : ''}
-              {formatPercent(featured.priceChangePercent24h)} today
-            </p>
-          </div>
-        </div>
-      </div>
     </section>
   )
 }
@@ -254,7 +209,9 @@ function CreatorPortraitCard({
   onBuy: (c: Creator) => void
   delay?: number
 }) {
-  const isUp = creator.priceChangePercent24h >= 0
+  const { score, delta } = getMomentum(creator.ticker)
+  const tier = getMomentumTier(score)
+  const isUp = delta >= 0
 
   return (
     <motion.div
@@ -294,7 +251,7 @@ function CreatorPortraitCard({
                 <p className="text-white/50 text-[9px]">Score {creator.creatorScore}/100</p>
               </div>
 
-              {/* Back button — revealed on hover */}
+              {/* Spot button — revealed on hover */}
               <button
                 onClick={e => {
                   e.preventDefault()
@@ -302,19 +259,11 @@ function CreatorPortraitCard({
                 }}
                 className="absolute top-3 right-3 px-2.5 py-1 bg-hype-gold text-[#0A0A0A] text-[9px] font-bold rounded-full opacity-0 group-hover:opacity-100 transition-all duration-200 active:scale-95 hover:bg-hype-gold-dim"
               >
-                Back
+                Spot
               </button>
 
               {/* Bottom info */}
               <div className="absolute bottom-0 left-0 right-0 p-4">
-                <div className="h-8 -mx-1 mb-2 opacity-55">
-                  <PriceChart
-                    data={creator.priceHistory}
-                    isPositive={isUp}
-                    height={32}
-                    compact
-                  />
-                </div>
                 <p className="text-white font-bold text-[14px] leading-tight tracking-tight">
                   {creator.name}
                 </p>
@@ -322,19 +271,12 @@ function CreatorPortraitCard({
                   ${creator.ticker}
                 </p>
                 <div className="flex items-center gap-1.5">
-                  <p className="text-white font-bold text-sm tabular">
-                    {formatPrice(creator.price)}
-                  </p>
-                  <p
-                    className={cn(
-                      'text-[10px] font-semibold tabular',
-                      isUp ? 'text-hype-green' : 'text-hype-red',
-                    )}
-                  >
-                    {isUp ? '+' : ''}
-                    {formatPercent(creator.priceChangePercent24h)}
+                  <p className="text-white font-black text-sm tabular">{score}</p>
+                  <p className={cn('text-[10px] font-semibold tabular', isUp ? 'text-hype-green' : 'text-hype-red')}>
+                    {isUp ? '+' : ''}{delta} pts
                   </p>
                 </div>
+                <p className="text-hype-gold text-[8px] font-bold uppercase tracking-wider mt-0.5">{tier}</p>
               </div>
             </div>
           </Link>
@@ -353,6 +295,13 @@ export default function HomePage() {
   const openIPOs = ipoCreators.filter(i => i.status === 'open').slice(0, 2)
   const posts = communityPosts.slice(0, 3)
 
+  const discoveryCount = holdings.length
+  const avgMomentum = holdings.length
+    ? Math.round(holdings.reduce((sum, h) => sum + getMomentum(h.ticker).score, 0) / holdings.length)
+    : 0
+
+  const { score: featuredScore } = getMomentum(featured?.ticker ?? '')
+
   if (!featured) return null
 
   return (
@@ -361,8 +310,8 @@ export default function HomePage() {
       <CinematicHero
         featured={featured}
         onBuy={trade.openBuy}
-        portfolioValue={totalPortfolioValue}
-        portfolioChange={totalPnlPercent}
+        discoveryCount={discoveryCount}
+        avgMomentum={avgMomentum}
       />
 
       {/* ── Live ticker strip ───────────────────────────────────────────── */}
@@ -379,7 +328,9 @@ export default function HomePage() {
         </div>
         <div className="flex gap-6 overflow-x-auto hide-scrollbar">
           {trending.slice(0, 5).map((c, i) => {
-            const up = c.priceChangePercent24h >= 0
+            const { score, delta } = getMomentum(c.ticker)
+            const tier = getMomentumTier(score)
+            const up = delta >= 0
             return (
               <Link
                 key={c.id}
@@ -390,19 +341,14 @@ export default function HomePage() {
                   ${c.ticker}
                 </p>
                 <p
-                  className="text-hype-text text-sm font-bold tabular group-hover:text-white transition-colors live-price"
+                  className="text-hype-text text-sm font-black tabular group-hover:text-white transition-colors live-price"
                   style={{ animationDelay: `${i * 0.55}s` }}
                 >
-                  {formatPrice(c.price)}
+                  {score}
                 </p>
-                <p
-                  className={cn(
-                    'text-[10px] font-semibold tabular',
-                    up ? 'text-hype-green' : 'text-hype-red',
-                  )}
-                >
-                  {up ? '+' : ''}
-                  {formatPercent(c.priceChangePercent24h)}
+                <p className="text-hype-gold text-[8px] font-semibold uppercase tracking-wider">{tier}</p>
+                <p className={cn('text-[10px] font-semibold tabular', up ? 'text-hype-green' : 'text-hype-red')}>
+                  {up ? '+' : ''}{delta} pts
                 </p>
               </Link>
             )
@@ -438,16 +384,11 @@ export default function HomePage() {
           )}
         </div>
 
-        {/* Animated stats */}
+        {/* Stats */}
         <div className="grid grid-cols-3 gap-3 mb-5">
           <div className="inset-surface rounded-2xl p-3">
-            <p className="text-hype-dim text-[9px] uppercase tracking-wider mb-1.5">
-              Market Cap
-            </p>
-            <CountUp
-              to={featured.marketCap}
-              className="text-hype-text font-black text-lg metric-display"
-            />
+            <p className="text-hype-dim text-[9px] uppercase tracking-wider mb-1.5">Momentum</p>
+            <p className="text-hype-text font-black text-lg metric-display tabular">{featuredScore}</p>
           </div>
           <div className="inset-surface rounded-2xl p-3">
             <p className="text-hype-dim text-[9px] uppercase tracking-wider mb-1.5">Score</p>
@@ -462,22 +403,12 @@ export default function HomePage() {
           </div>
         </div>
 
-        {/* Price chart */}
-        <div className="h-16 -mx-1 mb-5">
-          <PriceChart
-            data={featured.priceHistory}
-            isPositive={featured.priceChangePercent24h >= 0}
-            height={64}
-            compact
-          />
-        </div>
-
         {/* CTA */}
         <button
           onClick={() => trade.openBuy(featured)}
           className="w-full flex items-center justify-center gap-2 h-12 rounded-2xl bg-hype-gold text-[#0A0A0A] font-bold text-[13px] hover:bg-hype-gold-dim transition-all active:scale-[0.99] shadow-[0_4px_20px_rgba(201,168,76,0.18)]"
         >
-          Back {featured.name.split(' ')[0]} · {formatPrice(featured.price)}
+          Spot {featured.name.split(' ')[0]}
           <ArrowRight size={14} />
         </button>
       </motion.section>
@@ -510,7 +441,7 @@ export default function HomePage() {
         </div>
       </motion.section>
 
-      {/* ── Breaking Through (IPOs) ─────────────────────────────────────── */}
+      {/* ── Breaking Through (Debuts) ───────────────────────────────────── */}
       {openIPOs.length > 0 && (
         <motion.section
           {...sectionReveal}
@@ -521,11 +452,11 @@ export default function HomePage() {
               <p className="text-hype-text font-black text-xl leading-none tracking-tight">
                 Breaking Through
               </p>
-              <p className="text-hype-muted text-xs mt-1">Back them before they open</p>
+              <p className="text-hype-muted text-xs mt-1">Discover them first</p>
             </div>
             <Link href="/ipos">
               <span className="text-hype-muted text-xs flex items-center gap-0.5 hover:text-hype-secondary transition-colors">
-                All IPOs <ChevronRight size={12} />
+                All Debuts <ChevronRight size={12} />
               </span>
             </Link>
           </div>

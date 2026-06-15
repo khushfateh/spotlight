@@ -195,7 +195,7 @@ function SecondaryIPOCard({ ipo, delay = 0 }: { ipo: IPOCreator; delay?: number 
             <p className="text-hype-text font-black text-base tabular">
               ${ipo.initialPrice.toFixed(2)}
             </p>
-            <p className="text-hype-dim text-[9px] uppercase tracking-wider mt-0.5">IPO Price</p>
+            <p className="text-hype-dim text-[9px] uppercase tracking-wider mt-0.5">Debut Price</p>
           </div>
           <div className="w-px h-8 bg-hype-border" />
           <div>
@@ -268,13 +268,13 @@ export default function IPOsPage() {
       {/* ── Hero ──────────────────────────────────────────────────────── */}
       <div className="px-5 pt-8 pb-6">
         <motion.p {...fadeUp(0)} className="section-label text-hype-gold mb-3">
-          Creator IPOs
+          Creator Debuts
         </motion.p>
         <motion.h1 {...fadeUp(0.07)} className="page-headline text-hype-text mb-2">
           THE NEXT<br />WAVE
         </motion.h1>
         <motion.p {...fadeUp(0.13)} className="text-hype-muted text-sm max-w-[260px]">
-          Back emerging talent before the market opens. Own a piece of the culture.
+          Discover emerging talent before they break through. Be there at the beginning.
         </motion.p>
 
         {/* Quick stats */}

@@ -1,24 +1,28 @@
 'use client'
 
-import { Settings, ChevronRight, Star, TrendingUp, LogOut, Bell, Shield, HelpCircle, Zap, Compass, Trophy } from 'lucide-react'
+import { Settings, ChevronRight, Star, LogOut, Bell, Shield, HelpCircle, Zap, Compass, Trophy } from 'lucide-react'
 import { useUser } from '@/context/UserContext'
 import { Badge } from '@/components/ui/Badge'
-import { totalPortfolioValue, totalPnlPercent, holdings } from '@/lib/mock-data'
-import { formatLargeNumber, formatPercent } from '@/lib/utils'
+import { holdings } from '@/lib/mock-data'
+import { getMomentum, getMomentumTier } from '@/lib/mock-data'
 
-function getInvestorStatus(pnlPercent: number, holdingCount: number) {
-  if (pnlPercent >= 100 && holdingCount >= 4) {
+function getDiscoveryStatus(holdingCount: number, avgMomentum: number) {
+  if (avgMomentum >= 80 && holdingCount >= 4) {
     return { label: 'Top Discoverer', icon: Trophy, color: 'text-hype-gold', bg: 'bg-hype-gold/10 border-hype-gold/30', desc: 'Found rising talent before anyone else.' }
   }
-  if (pnlPercent >= 40 || holdingCount >= 3) {
+  if (avgMomentum >= 65 || holdingCount >= 3) {
     return { label: 'Culture Scout', icon: Compass, color: 'text-hype-indigo', bg: 'bg-hype-indigo/10 border-hype-indigo/30', desc: 'Identifying cultural momentum early.' }
   }
-  return { label: 'Early Backer', icon: Zap, color: 'text-hype-green', bg: 'bg-hype-green/10 border-hype-green/30', desc: 'Backing creators at the ground floor.' }
+  return { label: 'Early Spotter', icon: Zap, color: 'text-hype-green', bg: 'bg-hype-green/10 border-hype-green/30', desc: 'Spotting creators before the world catches on.' }
 }
 
 export default function ProfilePage() {
   const { user, userMode, setUserMode } = useUser()
-  const status = getInvestorStatus(totalPnlPercent, holdings.length)
+
+  const avgMomentum = holdings.length
+    ? Math.round(holdings.reduce((sum, h) => sum + getMomentum(h.ticker).score, 0) / holdings.length)
+    : 0
+  const status = getDiscoveryStatus(holdings.length, avgMomentum)
   const StatusIcon = status.icon
 
   return (
@@ -39,7 +43,7 @@ export default function ProfilePage() {
           </div>
         </div>
 
-        {/* Investor Status Badge */}
+        {/* Discovery Status Badge */}
         <div className={`mt-4 flex items-center gap-3 px-3 py-2.5 rounded-xl border ${status.bg}`}>
           <StatusIcon size={16} className={status.color} />
           <div className="flex-1">
@@ -51,15 +55,15 @@ export default function ProfilePage() {
         <div className="grid grid-cols-3 gap-2 mt-4 pt-4 border-t border-hype-border">
           <div className="text-center">
             <p className="text-hype-text font-bold">{holdings.length}</p>
-            <p className="text-hype-dim text-[10px]">Holdings</p>
+            <p className="text-hype-dim text-[10px]">Spotted</p>
           </div>
           <div className="text-center">
-            <p className="text-hype-green font-bold tabular">{formatLargeNumber(totalPortfolioValue)}</p>
-            <p className="text-hype-dim text-[10px]">Portfolio</p>
+            <p className="text-hype-gold font-bold tabular">{avgMomentum}</p>
+            <p className="text-hype-dim text-[10px]">Avg Score</p>
           </div>
           <div className="text-center">
-            <p className="text-hype-green font-bold tabular">+{formatPercent(totalPnlPercent)}</p>
-            <p className="text-hype-dim text-[10px]">All-time</p>
+            <p className="text-hype-gold font-bold">{getMomentumTier(avgMomentum)}</p>
+            <p className="text-hype-dim text-[10px]">Tier</p>
           </div>
         </div>
       </div>
@@ -76,7 +80,7 @@ export default function ProfilePage() {
                 : 'bg-hype-surface-2 border-hype-border text-hype-muted hover:text-hype-secondary'
             }`}
           >
-            Investor
+            Spotter
           </button>
           <button
             onClick={() => setUserMode('creator')}
@@ -90,21 +94,21 @@ export default function ProfilePage() {
           </button>
         </div>
         <p className="text-hype-dim text-[10px] mt-2 text-center">
-          Switch to access {userMode === 'investor' ? 'Creator Dashboard' : 'Investor Portfolio'}
+          Switch to access {userMode === 'investor' ? 'Creator Dashboard' : 'Discovery Portfolio'}
         </p>
       </div>
 
-      {/* Portfolio Summary */}
+      {/* Discovery Summary */}
       <div className="premium-card rounded-2xl p-4">
         <div className="flex items-center justify-between mb-3">
-          <p className="text-hype-text font-semibold text-sm">Portfolio Summary</p>
+          <p className="text-hype-text font-semibold text-sm">Discovery Summary</p>
           <a href="/portfolio" className="text-hype-gold text-xs font-medium hover:underline">View all</a>
         </div>
         <div className="flex items-center gap-3 p-3 inset-surface rounded-xl">
-          <TrendingUp size={20} className="text-hype-green flex-shrink-0" />
+          <Compass size={20} className="text-hype-gold flex-shrink-0" />
           <div>
-            <p className="text-hype-text font-bold tabular">{formatLargeNumber(totalPortfolioValue)}</p>
-            <p className="text-hype-green text-xs font-semibold tabular">+{formatPercent(totalPnlPercent)} all time</p>
+            <p className="text-hype-text font-bold">{holdings.length} creators spotted</p>
+            <p className="text-hype-gold text-xs font-semibold">Avg momentum: {avgMomentum} · {getMomentumTier(avgMomentum)}</p>
           </div>
         </div>
       </div>

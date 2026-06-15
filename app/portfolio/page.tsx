@@ -5,29 +5,22 @@ import { useRef, useEffect, useState } from 'react'
 import { motion } from 'framer-motion'
 import { ArrowRight, Clock } from 'lucide-react'
 import Link from 'next/link'
-import PortfolioChart from '@/components/portfolio/PortfolioChart'
 import TradeSheet from '@/components/trading/TradeSheet'
 import { useTradeSheet } from '@/hooks/useTradeSheet'
 import { creators } from '@/lib/mock-data'
-import {
-  holdings,
-  transactions,
-  portfolioHistory,
-  totalPortfolioValue,
-  totalPnl,
-  totalPnlPercent,
-} from '@/lib/mock-data'
-import { formatLargeNumber, formatPrice, formatPercent, formatTimeAgo, cn } from '@/lib/utils'
+import { holdings, transactions } from '@/lib/mock-data'
+import { formatTimeAgo, cn } from '@/lib/utils'
+import { getMomentum, getMomentumTier } from '@/lib/mock-data'
 import { fadeUp, sectionReveal, ease, countDuration, countEase } from '@/lib/motion'
 import type { Holding } from '@/types'
 
 // ── Holding narrative map ─────────────────────────────────────────────────────
 
 const narratives: Record<string, string> = {
-  APDHILLON: 'backed before his North American tour sold out.',
-  MRBEAST: 'in before the Netflix partnership was announced.',
-  SPEED: 'caught the parabolic run before the Ronaldo collab.',
-  LILNASX: 'early ahead of the album that sent streams up 340%.',
+  APDHILLON: 'spotted before his North American tour sold out.',
+  MRBEAST: 'spotted before the Netflix partnership was announced.',
+  SPEED: 'spotted before the Ronaldo collab made him global.',
+  LILNASX: 'spotted early ahead of the album that sent streams up 340%.',
 }
 
 // ── Animated counter ──────────────────────────────────────────────────────────
@@ -49,14 +42,14 @@ function AnimatedValue({ to, className }: { to: number; className?: string }) {
 
     function tick(now: number) {
       const t = Math.min((now - start) / countDuration, 1)
-      el.textContent = formatLargeNumber(to * countEase(t))
+      el.textContent = Math.round(to * countEase(t)).toString()
       if (t < 1) { rafId = requestAnimationFrame(tick) }
     }
     rafId = requestAnimationFrame(tick)
     return () => cancelAnimationFrame(rafId)
   }, [started, to])
 
-  return <span ref={ref} className={className}>$0</span>
+  return <span ref={ref} className={className}>0</span>
 }
 
 // ── Narrative holding card ────────────────────────────────────────────────────
@@ -70,9 +63,13 @@ function PortfolioHoldingCard({
   onSell?: () => void
   delay?: number
 }) {
-  const isUp = holding.pnlPercent >= 0
   const narrative = narratives[holding.ticker]
   const creatorData = creators.find(c => c.ticker === holding.ticker)
+  const { score: currentScore, delta: weeklyDelta } = getMomentum(holding.ticker)
+  const tier = getMomentumTier(currentScore)
+  const momentumGain = currentScore - holding.momentumAtSpot
+  const isGain = momentumGain >= 0
+  const isWeeklyUp = weeklyDelta >= 0
 
   return (
     <motion.div
@@ -119,40 +116,30 @@ function PortfolioHoldingCard({
           </p>
         )}
 
-        {/* Value + PnL */}
+        {/* Momentum growth */}
         <div className="flex items-end justify-between mb-3">
           <div>
-            <p className="text-hype-text font-black text-2xl tabular tracking-tight">
-              {formatPrice(holding.totalValue)}
+            <p className="text-hype-text font-black text-2xl tabular tracking-tight leading-none">
+              {currentScore}
             </p>
-            <p className="text-hype-muted text-[11px] mt-0.5">
-              {holding.shares.toLocaleString()} shares
+            <p className="text-hype-gold text-[10px] font-bold uppercase tracking-wider mt-0.5">
+              {tier}
             </p>
           </div>
           <div className="text-right">
-            <p
-              className={cn(
-                'font-black text-xl tabular tracking-tight',
-                isUp ? 'text-hype-green' : 'text-hype-red',
-              )}
-            >
-              {isUp ? '+' : ''}{formatPercent(holding.pnlPercent)}
+            <p className={cn('font-black text-xl tabular tracking-tight', isGain ? 'text-hype-green' : 'text-hype-red')}>
+              {isGain ? '+' : ''}{momentumGain} pts
             </p>
-            <p
-              className={cn(
-                'text-[11px] font-semibold tabular',
-                isUp ? 'text-hype-green/70' : 'text-hype-red/70',
-              )}
-            >
-              {isUp ? '+' : ''}{formatPrice(holding.pnl)}
+            <p className="text-hype-muted text-[10px] mt-0.5">
+              spotted at {holding.momentumAtSpot}
             </p>
           </div>
         </div>
 
-        {/* Avg buy price */}
+        {/* Weekly delta */}
         <div className="flex items-center justify-between text-xs text-hype-dim mb-3">
-          <span>avg buy <span className="text-hype-muted font-semibold tabular">{formatPrice(holding.avgBuyPrice)}</span></span>
-          <span>cost <span className="text-hype-muted font-semibold tabular">{formatPrice(holding.totalCost)}</span></span>
+          <span>this week <span className={cn('font-semibold tabular', isWeeklyUp ? 'text-hype-green' : 'text-hype-red')}>{isWeeklyUp ? '+' : ''}{weeklyDelta} pts</span></span>
+          <span className="text-hype-muted">momentum score</span>
         </div>
 
         {onSell && (
@@ -160,7 +147,7 @@ function PortfolioHoldingCard({
             onClick={onSell}
             className="w-full py-2.5 rounded-xl text-xs font-semibold text-hype-muted bg-transparent border border-hype-border hover:border-hype-border-light hover:text-hype-secondary transition-colors"
           >
-            Sell Shares
+            Release
           </button>
         )}
       </div>
@@ -170,12 +157,15 @@ function PortfolioHoldingCard({
 
 // ── Page ──────────────────────────────────────────────────────────────────────
 
-type Tab = 'Holdings' | 'History'
+type Tab = 'Spotted' | 'Activity'
 
 export default function PortfolioPage() {
-  const [activeTab, setActiveTab] = useState<Tab>('Holdings')
+  const [activeTab, setActiveTab] = useState<Tab>('Spotted')
   const trade = useTradeSheet()
-  const isUp = totalPnlPercent >= 0
+
+  const avgMomentum = Math.round(
+    holdings.reduce((sum, h) => sum + getMomentum(h.ticker).score, 0) / holdings.length,
+  )
 
   return (
     <>
@@ -183,56 +173,36 @@ export default function PortfolioPage() {
         {/* ── Hero ──────────────────────────────────────────────────────── */}
         <div className="pt-8 pb-6">
           <motion.p {...fadeUp(0)} className="section-label mb-4">
-            Your Portfolio
+            Your Discoveries
           </motion.p>
-          <motion.div {...fadeUp(0.08)}>
+          <motion.div {...fadeUp(0.08)} className="flex items-end gap-3">
             <AnimatedValue
-              to={totalPortfolioValue}
-              className={cn(
-                'number-display block',
-                isUp ? 'text-hype-text' : 'text-hype-text',
-              )}
+              to={holdings.length}
+              className="number-display text-hype-text"
             />
+            <span className="text-hype-muted text-base pb-2 font-medium">creators spotted</span>
           </motion.div>
           <motion.div {...fadeUp(0.14)} className="flex items-center gap-2 mt-2">
-            <span
-              className={cn(
-                'text-sm font-bold tabular',
-                isUp ? 'text-hype-green' : 'text-hype-red',
-              )}
-            >
-              {isUp ? '+' : ''}{formatLargeNumber(Math.abs(totalPnl))}
+            <span className="text-hype-gold text-sm font-bold tabular">
+              {avgMomentum}
             </span>
-            <span
-              className={cn(
-                'text-sm font-black tabular',
-                isUp ? 'text-hype-green' : 'text-hype-red',
-              )}
-            >
-              ({isUp ? '+' : ''}{formatPercent(totalPnlPercent)})
-            </span>
-            <span className="text-hype-muted text-xs">all time</span>
+            <span className="text-hype-muted text-xs">avg momentum · {getMomentumTier(avgMomentum)}</span>
           </motion.div>
         </div>
 
-        {/* Chart */}
-        <motion.div {...fadeUp(0.18)} className="mb-6 -mx-1">
-          <PortfolioChart data={portfolioHistory} height={140} />
-        </motion.div>
-
         {/* Discovery tagline */}
-        <motion.p {...fadeUp(0.22)} className="text-hype-muted text-sm mb-6">
-          You&apos;ve backed{' '}
+        <motion.p {...fadeUp(0.18)} className="text-hype-muted text-sm mb-6">
+          You&apos;ve spotted{' '}
           <span className="text-hype-text font-semibold">{holdings.length} creators</span>
-          {' '}— and spotted them early.
+          {' '}— and got ahead of the curve on each one.
         </motion.p>
 
         {/* ── Tabs ──────────────────────────────────────────────────────── */}
         <motion.div
-          {...fadeUp(0.26)}
+          {...fadeUp(0.22)}
           className="flex gap-4 border-b border-hype-border/60 mb-6"
         >
-          {(['Holdings', 'History'] as Tab[]).map(tab => (
+          {(['Spotted', 'Activity'] as Tab[]).map(tab => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
@@ -254,8 +224,8 @@ export default function PortfolioPage() {
           ))}
         </motion.div>
 
-        {/* ── Holdings ──────────────────────────────────────────────────── */}
-        {activeTab === 'Holdings' && (
+        {/* ── Spotted ───────────────────────────────────────────────────── */}
+        {activeTab === 'Spotted' && (
           <div className="space-y-4">
             {holdings.map((holding, i) => {
               const creatorData = creators.find(c => c.ticker === holding.ticker)
@@ -284,8 +254,8 @@ export default function PortfolioPage() {
           </div>
         )}
 
-        {/* ── Transaction History ────────────────────────────────────────── */}
-        {activeTab === 'History' && (
+        {/* ── Activity ──────────────────────────────────────────────────── */}
+        {activeTab === 'Activity' && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -295,8 +265,8 @@ export default function PortfolioPage() {
             {transactions.length === 0 ? (
               <div className="py-16 text-center">
                 <Clock size={28} className="text-hype-dim mx-auto mb-3" />
-                <p className="text-hype-text font-semibold mb-1">No trades yet</p>
-                <p className="text-hype-secondary text-sm">Your history will appear here</p>
+                <p className="text-hype-text font-semibold mb-1">No activity yet</p>
+                <p className="text-hype-secondary text-sm">Your spotting history will appear here</p>
               </div>
             ) : (
               transactions.map((tx, i) => (
@@ -310,30 +280,24 @@ export default function PortfolioPage() {
                   <div
                     className={cn(
                       'w-2 h-2 rounded-full flex-shrink-0',
-                      tx.type === 'buy' ? 'bg-hype-green' : 'bg-hype-red',
+                      tx.type === 'buy' ? 'bg-hype-green' : 'bg-hype-muted',
                     )}
                   />
                   <div className="flex-1 min-w-0">
                     <p className="text-hype-text text-sm font-semibold">
-                      {tx.type === 'buy' ? 'Backed' : 'Sold'}{' '}
+                      {tx.type === 'buy' ? 'Spotted' : 'Released'}{' '}
                       <span className="font-mono text-hype-secondary">${tx.ticker}</span>
                     </p>
                     <p className="text-hype-muted text-xs mt-0.5">
-                      {tx.shares} shares · {formatTimeAgo(tx.date)}
+                      {formatTimeAgo(tx.date)}
                     </p>
                   </div>
                   <div className="text-right">
-                    <p
-                      className={cn(
-                        'text-sm font-bold tabular',
-                        tx.type === 'buy' ? 'text-hype-red' : 'text-hype-green',
-                      )}
-                    >
-                      {tx.type === 'buy' ? '-' : '+'}
-                      {formatPrice(tx.total)}
-                    </p>
-                    <p className="text-hype-dim text-[10px] tabular mt-0.5">
-                      {formatPrice(tx.price)}/share
+                    <p className={cn(
+                      'text-xs font-semibold uppercase tracking-wide',
+                      tx.type === 'buy' ? 'text-hype-green' : 'text-hype-muted',
+                    )}>
+                      {tx.type === 'buy' ? '+ Spotted' : '− Released'}
                     </p>
                   </div>
                 </motion.div>
@@ -344,7 +308,7 @@ export default function PortfolioPage() {
 
         <div className="text-center mt-10">
           <p className="text-hype-dim text-[10px]">
-            Mock portfolio · Not financial advice
+            Mock discoveries · Not financial advice
           </p>
         </div>
       </div>

@@ -10,7 +10,8 @@ import {
   type PanInfo,
 } from 'framer-motion'
 import { X, ArrowLeft, ArrowRight } from 'lucide-react'
-import { cn, formatPrice, formatPercent } from '@/lib/utils'
+import { cn } from '@/lib/utils'
+import { getMomentum, getMomentumTier } from '@/lib/mock-data/momentum'
 import type { Creator } from '@/types'
 
 const ease = [0.16, 1, 0.3, 1] as const
@@ -31,7 +32,9 @@ function SwipeCard({
   const backOpacity = useTransform(x, [20, 90], [0, 1])
   const skipOpacity = useTransform(x, [-90, -20], [1, 0])
   const [exiting, setExiting] = useState<'left' | 'right' | null>(null)
-  const isUp = creator.priceChangePercent24h >= 0
+  const { score, delta } = getMomentum(creator.ticker)
+  const tier = getMomentumTier(score)
+  const isDeltaUp = delta >= 0
 
   function handleDragEnd(_: unknown, info: PanInfo) {
     if (info.offset.x > 80) setExiting('right')
@@ -69,12 +72,12 @@ function SwipeCard({
       <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/35 to-black/10 pointer-events-none" />
       <div className="absolute inset-0 bg-gradient-to-r from-black/50 to-transparent pointer-events-none" />
 
-      {/* BACK stamp — brightens as you drag right */}
+      {/* SPOT stamp — brightens as you drag right */}
       <motion.div
         style={{ opacity: backOpacity, rotate: -14, transformOrigin: 'center' }}
         className="absolute top-8 left-5 px-3 py-1.5 border-[2.5px] border-hype-gold text-hype-gold font-black text-lg tracking-[0.18em] rounded-xl pointer-events-none"
       >
-        BACK
+        SPOT
       </motion.div>
 
       {/* SKIP stamp — brightens as you drag left */}
@@ -101,19 +104,14 @@ function SwipeCard({
             {creator.story}
           </p>
         )}
-        <div className="flex items-center gap-3">
-          <span className="text-white font-black text-xl tabular">
-            {formatPrice(creator.price)}
-          </span>
-          <span
-            className={cn(
-              'text-sm font-bold tabular',
-              isUp ? 'text-hype-green' : 'text-hype-red',
-            )}
-          >
-            {isUp ? '+' : ''}
-            {formatPercent(creator.priceChangePercent24h)} today
-          </span>
+        <div className="flex items-end gap-3">
+          <span className="text-white font-black text-3xl tabular leading-none">{score}</span>
+          <div className="pb-0.5">
+            <p className="text-hype-gold text-[9px] font-bold uppercase tracking-wider leading-none">Momentum · {tier}</p>
+            <p className={cn('text-[11px] font-bold tabular leading-none mt-0.5', isDeltaUp ? 'text-hype-green' : 'text-hype-red')}>
+              {isDeltaUp ? '+' : ''}{delta} pts this week
+            </p>
+          </div>
         </div>
       </div>
     </motion.div>

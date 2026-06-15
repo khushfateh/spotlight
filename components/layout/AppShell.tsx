@@ -60,8 +60,8 @@ function DesktopSidebar() {
   const links = [
     { href: '/', label: 'Home' },
     { href: '/explore', label: 'Explore' },
-    { href: '/ipos', label: 'IPOs', highlight: true },
-    { href: '/portfolio', label: 'Portfolio' },
+    { href: '/ipos', label: 'Debuts', highlight: true },
+    { href: '/portfolio', label: 'Discoveries' },
     { href: '/profile', label: 'Profile' },
   ]
 

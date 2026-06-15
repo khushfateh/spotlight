@@ -52,3 +52,12 @@ export function formatTimeAgo(timestamp: string): string {
 export function isPositive(value: number): boolean {
   return value >= 0
 }
+
+export function getMomentumTier(score: number): string {
+  if (score >= 91) return 'Icon'
+  if (score >= 76) return 'Viral'
+  if (score >= 61) return 'Breakout'
+  if (score >= 41) return 'Heating Up'
+  if (score >= 21) return 'Rising'
+  return 'Emerging'
+}

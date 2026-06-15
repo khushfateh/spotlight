@@ -1,10 +1,29 @@
 'use client'
+/* eslint-disable @next/next/no-img-element */
 
-import { useState } from 'react'
 import { motion } from 'framer-motion'
 import { X, CheckCircle, AlertCircle } from 'lucide-react'
+import { Button } from '@/components/ui/Button'
+import type { Creator, TradeOrder } from '@/types'
+import { cn } from '@/lib/utils'
+import { getMomentum, getMomentumTier } from '@/lib/mock-data/momentum'
 
-// Deterministic burst — 12 gold particles radiating from trade icon on success
+type TradeStep = 'form' | 'confirm' | 'success' | 'error'
+
+type TradeSheetProps = {
+  isOpen: boolean
+  creator: Creator | null
+  tradeType: 'buy' | 'sell'
+  step: TradeStep
+  pendingOrder: TradeOrder | null
+  isSubmitting: boolean
+  onClose: () => void
+  onSubmitOrder: (order: TradeOrder) => void
+  onConfirmOrder: () => void
+  onReset: () => void
+}
+
+// Deterministic gold burst — 12 particles radiating from success icon
 const BURST = Array.from({ length: 12 }, (_, i) => {
   const angle = (i / 12) * Math.PI * 2
   const dist = 30 + (i % 4) * 7
@@ -27,59 +46,34 @@ function ParticleBurst() {
           transition={{ duration: 0.65, ease: [0.16, 1, 0.3, 1], delay: p.delay }}
           className="absolute rounded-full bg-hype-gold"
           style={{
-            width: p.size,
-            height: p.size,
-            top: '50%',
-            left: '50%',
-            marginTop: -p.size / 2,
-            marginLeft: -p.size / 2,
+            width: p.size, height: p.size,
+            top: '50%', left: '50%',
+            marginTop: -p.size / 2, marginLeft: -p.size / 2,
           }}
         />
       ))}
     </div>
   )
 }
-import { Button } from '@/components/ui/Button'
-import { Avatar } from '@/components/ui/Avatar'
-import type { Creator, TradeOrder } from '@/types'
-import { formatPrice, formatPercent, cn } from '@/lib/utils'
-
-type TradeStep = 'form' | 'confirm' | 'success' | 'error'
-
-type TradeSheetProps = {
-  isOpen: boolean
-  creator: Creator | null
-  tradeType: 'buy' | 'sell'
-  step: TradeStep
-  pendingOrder: TradeOrder | null
-  isSubmitting: boolean
-  onClose: () => void
-  onSubmitOrder: (order: TradeOrder) => void
-  onConfirmOrder: () => void
-  onReset: () => void
-}
 
 export default function TradeSheet({
   isOpen, creator, tradeType, step, pendingOrder, isSubmitting,
   onClose, onSubmitOrder, onConfirmOrder, onReset,
 }: TradeSheetProps) {
-  const [shares, setShares] = useState('')
-  const [orderType, setOrderType] = useState<'market' | 'limit'>('market')
-  const [limitPrice, setLimitPrice] = useState('')
-
   if (!creator) return null
 
-  const shareCount = parseFloat(shares) || 0
-  const price = orderType === 'limit' && limitPrice ? parseFloat(limitPrice) : creator.price
-  const estimatedTotal = shareCount * price
-  const isUp = creator.priceChangePercent24h >= 0
+  const { score, delta } = getMomentum(creator.ticker)
+  const tier = getMomentumTier(score)
+  const isDeltaUp = delta >= 0
+  const firstName = creator.name.split(' ')[0]
 
-  function handleSubmit() {
-    if (!shareCount || shareCount <= 0) return
-    onSubmitOrder({ type: tradeType, orderType, shares: shareCount, limitPrice: orderType === 'limit' ? parseFloat(limitPrice) : undefined, estimatedTotal })
+  function handleSpot() {
+    onSubmitOrder({ type: 'buy', orderType: 'market', shares: 1, estimatedTotal: 0 })
   }
 
-  const quickAmounts = [5, 10, 25, 50]
+  function handleRelease() {
+    onSubmitOrder({ type: 'sell', orderType: 'market', shares: 1, estimatedTotal: 0 })
+  }
 
   return (
     <>
@@ -105,146 +99,120 @@ export default function TradeSheet({
             <div className="w-8 h-0.5 bg-hype-border rounded-full" />
           </div>
 
-          {/* Form */}
-          {step === 'form' && (
+          {/* ── Spot form ──────────────────────────────────────────────── */}
+          {step === 'form' && tradeType === 'buy' && (
             <div className="px-5 pt-1">
-              <div className="flex items-center justify-between mb-5">
-                <div className="flex items-center gap-3">
-                  <Avatar initials={creator.avatar} gradientClass={creator.coverColor} size="sm" />
-                  <div>
-                    <p className="text-hype-text font-semibold text-sm">{creator.name}</p>
-                    <div className="flex items-center gap-2 mt-0.5">
-                      <span className="text-hype-dim text-[10px] font-mono">${creator.ticker}</span>
-                      <span className={cn('text-[10px] font-medium', isUp ? 'text-hype-green' : 'text-hype-red')}>
-                        {formatPercent(creator.priceChangePercent24h)}
-                      </span>
-                    </div>
-                  </div>
+              <div className="flex items-start justify-between mb-5">
+                <div>
+                  <p className="section-label text-hype-gold mb-1">Spot This Creator</p>
+                  <p className="text-hype-text font-black text-xl tracking-tight">{creator.name}</p>
+                  <p className="text-hype-muted text-xs font-mono mt-0.5">${creator.ticker} · {creator.category}</p>
                 </div>
-                <button onClick={onClose} className="w-7 h-7 rounded-full bg-hype-surface-2 flex items-center justify-center text-hype-muted hover:text-hype-text transition-colors">
+                <button
+                  onClick={onClose}
+                  className="w-7 h-7 rounded-full bg-hype-surface-2 flex items-center justify-center text-hype-muted hover:text-hype-text transition-colors mt-1"
+                >
                   <X size={14} />
                 </button>
               </div>
 
-              {/* Order type toggle */}
-              <div className="flex gap-1 p-0.5 bg-hype-surface-2 rounded-xl mb-5 border border-hype-border">
-                {(['market', 'limit'] as const).map(type => (
-                  <button
-                    key={type}
-                    onClick={() => setOrderType(type)}
-                    className={cn(
-                      'flex-1 py-2 rounded-[10px] text-xs font-medium transition-all capitalize',
-                      orderType === type ? 'bg-hype-surface-3 text-hype-text border border-hype-border' : 'text-hype-muted',
-                    )}
-                  >
-                    {type} Order
-                  </button>
-                ))}
-              </div>
-
-              {/* Price display */}
-              <div className="flex items-center justify-between mb-4 px-3 py-2.5 bg-hype-surface-2 rounded-xl border border-hype-border">
-                <span className="text-hype-muted text-xs">Market Price</span>
-                <span className="text-hype-text font-semibold tabular text-sm">{formatPrice(creator.price)}</span>
-              </div>
-
-              {/* Limit price input */}
-              {orderType === 'limit' && (
-                <div className="mb-4">
-                  <label className="text-hype-muted text-xs mb-1.5 block">Limit Price</label>
-                  <div className="relative">
-                    <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-hype-secondary text-sm">$</span>
-                    <input
-                      type="number"
-                      value={limitPrice}
-                      onChange={e => setLimitPrice(e.target.value)}
-                      placeholder={creator.price.toFixed(2)}
-                      className="w-full bg-hype-surface-2 border border-hype-border rounded-xl px-4 pl-7 py-3 text-hype-text text-sm outline-none focus:border-hype-border-light transition-colors"
-                    />
+              {/* Creator photo with momentum overlay */}
+              {creator.imageUrl && (
+                <div className="relative h-36 rounded-2xl overflow-hidden mb-5">
+                  <img
+                    src={creator.imageUrl}
+                    alt=""
+                    className="absolute inset-0 w-full h-full object-cover object-top"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/20 to-transparent" />
+                  <div className="absolute bottom-3 left-3 flex items-end gap-2">
+                    <span className="text-white font-black text-3xl tabular leading-none">{score}</span>
+                    <div className="pb-0.5">
+                      <p className="text-hype-gold text-[9px] font-bold uppercase tracking-wider leading-none">{tier}</p>
+                      <p className={cn('text-[10px] font-bold tabular leading-none mt-0.5', isDeltaUp ? 'text-hype-green' : 'text-hype-red')}>
+                        {isDeltaUp ? '+' : ''}{delta} pts this week
+                      </p>
+                    </div>
                   </div>
                 </div>
               )}
 
-              {/* Shares input */}
-              <div className="mb-3">
-                <label className="text-hype-muted text-xs mb-1.5 block">Shares</label>
-                <input
-                  type="number"
-                  value={shares}
-                  onChange={e => setShares(e.target.value)}
-                  placeholder="0"
-                  min="1"
-                  className="w-full bg-hype-surface-2 border border-hype-border rounded-xl px-4 py-3 text-hype-text text-xl font-semibold tabular outline-none focus:border-hype-border-light transition-colors"
-                />
-              </div>
+              {creator.story && (
+                <p className="text-hype-secondary text-sm leading-relaxed mb-5">{creator.story}</p>
+              )}
 
-              {/* Quick amounts */}
-              <div className="flex gap-2 mb-5">
-                {quickAmounts.map(amt => (
-                  <button
-                    key={amt}
-                    onClick={() => setShares(String(amt))}
-                    className="flex-1 py-1.5 rounded-lg text-xs font-medium text-hype-muted bg-hype-surface-2 border border-hype-border hover:text-hype-secondary hover:border-hype-border-light transition-colors"
-                  >
-                    {amt}
-                  </button>
-                ))}
-              </div>
-
-              {/* Estimated total */}
-              <div className="flex justify-between items-center px-3 py-3 bg-hype-surface-2 rounded-xl border border-hype-border mb-4">
-                <span className="text-hype-muted text-sm">Estimated Total</span>
-                <span className="text-hype-text font-bold text-lg tabular">{formatPrice(estimatedTotal)}</span>
-              </div>
-
-              <p className="text-hype-dim text-[10px] text-center mb-4">
-                Mock trading only · Not financial advice · For demo purposes
-              </p>
-
-              <Button
-                variant={tradeType === 'buy' ? 'buy' : 'sell'}
-                size="xl"
-                fullWidth
-                onClick={handleSubmit}
-                disabled={!shareCount || shareCount <= 0}
-              >
-                {tradeType === 'buy' ? 'Review Buy Order' : 'Review Sell Order'}
+              <Button variant="buy" size="xl" fullWidth onClick={handleSpot}>
+                Spot {firstName}
               </Button>
+              <p className="text-hype-dim text-[10px] text-center mt-3">
+                Add to your discovery list · Not financial advice
+              </p>
             </div>
           )}
 
-          {/* Confirm */}
+          {/* ── Release form (sell — deprioritised) ────────────────────── */}
+          {step === 'form' && tradeType === 'sell' && (
+            <div className="px-5 pt-1">
+              <div className="flex items-center justify-between mb-5">
+                <div>
+                  <p className="section-label text-hype-muted mb-1">Release Discovery</p>
+                  <p className="text-hype-text font-black text-xl tracking-tight">{creator.name}</p>
+                </div>
+                <button
+                  onClick={onClose}
+                  className="w-7 h-7 rounded-full bg-hype-surface-2 flex items-center justify-center text-hype-muted hover:text-hype-text transition-colors"
+                >
+                  <X size={14} />
+                </button>
+              </div>
+              <div className="premium-card rounded-2xl p-4 mb-5">
+                <p className="text-hype-secondary text-sm leading-relaxed">
+                  Releasing {firstName} removes them from your discovery list. You can spot them again later.
+                </p>
+              </div>
+              <Button variant="sell" size="xl" fullWidth onClick={handleRelease}>
+                Release {firstName}
+              </Button>
+              <p className="text-hype-dim text-[10px] text-center mt-3">
+                Removes from your Discoveries
+              </p>
+            </div>
+          )}
+
+          {/* ── Confirm ────────────────────────────────────────────────── */}
           {step === 'confirm' && pendingOrder && (
             <div className="px-5 pt-1">
               <div className="flex items-center justify-between mb-6">
-                <h2 className="text-hype-text font-semibold text-base">Review Order</h2>
-                <button onClick={onClose} className="w-7 h-7 rounded-full bg-hype-surface-2 flex items-center justify-center text-hype-muted">
+                <h2 className="text-hype-text font-semibold text-base">
+                  {pendingOrder.type === 'buy' ? 'Confirm Spot' : 'Confirm Release'}
+                </h2>
+                <button
+                  onClick={onClose}
+                  className="w-7 h-7 rounded-full bg-hype-surface-2 flex items-center justify-center text-hype-muted"
+                >
                   <X size={14} />
                 </button>
               </div>
 
-              <div className="space-y-0 mb-6 border border-hype-border rounded-xl overflow-hidden">
-                {[
-                  { label: 'Action', value: pendingOrder.type === 'buy' ? 'Buy' : 'Sell' },
-                  { label: 'Creator', value: creator.name },
-                  { label: 'Ticker', value: `$${creator.ticker}` },
-                  { label: 'Shares', value: pendingOrder.shares.toLocaleString() },
-                  { label: 'Price', value: formatPrice(creator.price) },
-                  { label: 'Order Type', value: pendingOrder.orderType === 'market' ? 'Market Order' : `Limit @ ${formatPrice(pendingOrder.limitPrice ?? 0)}` },
-                ].map(({ label, value }) => (
-                  <div key={label} className="flex justify-between items-center px-4 py-3 border-b border-hype-border last:border-0">
-                    <span className="text-hype-secondary text-sm">{label}</span>
-                    <span className="text-hype-text text-sm font-medium">{value}</span>
+              <div className="premium-card rounded-2xl p-4 mb-6">
+                <p className="text-hype-muted text-xs mb-2">
+                  {pendingOrder.type === 'buy' ? "You're spotting" : "You're releasing"}
+                </p>
+                <p className="text-hype-text font-black text-xl tracking-tight">{creator.name}</p>
+                <p className="text-hype-muted text-[10px] font-mono mt-0.5 mb-4">${creator.ticker}</p>
+                <div className="flex items-end gap-3 pt-3 border-t border-hype-border">
+                  <span className="text-hype-gold font-black text-3xl tabular leading-none">{score}</span>
+                  <div className="pb-0.5">
+                    <p className="text-hype-gold text-[9px] font-bold uppercase tracking-wider">Momentum · {tier}</p>
+                    <p className={cn('text-[10px] font-bold tabular', isDeltaUp ? 'text-hype-green' : 'text-hype-red')}>
+                      {isDeltaUp ? '+' : ''}{delta} pts this week
+                    </p>
                   </div>
-                ))}
-                <div className="flex justify-between items-center px-4 py-3.5 bg-hype-surface-2">
-                  <span className="text-hype-text font-semibold">Total</span>
-                  <span className="text-hype-gold font-bold text-xl tabular">{formatPrice(pendingOrder.estimatedTotal)}</span>
                 </div>
               </div>
 
               <p className="text-hype-dim text-[10px] text-center mb-5">
-                Simulated trade · No real money involved
+                {pendingOrder.type === 'buy' ? 'Early discovery claim' : 'Removes from your Discoveries'} · Not financial advice
               </p>
 
               <div className="flex gap-3">
@@ -256,13 +224,13 @@ export default function TradeSheet({
                   isLoading={isSubmitting}
                   onClick={onConfirmOrder}
                 >
-                  Confirm
+                  {pendingOrder.type === 'buy' ? 'Confirm Spot' : 'Confirm Release'}
                 </Button>
               </div>
             </div>
           )}
 
-          {/* Success */}
+          {/* ── Success ────────────────────────────────────────────────── */}
           {step === 'success' && pendingOrder && (
             <div className="px-5 pt-4 flex flex-col items-center text-center">
               <div className="relative w-14 h-14 mb-4">
@@ -271,28 +239,44 @@ export default function TradeSheet({
                 </div>
                 <ParticleBurst />
               </div>
-              <h2 className="text-hype-text font-bold text-xl mb-1">Order Executed</h2>
-              <p className="text-hype-secondary text-sm mb-6 leading-relaxed">
-                {pendingOrder.type === 'buy' ? 'Purchased' : 'Sold'}{' '}
-                <span className="text-hype-text font-semibold">{pendingOrder.shares} shares</span> of{' '}
-                <span className="text-hype-text font-semibold">{creator.name}</span>
-              </p>
-              <div className="w-full p-3.5 bg-hype-surface-2 border border-hype-border rounded-xl mb-6">
-                <p className="text-hype-secondary text-xs">Total {pendingOrder.type === 'buy' ? 'spent' : 'received'}</p>
-                <p className="text-hype-gold font-bold text-2xl tabular mt-1">{formatPrice(pendingOrder.estimatedTotal)}</p>
-              </div>
+
+              {pendingOrder.type === 'buy' ? (
+                <>
+                  <h2 className="text-hype-text font-black text-3xl tracking-tight mb-2">Spotted.</h2>
+                  <p className="text-hype-secondary text-sm mb-5 leading-relaxed">
+                    You&apos;re ahead of the curve on{' '}
+                    <span className="text-hype-text font-semibold">{creator.name}</span>.
+                  </p>
+                  <div className="w-full p-4 bg-hype-gold/[0.08] border border-hype-gold/20 rounded-2xl mb-6">
+                    <p className="text-hype-gold/60 text-[10px] font-semibold uppercase tracking-wider mb-1">
+                      Momentum at discovery
+                    </p>
+                    <p className="text-hype-gold font-black text-4xl tabular leading-none">{score}</p>
+                    <p className="text-hype-gold/50 text-xs mt-1">{tier}</p>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <h2 className="text-hype-text font-bold text-xl mb-2">Released</h2>
+                  <p className="text-hype-secondary text-sm mb-6 leading-relaxed">
+                    <span className="text-hype-text font-semibold">{creator.name}</span>{' '}
+                    removed from your Discoveries.
+                  </p>
+                </>
+              )}
+
               <Button variant="primary" size="lg" fullWidth onClick={onClose}>Done</Button>
             </div>
           )}
 
-          {/* Error */}
+          {/* ── Error ──────────────────────────────────────────────────── */}
           {step === 'error' && (
             <div className="px-5 pt-4 flex flex-col items-center text-center">
               <div className="w-14 h-14 rounded-full bg-hype-red/10 border border-hype-red/20 flex items-center justify-center mb-4">
                 <AlertCircle size={28} className="text-hype-red" />
               </div>
-              <h2 className="text-hype-text font-bold text-xl mb-2">Order Failed</h2>
-              <p className="text-hype-secondary text-sm mb-6">Something went wrong. Please try again.</p>
+              <h2 className="text-hype-text font-bold text-xl mb-2">Something went wrong</h2>
+              <p className="text-hype-secondary text-sm mb-6">Please try again.</p>
               <Button variant="secondary" size="lg" fullWidth onClick={onReset}>Try Again</Button>
             </div>
           )}

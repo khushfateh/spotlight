@@ -20,8 +20,8 @@ export default function BottomNav() {
   const investorNav: NavItem[] = [
     { href: '/', label: 'Home', icon: <Home size={20} /> },
     { href: '/explore', label: 'Explore', icon: <Compass size={20} /> },
-    { href: '/ipos', label: 'IPOs', icon: <Rocket size={20} />, isCenter: true },
-    { href: '/portfolio', label: 'Portfolio', icon: <PieChart size={20} /> },
+    { href: '/ipos', label: 'Debuts', icon: <Rocket size={20} />, isCenter: true },
+    { href: '/portfolio', label: 'Discoveries', icon: <PieChart size={20} /> },
     { href: '/profile', label: 'Profile', icon: <User size={20} /> },
   ]
 

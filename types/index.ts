@@ -100,6 +100,7 @@ export type Holding = {
   totalCost: number
   pnl: number
   pnlPercent: number
+  momentumAtSpot: number  // momentum score at time of discovery
 }
 
 export type Transaction = {

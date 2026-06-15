@@ -3,7 +3,6 @@
 import { use, useState } from 'react'
 import { ArrowLeft, Star, Share2, TrendingUp, TrendingDown, Users, BarChart3, MessageCircle, Calendar, Zap } from 'lucide-react'
 import { useRouter } from 'next/navigation'
-import PriceChart from '@/components/market/PriceChart'
 import TradeSheet from '@/components/trading/TradeSheet'
 import PostCard from '@/components/community/PostCard'
 import { Avatar } from '@/components/ui/Avatar'
@@ -12,7 +11,8 @@ import { Button } from '@/components/ui/Button'
 import { useTradeSheet } from '@/hooks/useTradeSheet'
 import { getCreatorByTicker } from '@/lib/mock-data'
 import { communityPosts } from '@/lib/mock-data'
-import { formatPrice, formatPercent, formatLargeNumber, formatNumber, cn } from '@/lib/utils'
+import { cn } from '@/lib/utils'
+import { getMomentum, getMomentumTier } from '@/lib/mock-data'
 
 type Tab = 'Overview' | 'Community' | 'Updates'
 
@@ -36,7 +36,10 @@ export default function CreatorProfilePage({ params }: { params: Promise<{ ticke
     )
   }
 
-  const isUp = creator.priceChangePercent24h >= 0
+  const { score, delta } = getMomentum(creator.ticker)
+  const tier = getMomentumTier(score)
+  const isDeltaUp = delta >= 0
+  const firstName = creator.name.split(' ')[0]
   const creatorPosts = communityPosts.filter(p => p.creatorId === creator.id)
 
   return (
@@ -100,55 +103,50 @@ export default function CreatorProfilePage({ params }: { params: Promise<{ ticke
         </div>
 
         <div className="px-4 pt-4 space-y-4">
-          {/* Price Widget */}
+          {/* Momentum Widget */}
           <div className="premium-card rounded-2xl p-4">
             <div className="flex items-start justify-between mb-3">
               <div>
-                <p className="text-hype-text font-black text-3xl metric-display">{formatPrice(creator.price)}</p>
-                <div className={cn('flex items-center gap-1 mt-0.5', isUp ? 'text-hype-green' : 'text-hype-red')}>
-                  {isUp ? <TrendingUp size={14} /> : <TrendingDown size={14} />}
+                <p className="text-hype-text font-black text-3xl metric-display tabular">{score}</p>
+                <div className={cn('flex items-center gap-1 mt-0.5', isDeltaUp ? 'text-hype-green' : 'text-hype-red')}>
+                  {isDeltaUp ? <TrendingUp size={14} /> : <TrendingDown size={14} />}
                   <span className="font-bold text-sm tabular">
-                    {isUp ? '+' : ''}{formatPrice(Math.abs(creator.priceChange24h))} ({formatPercent(creator.priceChangePercent24h)}) today
+                    {isDeltaUp ? '+' : ''}{delta} pts this week
                   </span>
                 </div>
               </div>
               <div className="text-right">
-                <p className="text-hype-muted text-xs">Creator Score</p>
-                <div className="flex items-center justify-end gap-1">
-                  <p className="text-hype-text font-bold text-lg">{creator.creatorScore}</p>
-                  <span className="text-hype-dim text-xs">/100</span>
-                </div>
+                <p className="text-hype-muted text-xs">Momentum</p>
+                <p className="text-hype-gold font-black text-lg tracking-wide">{tier}</p>
               </div>
             </div>
 
-            <PriceChart data={creator.priceHistory} isPositive={isUp} showRangeSelector height={200} />
-
-            <div className="grid grid-cols-3 gap-2 mt-4 pt-4 border-t border-hype-border">
+            <div className="grid grid-cols-3 gap-2 pt-4 border-t border-hype-border">
               {[
-                { label: 'Market Cap', value: formatLargeNumber(creator.marketCap) },
-                { label: '24h Volume', value: formatLargeNumber(creator.volume24h) },
-                { label: 'Float', value: formatNumber(creator.floatShares) },
+                { label: 'Followers', value: creator.followers },
+                { label: 'Creator Score', value: `${creator.creatorScore}/100` },
+                { label: 'Category', value: creator.category },
               ].map(({ label, value }) => (
                 <div key={label} className="text-center">
-                  <p className="text-hype-text font-semibold text-sm tabular">{value}</p>
+                  <p className="text-hype-text font-semibold text-sm">{value}</p>
                   <p className="text-hype-dim text-[10px] mt-0.5">{label}</p>
                 </div>
               ))}
             </div>
           </div>
 
-          {/* Buy / Sell */}
+          {/* Spot / Release */}
           <div className="flex gap-3">
             <Button variant="buy" size="lg" fullWidth onClick={() => trade.openBuy(creator)}>
-              Buy ${creator.ticker}
+              Spot {firstName}
             </Button>
             <Button variant="sell" size="lg" fullWidth onClick={() => trade.openSell(creator)}>
-              Sell
+              Release
             </Button>
           </div>
 
           <p className="text-hype-dim text-[10px] text-center">
-            Creator Shares = revenue pool participation, not equity ownership · Mock trading only
+            Add to your Discoveries · Early access, not ownership · Mock only
           </p>
 
           {/* Tabs */}

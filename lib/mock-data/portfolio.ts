@@ -14,6 +14,7 @@ export const holdings: Holding[] = [
     totalCost: 525.00,
     pnl: 700.00,
     pnlPercent: 133.33,
+    momentumAtSpot: 45,
   },
   {
     creatorId: 'mrbeast',
@@ -28,6 +29,7 @@ export const holdings: Holding[] = [
     totalCost: 960.00,
     pnl: 820.00,
     pnlPercent: 85.42,
+    momentumAtSpot: 51,
   },
   {
     creatorId: 'ishowspeed',
@@ -42,6 +44,7 @@ export const holdings: Holding[] = [
     totalCost: 520.00,
     pnl: 1280.00,
     pnlPercent: 246.15,
+    momentumAtSpot: 28,
   },
   {
     creatorId: 'lilnasx',
@@ -56,6 +59,7 @@ export const holdings: Holding[] = [
     totalCost: 480.00,
     pnl: 195.00,
     pnlPercent: 40.63,
+    momentumAtSpot: 58,
   },
 ]
 

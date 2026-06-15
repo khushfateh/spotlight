@@ -13,7 +13,8 @@ import {
   getTrendingCreators,
   getTopGainers,
 } from '@/lib/mock-data'
-import { formatPrice, formatPercent, cn } from '@/lib/utils'
+import { cn } from '@/lib/utils'
+import { getMomentum, getMomentumTier } from '@/lib/mock-data'
 import { fadeUp, reveal, sectionReveal, ease } from '@/lib/motion'
 import { DiscoverStack } from '@/components/effects/DiscoverStack'
 import type { Creator, CreatorCategory } from '@/types'
@@ -30,7 +31,9 @@ function MiniPortraitCard({
   onBuy: (c: Creator) => void
   delay?: number
 }) {
-  const isUp = creator.priceChangePercent24h >= 0
+  const { score, delta } = getMomentum(creator.ticker)
+  const tier = getMomentumTier(score)
+  const isDeltaUp = delta >= 0
 
   return (
     <motion.div
@@ -57,16 +60,17 @@ function MiniPortraitCard({
             onClick={e => { e.preventDefault(); onBuy(creator) }}
             className="absolute top-2 right-2 px-2 py-0.5 bg-hype-gold text-[#0A0A0A] text-[9px] font-bold rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
           >
-            Back
+            Spot
           </button>
           <div className="absolute bottom-0 left-0 right-0 p-3">
             <p className="text-white font-bold text-[13px] leading-tight">{creator.name}</p>
             <div className="flex items-center gap-1.5 mt-1">
-              <p className="text-white/80 text-[11px] font-bold tabular">{formatPrice(creator.price)}</p>
-              <p className={cn('text-[10px] font-bold tabular', isUp ? 'text-hype-green' : 'text-hype-red')}>
-                {isUp ? '+' : ''}{formatPercent(creator.priceChangePercent24h)}
-              </p>
+              <p className="text-white/80 text-sm font-black tabular">{score}</p>
+              <p className="text-hype-gold text-[8px] font-semibold uppercase tracking-wider">{tier}</p>
             </div>
+            <p className={cn('text-[10px] font-semibold tabular mt-0.5', isDeltaUp ? 'text-hype-green' : 'text-hype-red')}>
+              {isDeltaUp ? '+' : ''}{delta} pts
+            </p>
           </div>
         </div>
       </Link>
@@ -84,7 +88,9 @@ function CreatorListRow({
   rank: number
   onBuy: (c: Creator) => void
 }) {
-  const isUp = creator.priceChangePercent24h >= 0
+  const { score, delta } = getMomentum(creator.ticker)
+  const tier = getMomentumTier(score)
+  const isDeltaUp = delta >= 0
 
   return (
     <Link href={`/creator/${creator.ticker.toLowerCase()}`}>
@@ -104,14 +110,13 @@ function CreatorListRow({
           <p className="text-hype-muted text-[10px] font-mono">${creator.ticker} · {creator.category}</p>
         </div>
 
-        <div className="w-14 h-6 flex-shrink-0 opacity-70">
-          <PriceChart data={creator.priceHistory} isPositive={isUp} height={24} compact />
-        </div>
-
-        <div className="text-right flex-shrink-0 w-16">
-          <p className="text-hype-text text-sm font-bold tabular">{formatPrice(creator.price)}</p>
-          <p className={cn('text-[10px] font-semibold tabular', isUp ? 'text-hype-green' : 'text-hype-red')}>
-            {isUp ? '+' : ''}{formatPercent(creator.priceChangePercent24h)}
+        <div className="text-right flex-shrink-0 w-20">
+          <div className="flex items-baseline justify-end gap-1.5">
+            <p className="text-hype-text text-sm font-black tabular">{score}</p>
+            <p className="text-hype-gold text-[8px] font-semibold uppercase tracking-wider">{tier}</p>
+          </div>
+          <p className={cn('text-[10px] font-semibold tabular', isDeltaUp ? 'text-hype-green' : 'text-hype-red')}>
+            {isDeltaUp ? '+' : ''}{delta} pts
           </p>
         </div>
 
@@ -119,7 +124,7 @@ function CreatorListRow({
           onClick={e => { e.preventDefault(); onBuy(creator) }}
           className="flex-shrink-0 px-2.5 py-1.5 bg-hype-gold/0 border border-hype-border text-hype-muted text-[10px] font-semibold rounded-lg opacity-0 group-hover:opacity-100 group-hover:bg-hype-gold group-hover:text-[#0A0A0A] group-hover:border-hype-gold transition-all"
         >
-          Back
+          Spot
         </button>
       </div>
     </Link>
@@ -131,7 +136,7 @@ function CreatorListRow({
 const categories = ['All', 'Music', 'Gaming', 'Content', 'Sports', 'Lifestyle'] as const
 type CategoryFilter = typeof categories[number]
 
-const sortOptions = ['Trending', 'Gainers', 'Losers', 'Market Cap'] as const
+const sortOptions = ['Trending', 'Rising', 'Cooling', 'Reach'] as const
 type SortOption = typeof sortOptions[number]
 
 export default function ExplorePage() {
@@ -164,10 +169,10 @@ export default function ExplorePage() {
       )
     }
     switch (sort) {
-      case 'Gainers': return [...list].sort((a, b) => b.priceChangePercent24h - a.priceChangePercent24h)
-      case 'Losers': return [...list].sort((a, b) => a.priceChangePercent24h - b.priceChangePercent24h)
-      case 'Market Cap': return [...list].sort((a, b) => b.marketCap - a.marketCap)
-      default: return [...list].sort((a, b) => Math.abs(b.priceChangePercent24h) - Math.abs(a.priceChangePercent24h))
+      case 'Rising': return [...list].sort((a, b) => (getMomentum(b.ticker).delta) - (getMomentum(a.ticker).delta))
+      case 'Cooling': return [...list].sort((a, b) => (getMomentum(a.ticker).delta) - (getMomentum(b.ticker).delta))
+      case 'Reach': return [...list].sort((a, b) => b.marketCap - a.marketCap)
+      default: return [...list].sort((a, b) => getMomentum(b.ticker).score - getMomentum(a.ticker).score)
     }
   }, [query, category, sort])
 
@@ -235,15 +240,14 @@ export default function ExplorePage() {
                       onClick={e => { e.preventDefault(); trade.openBuy(featuredStory) }}
                       className="flex items-center gap-1.5 px-4 py-2.5 rounded-2xl bg-hype-gold text-[#0A0A0A] font-bold text-[12px] hover:bg-hype-gold-dim transition-colors"
                     >
-                      Back {featuredStory.name.split(' ')[0]} <ArrowRight size={12} />
+                      Spot {featuredStory.name.split(' ')[0]} <ArrowRight size={12} />
                     </button>
                     <div className="text-right">
                       <p className="text-white font-black text-xl tabular">
-                        {formatPrice(featuredStory.price)}
+                        {getMomentum(featuredStory.ticker).score}
                       </p>
-                      <p className={cn('text-xs font-bold tabular', featuredStory.priceChangePercent24h >= 0 ? 'text-hype-green' : 'text-hype-red')}>
-                        {featuredStory.priceChangePercent24h >= 0 ? '+' : ''}
-                        {formatPercent(featuredStory.priceChangePercent24h)} today
+                      <p className="text-hype-gold text-xs font-bold uppercase tracking-wider">
+                        {getMomentumTier(getMomentum(featuredStory.ticker).score)}
                       </p>
                     </div>
                   </div>
