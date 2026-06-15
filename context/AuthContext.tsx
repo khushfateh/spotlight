@@ -23,7 +23,7 @@ type AuthContextType = {
   updateInterests: (interests: string[]) => void
   allUsers: MockUser[]
   signIn: (email: string, password: string) => Promise<{ error?: string }>
-  signUp: (email: string, password: string, name: string) => Promise<{ error?: string }>
+  signUp: (email: string, password: string, name: string) => Promise<{ error?: string; confirmEmail?: boolean }>
   signOut: () => Promise<void>
 }
 

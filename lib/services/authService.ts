@@ -5,6 +5,7 @@ import type { MockUser } from '@/lib/mock-data/users'
 export interface AuthResult {
   error?: string
   needsOnboarding?: boolean
+  confirmEmail?: boolean
 }
 
 function getInitials(name: string): string {
@@ -51,7 +52,7 @@ export async function signUp(
   name: string
 ): Promise<AuthResult> {
   if (!supabase) return { error: 'Supabase not configured' }
-  const { error } = await supabase.auth.signUp({
+  const { data, error } = await supabase.auth.signUp({
     email,
     password,
     options: {
@@ -59,6 +60,8 @@ export async function signUp(
     },
   })
   if (error) return { error: error.message }
+  // session is null when Supabase email confirmation is required
+  if (!data.session) return { confirmEmail: true }
   return { needsOnboarding: true }
 }
 
