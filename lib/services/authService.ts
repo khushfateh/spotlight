@@ -59,7 +59,21 @@ export async function signUp(
       data: { full_name: name },
     },
   })
-  if (error) return { error: error.message }
+
+  if (error) {
+    const msg = error.message.toLowerCase()
+    // Rate limit: account was created but Supabase couldn't send the email yet.
+    // Treat as confirmEmail so the bird animation still plays.
+    if (msg.includes('rate limit') || msg.includes('over_email_send_rate_limit')) {
+      return { confirmEmail: true }
+    }
+    // Already registered: guide to login instead of showing raw error
+    if (msg.includes('already registered') || msg.includes('already been registered')) {
+      return { error: 'An account with this email already exists — try signing in.' }
+    }
+    return { error: error.message }
+  }
+
   // session is null when Supabase email confirmation is required
   if (!data.session) return { confirmEmail: true }
   return { needsOnboarding: true }
