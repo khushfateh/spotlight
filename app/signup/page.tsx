@@ -246,6 +246,12 @@ function ConfirmationScreen({ email }: { email: string }) {
       </div>
 
       <div className="w-full max-w-sm space-y-3">
+        <Link
+          href="/login"
+          className="w-full h-12 rounded-2xl bg-hype-gold text-[#0A0A0A] font-bold text-sm flex items-center justify-center gap-2 shadow-[0_4px_24px_rgba(201,168,76,0.3)] hover:bg-hype-gold-dim transition-all"
+        >
+          Go to Sign In <ArrowRight size={16} />
+        </Link>
         <div className="px-4 py-3 rounded-2xl bg-white/[0.04] border border-white/8 text-white/30 text-xs text-center">
           Don&apos;t see it? Check your spam folder.
         </div>
