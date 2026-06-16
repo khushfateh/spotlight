@@ -1,6 +1,6 @@
 'use client'
 
-import { use, useState } from 'react'
+import { use, useState, useEffect } from 'react'
 import { ArrowLeft, Star, Share2, TrendingUp, TrendingDown, Users, BarChart3, MessageCircle, Calendar, Zap } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import TradeSheet from '@/components/trading/TradeSheet'
@@ -9,12 +9,15 @@ import { Avatar } from '@/components/ui/Avatar'
 import { Badge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
 import { useTradeSheet } from '@/hooks/useTradeSheet'
+import { useAuth } from '@/context/AuthContext'
 import { getCreatorByTicker } from '@/lib/mock-data'
 import { communityPosts } from '@/lib/mock-data'
 import { cn } from '@/lib/utils'
 import { getMomentum, getMomentumTier } from '@/lib/mock-data'
 import { getMomentumDrivers, driverCategoryLabel } from '@/lib/mock-data/momentum-drivers'
 import { getEarlySpotters } from '@/lib/mock-data/spots'
+import { logCreatorView } from '@/lib/services/interactionService'
+import { useCreatorSpotifyData } from '@/hooks/useCreatorSpotifyData'
 
 type Tab = 'Overview' | 'Community' | 'Updates'
 
@@ -24,6 +27,14 @@ export default function CreatorProfilePage({ params }: { params: Promise<{ ticke
   const [activeTab, setActiveTab] = useState<Tab>('Overview')
   const [isWatched, setIsWatched] = useState(false)
   const trade = useTradeSheet()
+  const { currentUser } = useAuth()
+  const { snapshot: spotifyData } = useCreatorSpotifyData(ticker)
+
+  useEffect(() => {
+    if (currentUser?.id) {
+      logCreatorView(currentUser.id, ticker)
+    }
+  }, [currentUser?.id, ticker])
 
   const creator = getCreatorByTicker(ticker)
 
@@ -59,10 +70,10 @@ export default function CreatorProfilePage({ params }: { params: Promise<{ ticke
       <div className="pb-2">
         {/* Hero Header */}
         <div className={cn('relative h-52 bg-gradient-to-br overflow-hidden', creator.coverColor)}>
-          {creator.imageUrl && (
+          {(spotifyData?.imageUrl ?? creator.imageUrl) && (
             // eslint-disable-next-line @next/next/no-img-element
             <img
-              src={creator.imageUrl}
+              src={spotifyData?.imageUrl ?? creator.imageUrl ?? ''}
               alt=""
               className="absolute inset-0 w-full h-full object-cover object-top focus-reveal"
             />
@@ -96,6 +107,7 @@ export default function CreatorProfilePage({ params }: { params: Promise<{ ticke
             <Avatar
               initials={creator.avatar}
               gradientClass={creator.coverColor}
+              imageUrl={spotifyData?.imageUrl ?? creator.imageUrl}
               size="xl"
               isVerified={creator.isVerified}
               className="border-2 border-hype-bg"
@@ -283,6 +295,59 @@ export default function CreatorProfilePage({ params }: { params: Promise<{ ticke
                 <p className="text-hype-text font-semibold text-sm mb-2">About</p>
                 <p className="text-hype-secondary text-sm leading-relaxed">{creator.bio}</p>
               </div>
+
+              {/* Spotify Data */}
+              {spotifyData && (
+                <div className="premium-card rounded-2xl p-4 border border-[#1DB954]/10">
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-2">
+                      <svg className="w-4 h-4 text-[#1DB954]" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.521 17.34c-.24.359-.66.48-1.021.24-2.82-1.74-6.36-2.101-10.561-1.141-.418.122-.779-.179-.899-.539-.12-.421.18-.78.54-.9 4.56-1.021 8.52-.6 11.64 1.32.42.18.479.659.301 1.02zm1.44-3.3c-.301.42-.841.6-1.262.3-3.239-1.98-8.159-2.58-11.939-1.38-.479.12-1.02-.12-1.14-.6-.12-.48.12-1.021.6-1.141C9.6 9.9 15 10.561 18.72 12.84c.361.181.54.78.241 1.2zm.12-3.36C15.24 8.4 8.82 8.16 5.16 9.301c-.6.179-1.2-.181-1.38-.721-.18-.601.18-1.2.72-1.381 4.26-1.26 11.28-1.02 15.721 1.621.539.3.719 1.02.419 1.56-.299.421-1.02.599-1.559.3z" />
+                      </svg>
+                      <p className="text-hype-text font-semibold text-sm">Spotify</p>
+                    </div>
+                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-[#1DB954]/10 text-[#1DB954] font-semibold">Live Data</span>
+                  </div>
+
+                  {spotifyData.recentReleases.length > 0 && (
+                    <>
+                      <p className="text-hype-muted text-[10px] font-semibold uppercase tracking-wider mb-2">Recent Releases</p>
+                      <div className="space-y-2 mb-3">
+                        {spotifyData.recentReleases.slice(0, 3).map(release => (
+                          <a
+                            key={release.id}
+                            href={release.spotifyUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex items-center gap-2.5 group"
+                          >
+                            {release.imageUrl && (
+                              // eslint-disable-next-line @next/next/no-img-element
+                              <img src={release.imageUrl} alt="" className="w-10 h-10 rounded-lg flex-shrink-0 object-cover" />
+                            )}
+                            <div className="flex-1 min-w-0">
+                              <p className="text-hype-text text-xs font-semibold truncate group-hover:text-[#1DB954] transition-colors">{release.name}</p>
+                              <p className="text-hype-dim text-[9px] capitalize">{release.type} · {release.releaseDate} · {release.totalTracks} {release.totalTracks === 1 ? 'track' : 'tracks'}</p>
+                            </div>
+                          </a>
+                        ))}
+                      </div>
+                    </>
+                  )}
+
+                  <a
+                    href={spotifyData.spotifyUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center justify-center gap-1.5 py-2 rounded-xl border border-[#1DB954]/20 text-[#1DB954] text-xs font-semibold hover:bg-[#1DB954]/5 transition-colors"
+                  >
+                    <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.521 17.34c-.24.359-.66.48-1.021.24-2.82-1.74-6.36-2.101-10.561-1.141-.418.122-.779-.179-.899-.539-.12-.421.18-.78.54-.9 4.56-1.021 8.52-.6 11.64 1.32.42.18.479.659.301 1.02zm1.44-3.3c-.301.42-.841.6-1.262.3-3.239-1.98-8.159-2.58-11.939-1.38-.479.12-1.02-.12-1.14-.6-.12-.48.12-1.021.6-1.141C9.6 9.9 15 10.561 18.72 12.84c.361.181.54.78.241 1.2zm.12-3.36C15.24 8.4 8.82 8.16 5.16 9.301c-.6.179-1.2-.181-1.38-.721-.18-.601.18-1.2.72-1.381 4.26-1.26 11.28-1.02 15.721 1.621.539.3.719 1.02.419 1.56-.299.421-1.02.599-1.559.3z" />
+                    </svg>
+                    Open on Spotify
+                  </a>
+                </div>
+              )}
 
               {Object.keys(creator.socialHandles).length > 0 && (
                 <div className="premium-card rounded-2xl p-4">

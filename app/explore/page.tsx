@@ -1,7 +1,7 @@
 'use client'
 /* eslint-disable @next/next/no-img-element */
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Search, X, Layers, TrendingUp, Gem, Zap, Star, Flame } from 'lucide-react'
 import Link from 'next/link'
@@ -18,6 +18,9 @@ import { genres } from '@/lib/mock-data/genres'
 import { getCreatorsInGenre } from '@/lib/mock-data/genres'
 import { cn } from '@/lib/utils'
 import { DiscoverStack } from '@/components/effects/DiscoverStack'
+import { useDiscoverFeed } from '@/hooks/useDiscoverFeed'
+import { useAuth } from '@/context/AuthContext'
+import { logCreatorSearch } from '@/lib/services/interactionService'
 import type { Creator, CreatorCategory } from '@/types'
 
 const ease = [0.16, 1, 0.3, 1] as const
@@ -93,17 +96,23 @@ function GenreCard({ genre, onSelect }: { genre: typeof genres[0]; onSelect: (id
     <button
       onClick={() => onSelect(genre.id)}
       className="flex-shrink-0 relative rounded-2xl overflow-hidden text-left"
-      style={{ width: 120, height: 80 }}
+      style={{ width: 140, height: 100 }}
     >
       {genre.imageUrl ? (
-        <img src={genre.imageUrl} alt="" className="absolute inset-0 w-full h-full object-cover" />
+        <img
+          src={genre.imageUrl}
+          alt=""
+          className="absolute inset-0 w-full h-full object-cover object-center scale-105"
+          style={{ transition: 'transform 0.4s ease' }}
+        />
       ) : (
         <div className={cn('absolute inset-0 bg-gradient-to-br', genre.coverColor)} />
       )}
-      <div className="absolute inset-0 bg-black/60" />
+      {/* Gradient overlay: transparent top → dark bottom for text legibility */}
+      <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/30 to-black/10" />
       <div className="absolute inset-0 p-3 flex flex-col justify-end">
-        <span className="text-lg">{genre.emoji}</span>
-        <p className="text-white text-[11px] font-bold leading-tight mt-0.5">{genre.label}</p>
+        <span className="text-base leading-none">{genre.emoji}</span>
+        <p className="text-white text-[11px] font-bold leading-tight mt-1">{genre.label}</p>
       </div>
     </button>
   )
@@ -135,42 +144,51 @@ export default function ExplorePage() {
     setActiveGenre(null)
   }
 
+  const { currentUser } = useAuth()
   const allCreators = getCreatorsByCategory('All' as CreatorCategory)
   const gainers = getTopGainers(5)
+  const { engineCreators, loading: engineLoading } = useDiscoverFeed(activeLens)
+
+  // Log search interactions
+  useEffect(() => {
+    if (!query.trim()) return
+    const t = setTimeout(() => {
+      logCreatorSearch(currentUser?.id ?? null, query.trim())
+    }, 800)
+    return () => clearTimeout(t)
+  }, [query, currentUser?.id])
 
   const filteredCreators = useMemo(() => {
-    let list = allCreators
-
+    // Search and genre: always client-side
     if (query.trim()) {
       const q = query.toLowerCase()
-      list = list.filter(c => c.name.toLowerCase().includes(q) || c.ticker.toLowerCase().includes(q))
-    } else if (activeGenre) {
+      return allCreators.filter(c => c.name.toLowerCase().includes(q) || c.ticker.toLowerCase().includes(q))
+    }
+    if (activeGenre) {
       const tickers = getCreatorsInGenre(activeGenre)
-      list = list.filter(c => tickers.includes(c.ticker))
-    } else if (activeLens) {
+      return allCreators.filter(c => tickers.includes(c.ticker))
+    }
+    // Lens: use engine results when available, fall back to static sort
+    if (activeLens) {
+      if (engineCreators.length > 0) return engineCreators
+      // Fallback while loading
       switch (activeLens) {
         case 'trending':
-          list = [...list].sort((a, b) => getMomentum(b.ticker).score - getMomentum(a.ticker).score)
-          break
+          return [...allCreators].sort((a, b) => getMomentum(b.ticker).score - getMomentum(a.ticker).score)
         case 'rising':
-          list = [...list].sort((a, b) => getMomentum(b.ticker).delta - getMomentum(a.ticker).delta).filter(c => getMomentum(c.ticker).delta > 0)
-          break
+          return [...allCreators].sort((a, b) => getMomentum(b.ticker).delta - getMomentum(a.ticker).delta).filter(c => getMomentum(c.ticker).delta > 0)
         case 'breakout':
-          list = [...list].filter(c => { const s = getMomentum(c.ticker).score; return s >= 65 && s < 80 }).sort((a, b) => getMomentum(b.ticker).delta - getMomentum(a.ticker).delta)
-          break
+          return [...allCreators].filter(c => { const s = getMomentum(c.ticker).score; return s >= 65 && s < 80 }).sort((a, b) => getMomentum(b.ticker).delta - getMomentum(a.ticker).delta)
         case 'gems':
-          list = [...list].filter(c => getMomentum(c.ticker).score < 70 && getMomentum(c.ticker).delta > 5).sort((a, b) => getMomentum(b.ticker).delta - getMomentum(a.ticker).delta)
-          break
+          return [...allCreators].filter(c => getMomentum(c.ticker).score < 70 && getMomentum(c.ticker).delta > 5).sort((a, b) => getMomentum(b.ticker).delta - getMomentum(a.ticker).delta)
         case 'editors':
-          list = getTrendingCreators(8)
-          break
+          return getTrendingCreators(8)
+        default:
+          return allCreators
       }
-    } else {
-      list = [...list].sort((a, b) => getMomentum(b.ticker).score - getMomentum(a.ticker).score)
     }
-
-    return list
-  }, [query, activeLens, activeGenre, allCreators])
+    return [...allCreators].sort((a, b) => getMomentum(b.ticker).score - getMomentum(a.ticker).score)
+  }, [query, activeLens, activeGenre, allCreators, engineCreators])
 
   const activeLensData = LENSES.find(l => l.id === activeLens)
   const activeGenreData = genres.find(g => g.id === activeGenre)
@@ -365,7 +383,15 @@ export default function ExplorePage() {
                   activeLensData ? activeLensData.label :
                   'All Creators'}
               </p>
-              <p className="text-hype-muted text-xs mt-0.5">{filteredCreators.length} creators</p>
+              <p className="text-hype-muted text-xs mt-0.5 flex items-center gap-1.5">
+                {activeLens && engineLoading
+                  ? <span className="inline-block w-3 h-3 rounded-full border border-hype-gold/40 border-t-hype-gold animate-spin" />
+                  : null}
+                {filteredCreators.length} creators
+                {activeLens && engineCreators.length > 0 && (
+                  <span className="text-hype-gold/60 text-[9px] font-medium">· engine ranked</span>
+                )}
+              </p>
             </div>
             {(activeLens || activeGenre) && (
               <button
@@ -377,7 +403,24 @@ export default function ExplorePage() {
             )}
           </div>
 
-          {filteredCreators.length > 0 ? (
+          {activeLens && engineLoading ? (
+            <div className="premium-card rounded-2xl overflow-hidden divide-y divide-hype-border/60 animate-pulse">
+              {[0,1,2,3,4].map(i => (
+                <div key={i} className="flex items-center gap-3 px-4 py-3.5">
+                  <div className="w-5 h-3 bg-white/5 rounded" />
+                  <div className="w-10 h-10 rounded-xl bg-white/8 flex-shrink-0" />
+                  <div className="flex-1 space-y-1.5">
+                    <div className="h-3.5 w-32 bg-white/8 rounded" />
+                    <div className="h-2.5 w-20 bg-white/5 rounded" />
+                  </div>
+                  <div className="space-y-1 text-right">
+                    <div className="h-4 w-10 bg-white/8 rounded" />
+                    <div className="h-2.5 w-8 bg-white/5 rounded" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : filteredCreators.length > 0 ? (
             <div className="premium-card rounded-2xl overflow-hidden divide-y divide-hype-border/60">
               {filteredCreators.map((c, i) => (
                 <CreatorListRow key={c.id} creator={c} rank={i + 1} onBuy={trade.openBuy} />

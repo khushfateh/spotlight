@@ -10,15 +10,6 @@ async function getCreatorIdByTicker(ticker: string): Promise<string | null> {
   return data?.id ?? null
 }
 
-async function getTickerByCreatorId(creatorId: string): Promise<string | null> {
-  if (!supabase) return null
-  const { data } = await supabase
-    .from('creators')
-    .select('ticker')
-    .eq('id', creatorId)
-    .single()
-  return data?.ticker ?? null
-}
 
 export async function logSpot(userId: string, ticker: string): Promise<void> {
   if (!supabase) return

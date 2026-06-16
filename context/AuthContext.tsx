@@ -38,19 +38,43 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   // ── Supabase mode ────────────────────────────────────────────────────
   const loadSupabaseUser = useCallback(async (userId: string, email: string) => {
-    const profile = await getProfile(userId)
+    let profile = await getProfile(userId)
+
     if (!profile) {
+      // Profile may not exist yet — try to create it, then re-fetch
       await ensureProfile(userId, email)
-      const fresh = await getProfile(userId)
-      if (!fresh) return
-      const mockUser = profileToMockUser(fresh, email)
+      profile = await getProfile(userId)
+    }
+
+    if (profile) {
+      const mockUser = profileToMockUser(profile, email)
       const slugs = await getUserGenreSlugs(userId)
       setCurrentUser({ ...mockUser, interests: slugs })
-      return
+    } else {
+      // Profile can't be read/created (RLS, new account, etc.) —
+      // still mark the user as authenticated with a synthetic profile
+      const displayName = email.split('@')[0]
+      const synthetic: MockUser = {
+        id: userId,
+        name: displayName,
+        username: `@${displayName}`,
+        initials: displayName.slice(0, 2).toUpperCase(),
+        avatar: '👤',
+        bio: '',
+        interests: [],
+        spottedTickers: [],
+        discoveryScore: 0,
+        creatorsSpotted: 0,
+        breakoutsIdentified: 0,
+        avgLeadDays: 0,
+        momentumAccuracy: 0,
+        discoveryRank: 'Newcomer',
+        badges: [],
+        joinedDaysAgo: 0,
+        coverColor: 'from-zinc-700 to-zinc-900',
+      }
+      setCurrentUser(synthetic)
     }
-    const mockUser = profileToMockUser(profile, email)
-    const slugs = await getUserGenreSlugs(userId)
-    setCurrentUser({ ...mockUser, interests: slugs })
   }, [])
 
   useEffect(() => {

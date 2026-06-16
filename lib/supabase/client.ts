@@ -7,7 +7,8 @@ const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? ''
 export const IS_SUPABASE_ENABLED = !!(
   supabaseUrl &&
   supabaseAnonKey &&
-  supabaseUrl.startsWith('https://')
+  supabaseUrl.startsWith('https://') &&
+  process.env.NEXT_PUBLIC_DEV_FORCE_MOCK !== 'true'
 )
 
 export const supabase: SupabaseClient<Database> | null = IS_SUPABASE_ENABLED

@@ -7,7 +7,7 @@ export async function getProfile(userId: string): Promise<SupabaseProfile | null
     .from('profiles')
     .select('*')
     .eq('id', userId)
-    .single()
+    .maybeSingle()
   if (error) {
     console.error('profileService.getProfile:', error.message)
     return null
@@ -43,9 +43,9 @@ export async function ensureProfile(
   if (existing) return existing
   const { data, error } = await supabase
     .from('profiles')
-    .insert({ id: userId, email, full_name: name, display_name: name })
+    .upsert({ id: userId, email, full_name: name, display_name: name }, { onConflict: 'id' })
     .select()
-    .single()
+    .maybeSingle()
   if (error) {
     console.error('profileService.ensureProfile:', error.message)
     return null

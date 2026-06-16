@@ -15,7 +15,8 @@ export const genres: Genre[] = [
     emoji: '🎵',
     description: 'Bhangra beats, R&B fusion, and South Asian diaspora sound',
     coverColor: 'from-orange-500 to-pink-600',
-    imageUrl: 'https://images.unsplash.com/photo-1493225457124-a3eb4598d050?auto=format&fit=crop&w=800&q=80',
+    // Vibrant crowd at outdoor festival, warm amber/orange stage wash
+    imageUrl: 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?auto=format&fit=crop&w=400&q=80',
     creatorTickers: ['APDHILLON', 'SHUBH', 'KARANAUJLA'],
   },
   {
@@ -24,7 +25,8 @@ export const genres: Genre[] = [
     emoji: '🎤',
     description: 'From street rap to genre-bending crossover',
     coverColor: 'from-gray-800 to-slate-900',
-    imageUrl: 'https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?auto=format&fit=crop&w=800&q=80',
+    // Dark stage performance, single spotlight, gritty energy
+    imageUrl: 'https://images.unsplash.com/photo-1571609249584-cfbd1daecd08?auto=format&fit=crop&w=400&q=80',
     creatorTickers: ['LILNASX', 'ICESPICE', 'TYLERTC', 'HANUMANKIND'],
   },
   {
@@ -33,26 +35,9 @@ export const genres: Genre[] = [
     emoji: '⭐',
     description: 'Mainstream culture-shaping artists at peak relevance',
     coverColor: 'from-pink-500 to-purple-600',
-    imageUrl: 'https://images.unsplash.com/photo-1508214751196-bcfd4ca60f91?auto=format&fit=crop&w=800&q=80',
-    creatorTickers: ['SABRINA', 'DOJACAT', 'CHARLI', 'NEWJEANS'],
-  },
-  {
-    id: 'gaming',
-    label: 'Gaming',
-    emoji: '🎮',
-    description: 'The worlds biggest streamers and gaming personalities',
-    coverColor: 'from-violet-600 to-indigo-800',
-    imageUrl: 'https://images.unsplash.com/photo-1542751371-adc38448a05e?auto=format&fit=crop&w=800&q=80',
-    creatorTickers: ['KAICENAT', 'SPEED', 'POKIMANE', 'VALKYRAE', 'XQC', 'PDPIE', 'DRDIS'],
-  },
-  {
-    id: 'streaming',
-    label: 'Streaming',
-    emoji: '📺',
-    description: 'Live streaming culture, Twitch and YouTube pioneers',
-    coverColor: 'from-purple-600 to-violet-800',
-    imageUrl: 'https://images.unsplash.com/photo-1593508512255-86ab42a8e620?auto=format&fit=crop&w=800&q=80',
-    creatorTickers: ['KAICENAT', 'POKIMANE', 'XQC', 'VALKYRAE'],
+    // Stadium crowd, thousands of hands raised, bokeh confetti
+    imageUrl: 'https://images.unsplash.com/photo-1540039155733-5bb30b4a3163?auto=format&fit=crop&w=400&q=80',
+    creatorTickers: ['SABRINA', 'DOJACAT', 'NEWJEANS'],
   },
   {
     id: 'content',
@@ -60,8 +45,9 @@ export const genres: Genre[] = [
     emoji: '🎬',
     description: 'YouTube giants, viral creators, and digital entertainment',
     coverColor: 'from-green-500 to-emerald-700',
-    imageUrl: 'https://images.unsplash.com/photo-1536240478700-b869ad10e128?auto=format&fit=crop&w=800&q=80',
-    creatorTickers: ['MRBEAST', 'CHARLI', 'SIDEMEN', 'CORPSE'],
+    // Podcast/recording setup, professional mic in dark creative space
+    imageUrl: 'https://images.unsplash.com/photo-1598488035139-bdbb2231ce04?auto=format&fit=crop&w=400&q=80',
+    creatorTickers: ['CORPSE'],
   },
   {
     id: 'south-asian-culture',
@@ -69,7 +55,8 @@ export const genres: Genre[] = [
     emoji: '🌏',
     description: 'South Asian diaspora shaping global pop culture',
     coverColor: 'from-amber-500 to-orange-600',
-    imageUrl: 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?auto=format&fit=crop&w=800&q=80',
+    // Holi festival — explosive burst of color
+    imageUrl: 'https://images.unsplash.com/photo-1576618148400-f54bed99fcfd?auto=format&fit=crop&w=400&q=80',
     creatorTickers: ['APDHILLON', 'SHUBH', 'KARANAUJLA', 'HANUMANKIND'],
   },
   {
@@ -78,8 +65,9 @@ export const genres: Genre[] = [
     emoji: '🎸',
     description: 'Regional Mexican, reggaeton, and Latin crossover dominance',
     coverColor: 'from-red-500 to-yellow-500',
-    imageUrl: 'https://images.unsplash.com/photo-1526510747491-58f928ec870f?auto=format&fit=crop&w=800&q=80',
-    creatorTickers: ['PESOPLUMA'],
+    // Intimate Latin guitar performance, warm candlelit stage
+    imageUrl: 'https://images.unsplash.com/photo-1485579149621-3123dd979885?auto=format&fit=crop&w=400&q=80',
+    creatorTickers: ['PESOPLUMA', 'BUNNY', 'KAROLG', 'BALVIN', 'OZUNA'],
   },
   {
     id: 'k-pop',
@@ -87,17 +75,39 @@ export const genres: Genre[] = [
     emoji: '🌸',
     description: 'Korean pop culture going fully global',
     coverColor: 'from-pink-400 to-rose-500',
-    imageUrl: 'https://images.unsplash.com/photo-1501196354995-cbb51c65aaea?auto=format&fit=crop&w=800&q=80',
-    creatorTickers: ['NEWJEANS'],
+    // Seoul at night, electric neon signs, pink/blue glow
+    imageUrl: 'https://images.unsplash.com/photo-1601042879364-f3947d3f9c16?auto=format&fit=crop&w=400&q=80',
+    creatorTickers: ['NEWJEANS', 'BPINK', 'SKIDS', 'AESPA', 'BTS'],
   },
   {
-    id: 'internet-culture',
-    label: 'Internet Culture',
-    emoji: '🌐',
-    description: 'Meme lords, viral moments, and chronically online icons',
-    coverColor: 'from-blue-500 to-cyan-600',
-    imageUrl: 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&w=800&q=80',
-    creatorTickers: ['MRBEAST', 'SPEED', 'KAICENAT', 'XQC', 'SIDEMEN'],
+    id: 'afrobeats',
+    label: 'Afrobeats',
+    emoji: '🥁',
+    description: 'West African sounds taking over global playlists',
+    coverColor: 'from-yellow-500 to-orange-600',
+    // West African djembe drums, warm sunset glow, rhythmic energy
+    imageUrl: 'https://images.unsplash.com/photo-1547234935-80c7145ec969?auto=format&fit=crop&w=400&q=80',
+    creatorTickers: ['BURNA', 'WIZKID', 'TEMS', 'DAVIDO'],
+  },
+  {
+    id: 'r-and-b',
+    label: 'R&B & Soul',
+    emoji: '🎷',
+    description: 'Neo-soul, alt-R&B, and next-gen soulful sounds',
+    coverColor: 'from-indigo-500 to-violet-700',
+    // Moody intimate concert, warm amber single spotlight, haze
+    imageUrl: 'https://images.unsplash.com/photo-1478737270239-2f02b77fc618?auto=format&fit=crop&w=400&q=80',
+    creatorTickers: ['SZA', 'WEEKND', 'HER', 'GIVEON', 'DOJACAT'],
+  },
+  {
+    id: 'electronic',
+    label: 'Electronic',
+    emoji: '🎛️',
+    description: 'EDM, future bass, and experimental electronic frontiers',
+    coverColor: 'from-cyan-500 to-blue-600',
+    // Festival mainstage — laser beams slicing through a massive crowd
+    imageUrl: 'https://images.unsplash.com/photo-1549247779-b93bbed26fc0?auto=format&fit=crop&w=400&q=80',
+    creatorTickers: ['SKRLL', 'DIPLO', 'PORTER', 'FLUME'],
   },
   {
     id: 'indie-alt',
@@ -105,7 +115,8 @@ export const genres: Genre[] = [
     emoji: '🎸',
     description: 'Underground sounds and alternative visionaries',
     coverColor: 'from-gray-700 to-slate-800',
-    imageUrl: 'https://images.unsplash.com/photo-1527203561368-7521bf25ae49?auto=format&fit=crop&w=800&q=80',
+    // Small intimate venue, warm low tungsten light, raw grain
+    imageUrl: 'https://images.unsplash.com/photo-1508700115892-45ecd05ae2ad?auto=format&fit=crop&w=400&q=80',
     creatorTickers: ['CORPSE', 'TYLERTC', 'LILNASX'],
   },
   {
@@ -114,8 +125,9 @@ export const genres: Genre[] = [
     emoji: '👗',
     description: 'Taste-making creators defining what culture wears',
     coverColor: 'from-rose-400 to-pink-600',
-    imageUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=800&q=80',
-    creatorTickers: ['CHARLI', 'DOJACAT', 'SABRINA'],
+    // Bold editorial fashion — high contrast, architectural lines
+    imageUrl: 'https://images.unsplash.com/photo-1469334031218-e382a71b716b?auto=format&fit=crop&w=400&q=80',
+    creatorTickers: ['DOJACAT', 'SABRINA'],
   },
   {
     id: 'film',
@@ -123,17 +135,9 @@ export const genres: Genre[] = [
     emoji: '🎥',
     description: 'Auteur creators merging music, film, and visual storytelling',
     coverColor: 'from-yellow-600 to-amber-700',
-    imageUrl: 'https://images.unsplash.com/photo-1478720568477-152d9b164e26?auto=format&fit=crop&w=800&q=80',
+    // Cinema screen at night, wide shot, deep cinematic blue
+    imageUrl: 'https://images.unsplash.com/photo-1478720568477-152d9b164e26?auto=format&fit=crop&w=400&q=80',
     creatorTickers: ['TYLERTC', 'LILNASX', 'CORPSE'],
-  },
-  {
-    id: 'sports',
-    label: 'Sports & Athletics',
-    emoji: '⚡',
-    description: 'Athletes, sports creators, and crossover culture',
-    coverColor: 'from-orange-500 to-red-600',
-    imageUrl: 'https://images.unsplash.com/photo-1522926193341-e9ffd686c60f?auto=format&fit=crop&w=800&q=80',
-    creatorTickers: ['SIDEMEN', 'SPEED'],
   },
 ]
 

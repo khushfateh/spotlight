@@ -33,6 +33,7 @@ export default function CreatorCard({ creator, onBuy }: CreatorCardProps) {
           <Avatar
             initials={creator.avatar}
             gradientClass={creator.coverColor}
+            imageUrl={creator.imageUrl}
             size="md"
             isVerified={creator.isVerified}
           />

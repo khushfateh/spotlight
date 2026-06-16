@@ -121,6 +121,13 @@ export interface Database {
           bio: string | null
           momentum_score: number
           created_at: string
+          spotify_artist_id: string | null
+          spotify_followers: number | null
+          spotify_popularity: number | null
+          spotify_image_url: string | null
+          spotify_url: string | null
+          spotify_latest_release_date: string | null
+          spotify_last_synced_at: string | null
         }
         Insert: {
           id?: string
@@ -132,6 +139,13 @@ export interface Database {
           bio?: string | null
           momentum_score?: number
           created_at?: string
+          spotify_artist_id?: string | null
+          spotify_followers?: number | null
+          spotify_popularity?: number | null
+          spotify_image_url?: string | null
+          spotify_url?: string | null
+          spotify_latest_release_date?: string | null
+          spotify_last_synced_at?: string | null
         }
         Update: {
           name?: string
@@ -141,6 +155,13 @@ export interface Database {
           image_url?: string | null
           bio?: string | null
           momentum_score?: number
+          spotify_artist_id?: string | null
+          spotify_followers?: number | null
+          spotify_popularity?: number | null
+          spotify_image_url?: string | null
+          spotify_url?: string | null
+          spotify_latest_release_date?: string | null
+          spotify_last_synced_at?: string | null
         }
         Relationships: []
       }
@@ -221,6 +242,115 @@ export interface Database {
         }
         Update: {
           metadata?: Json
+        }
+        Relationships: []
+      }
+      creator_views: {
+        Row: {
+          id: string
+          user_id: string
+          ticker: string
+          viewed_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          ticker: string
+          viewed_at?: string
+        }
+        Update: {
+          ticker?: string
+        }
+        Relationships: []
+      }
+      creator_searches: {
+        Row: {
+          id: string
+          user_id: string | null
+          query: string
+          result_ticker: string | null
+          searched_at: string
+        }
+        Insert: {
+          id?: string
+          user_id?: string | null
+          query: string
+          result_ticker?: string | null
+          searched_at?: string
+        }
+        Update: {
+          query?: string
+          result_ticker?: string | null
+        }
+        Relationships: []
+      }
+      editorial_boosts: {
+        Row: {
+          id: string
+          ticker: string
+          boost_score: number
+          reason: string | null
+          active: boolean
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          ticker: string
+          boost_score?: number
+          reason?: string | null
+          active?: boolean
+          created_at?: string
+        }
+        Update: {
+          boost_score?: number
+          reason?: string | null
+          active?: boolean
+        }
+        Relationships: []
+      }
+      creator_recommendations: {
+        Row: {
+          id: string
+          user_id: string
+          ticker: string
+          section_id: string | null
+          reason_type: string | null
+          score: number | null
+          generated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          ticker: string
+          section_id?: string | null
+          reason_type?: string | null
+          score?: number | null
+          generated_at?: string
+        }
+        Update: {
+          section_id?: string | null
+          reason_type?: string | null
+          score?: number | null
+        }
+        Relationships: []
+      }
+      recommendation_feedback: {
+        Row: {
+          id: string
+          user_id: string
+          ticker: string
+          feedback_type: string
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          ticker: string
+          feedback_type: string
+          created_at?: string
+        }
+        Update: {
+          feedback_type?: string
         }
         Relationships: []
       }

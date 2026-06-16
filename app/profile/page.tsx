@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Settings, ChevronRight, Star, LogOut, Bell, Shield, HelpCircle, Zap, Compass, Trophy, Target, Clock, Award, X, Search, Check } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import Link from 'next/link'
@@ -41,6 +41,12 @@ function GenreManagerSheet({ open, onClose }: { open: boolean; onClose: () => vo
   const [query, setQuery] = useState('')
   const [selected, setSelected] = useState<string[]>(genreSlugs)
   const [saving, setSaving] = useState(false)
+
+  // Sync sheet selection whenever it opens (genreSlugs may load async in Supabase mode)
+  useEffect(() => {
+    if (open) setSelected(genreSlugs)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open])
 
   const allGenres = supabaseGenres.length > 0
     ? supabaseGenres
@@ -164,7 +170,7 @@ function GenreManagerSheet({ open, onClose }: { open: boolean; onClose: () => vo
 export default function ProfilePage() {
   const { user, userMode, setUserMode } = useUser()
   const { currentUser, logout, isSupabaseMode } = useAuth()
-  const { genreSlugs } = useUserPreferences()
+  const { genreSlugs, saveGenres } = useUserPreferences()
   const { spottedTickers, loading: spotsLoading } = useSpots()
   const [genreSheetOpen, setGenreSheetOpen] = useState(false)
 
@@ -385,16 +391,24 @@ export default function ProfilePage() {
         <div className="flex items-center justify-between mb-3">
           <p className="text-hype-text font-semibold text-sm">Taste Profile</p>
           <button onClick={() => setGenreSheetOpen(true)} className="text-hype-gold text-xs font-medium hover:text-hype-gold-dim transition-colors">
-            {displayedGenres.length > 0 ? 'Edit' : '+ Add genres'}
+            {displayedGenres.length > 0 ? '+ Add more' : '+ Add genres'}
           </button>
         </div>
         {displayedGenres.length > 0 ? (
           <div className="flex flex-wrap gap-2">
             {displayedGenres.map(g => (
-              <div key={g.slug} className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-hype-border bg-hype-surface">
+              <button
+                key={g.slug}
+                onClick={async () => {
+                  const next = genreSlugs.filter(s => s !== g.slug)
+                  await saveGenres(next)
+                }}
+                className="group flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-hype-border bg-hype-surface hover:border-red-400/40 hover:bg-red-500/8 transition-all"
+              >
                 <span className="text-sm">{g.emoji}</span>
-                <span className="text-hype-text text-xs font-medium">{g.label}</span>
-              </div>
+                <span className="text-hype-text text-xs font-medium group-hover:text-red-300 transition-colors">{g.label}</span>
+                <X size={10} className="text-hype-dim group-hover:text-red-400 transition-colors ml-0.5" />
+              </button>
             ))}
           </div>
         ) : (

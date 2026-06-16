@@ -27,6 +27,7 @@ export default function CreatorRow({ creator, rank, showChart = true, onBuy }: C
         <Avatar
           initials={creator.avatar}
           gradientClass={creator.coverColor}
+          imageUrl={creator.imageUrl}
           size="sm"
           isVerified={creator.isVerified}
         />

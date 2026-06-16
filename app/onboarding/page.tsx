@@ -1,7 +1,6 @@
 'use client'
-/* eslint-disable @next/next/no-img-element */
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { ArrowRight, ArrowLeft, Check } from 'lucide-react'
 import { useRouter } from 'next/navigation'
@@ -18,9 +17,9 @@ const STEPS = ['welcome', 'genres', 'creators', 'generating'] as const
 type Step = typeof STEPS[number]
 
 const ONBOARDING_TICKERS = [
-  'APDHILLON', 'MRBEAST', 'KAICENAT', 'SABRINA', 'LILNASX',
-  'TYLERTC', 'NEWJEANS', 'PESOPLUMA', 'CHARLI', 'DOJACAT',
-  'XQC', 'HANUMANKIND',
+  'APDHILLON', 'SABRINA', 'LILNASX', 'TYLERTC', 'NEWJEANS',
+  'PESOPLUMA', 'DOJACAT', 'HANUMANKIND', 'SZA', 'WEEKND',
+  'BURNA', 'DIPLO',
 ]
 
 const LOADING_STEPS = [

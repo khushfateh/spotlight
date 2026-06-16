@@ -25,7 +25,9 @@ import {
   getMomentumTier,
   getCreatorsByTickers,
 } from '@/lib/mock-data'
-import { getHomeSections, reasonTypeLabel, type HomeSection } from '@/lib/mock-data/recommendations'
+import { reasonTypeLabel, type HomeSection } from '@/lib/mock-data/recommendations'
+import { usePersonalizedFeed } from '@/hooks/usePersonalizedFeed'
+import RecommendationDebugPanel from '@/components/dev/RecommendationDebugPanel'
 import { cn } from '@/lib/utils'
 import type { Creator } from '@/types'
 
@@ -325,9 +327,11 @@ function PersonalizedSection({
         </div>
 
         {reasonLabel && (
-          <div className="flex items-center gap-1.5 mt-2.5">
-            <Info size={10} className="text-hype-gold/60" />
-            <span className="text-hype-gold/70 text-[10px] font-medium">{reasonLabel}</span>
+          <div className="mt-2.5">
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-hype-gold/10 border border-hype-gold/20 text-hype-gold text-[10px] font-semibold">
+              <Info size={9} />
+              {reasonLabel}
+            </span>
           </div>
         )}
       </div>
@@ -349,6 +353,23 @@ function PersonalizedSection({
   )
 }
 
+function SectionSkeleton() {
+  return (
+    <div className="py-6 border-b border-hype-border/50 animate-pulse">
+      <div className="px-5 mb-4">
+        <div className="h-5 w-48 bg-white/8 rounded-lg mb-2" />
+        <div className="h-3 w-32 bg-white/5 rounded-md mb-3" />
+        <div className="h-6 w-36 bg-hype-gold/8 rounded-full" />
+      </div>
+      <div className="flex gap-4 pl-5 overflow-hidden" style={{ paddingRight: 20 }}>
+        {[0, 1, 2].map(i => (
+          <div key={i} className="flex-shrink-0 rounded-3xl bg-white/5" style={{ width: 176, height: 264 }} />
+        ))}
+      </div>
+    </div>
+  )
+}
+
 export default function HomeFeed() {
   const trade = useTradeSheet()
   const { currentUser } = useAuth()
@@ -363,8 +384,9 @@ export default function HomeFeed() {
     : 0
 
   const { score: featuredScore } = getMomentum(featured?.ticker ?? '')
-  const userId = currentUser?.id ?? 'khush'
-  const homeSections = getHomeSections(userId)
+
+  // ── Recommendation engine ─────────────────────────────────────────────────────
+  const { sections: homeSections, loading: sectionsLoading } = usePersonalizedFeed()
 
   if (!featured) return null
 
@@ -416,9 +438,21 @@ export default function HomeFeed() {
         </div>
       </div>
 
-      {homeSections.map(section => (
-        <PersonalizedSection key={section.id} section={section} onBuy={trade.openBuy} />
-      ))}
+      {sectionsLoading ? (
+        <>
+          <SectionSkeleton />
+          <SectionSkeleton />
+        </>
+      ) : homeSections.length === 0 ? (
+        <div className="px-5 py-12 text-center border-b border-hype-border/50">
+          <p className="text-hype-muted text-sm font-medium mb-1">No recommendations yet</p>
+          <p className="text-hype-dim text-xs">Spot some creators to personalise your feed</p>
+        </div>
+      ) : (
+        homeSections.map(section => (
+          <PersonalizedSection key={section.id} section={section} onBuy={trade.openBuy} />
+        ))
+      )}
 
       <motion.section {...sectionReveal} className="px-5 py-8 border-b border-hype-border/50">
         <p className="section-label text-hype-gold mb-4">This Week in Culture</p>
@@ -533,6 +567,8 @@ export default function HomeFeed() {
         onConfirmOrder={trade.confirmOrder}
         onReset={trade.reset}
       />
+
+      <RecommendationDebugPanel />
     </>
   )
 }

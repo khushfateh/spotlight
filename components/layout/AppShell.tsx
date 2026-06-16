@@ -25,11 +25,12 @@ function InnerShell({ children }: { children: ReactNode }) {
     if (!isAuthenticated && !isHome && !isAuthFlow) {
       router.replace('/')
     }
-    // Authenticated on login/signup/onboarding → go home
-    if (isAuthenticated && isAuthFlow) {
+    // Authenticated on login/signup → go home (but NOT onboarding — user just enrolled)
+    const isLoginOrSignup = ['/login', '/signup'].some(r => pathname.startsWith(r))
+    if (isAuthenticated && isLoginOrSignup) {
       router.replace('/')
     }
-  }, [isAuthenticated, isLoading, isHome, isAuthFlow, router])
+  }, [isAuthenticated, isLoading, isHome, isAuthFlow, pathname, router])
 
   // Auth-flow pages (login / signup / onboarding) — no chrome
   if (isAuthFlow) {
