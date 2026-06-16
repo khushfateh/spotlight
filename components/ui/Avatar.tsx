@@ -3,6 +3,7 @@ import { cn } from '@/lib/utils'
 type AvatarProps = {
   initials: string
   gradientClass: string
+  imageUrl?: string | null
   size?: 'xs' | 'sm' | 'md' | 'lg' | 'xl'
   isVerified?: boolean
   className?: string
@@ -16,17 +17,22 @@ const sizes = {
   xl: 'w-20 h-20 text-xl',
 }
 
-export function Avatar({ initials, gradientClass, size = 'md', isVerified, className }: AvatarProps) {
+export function Avatar({ initials, gradientClass, imageUrl, size = 'md', isVerified, className }: AvatarProps) {
   return (
     <div className={cn('relative inline-flex flex-shrink-0', className)}>
       <div
         className={cn(
-          'rounded-full flex items-center justify-center font-semibold text-white/90 bg-gradient-to-br ring-1 ring-white/5',
+          'rounded-full overflow-hidden flex items-center justify-center font-semibold text-white/90 bg-gradient-to-br ring-1 ring-white/5',
           `bg-gradient-to-br ${gradientClass}`,
           sizes[size],
         )}
       >
-        {initials}
+        {imageUrl ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={imageUrl} alt={initials} className="w-full h-full object-cover" />
+        ) : (
+          initials
+        )}
       </div>
       {isVerified && (
         <div className="absolute -bottom-0.5 -right-0.5 w-4 h-4 bg-hype-gold rounded-full flex items-center justify-center ring-1 ring-hype-bg">

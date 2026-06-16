@@ -8,36 +8,38 @@ import { AuthProvider, useAuth } from '@/context/AuthContext'
 import { UserProvider } from '@/context/UserContext'
 import { SpotlightCursor } from '@/components/effects/SpotlightCursor'
 
-const AUTH_ROUTES = ['/login', '/signup', '/onboarding']
+// These routes render without app chrome (no TopBar / BottomNav)
+const AUTH_FLOW_ROUTES = ['/login', '/signup', '/onboarding']
 
 // Inner shell — rendered inside the providers so it can read auth state
 function InnerShell({ children }: { children: ReactNode }) {
   const pathname = usePathname()
   const router = useRouter()
   const { isAuthenticated, isLoading } = useAuth()
-  const isAuthRoute = AUTH_ROUTES.some(r => pathname.startsWith(r))
+  const isAuthFlow = AUTH_FLOW_ROUTES.some(r => pathname.startsWith(r))
+  const isHome = pathname === '/'
 
   useEffect(() => {
     if (isLoading) return
-    if (!isAuthenticated && !isAuthRoute) {
-      router.replace('/login')
-    }
-    if (isAuthenticated && isAuthRoute) {
+    // Unauthenticated on a protected page (not home, not auth-flow) → redirect home
+    if (!isAuthenticated && !isHome && !isAuthFlow) {
       router.replace('/')
     }
-  }, [isAuthenticated, isLoading, isAuthRoute, router])
+    // Authenticated on login/signup → go home (but NOT onboarding — user just enrolled)
+    const isLoginOrSignup = ['/login', '/signup'].some(r => pathname.startsWith(r))
+    if (isAuthenticated && isLoginOrSignup) {
+      router.replace('/')
+    }
+  }, [isAuthenticated, isLoading, isHome, isAuthFlow, pathname, router])
 
-  // Minimal shell for auth pages — no chrome
-  if (isAuthRoute) {
-    return (
-      <div className="min-h-screen bg-hype-bg">
-        {children}
-      </div>
-    )
+  // Auth-flow pages (login / signup / onboarding) — no chrome
+  if (isAuthFlow) {
+    return <div className="min-h-screen bg-hype-bg">{children}</div>
   }
 
-  // Loading / not yet authenticated — show nothing to avoid flash
-  if (isLoading || !isAuthenticated) {
+  // Home is public — always render with chrome (TopBar adapts based on auth state)
+  // Protected routes: show spinner while auth resolves, then redirect if still unauthed
+  if (!isHome && (isLoading || !isAuthenticated)) {
     return (
       <div className="min-h-screen bg-hype-bg flex items-center justify-center">
         <div className="w-8 h-8 rounded-full border-2 border-hype-gold/30 border-t-hype-gold animate-spin" />

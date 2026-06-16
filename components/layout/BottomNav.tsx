@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { Home, Compass, Star, PieChart, User, LayoutDashboard, Plus } from 'lucide-react'
 import { useUser } from '@/context/UserContext'
+import { useAuth } from '@/context/AuthContext'
 import { cn } from '@/lib/utils'
 
 type NavItem = {
@@ -16,6 +17,7 @@ type NavItem = {
 export default function BottomNav() {
   const pathname = usePathname()
   const { userMode } = useUser()
+  const { isAuthenticated } = useAuth()
 
   const investorNav: NavItem[] = [
     { href: '/', label: 'Home', icon: <Home size={20} /> },
@@ -34,6 +36,8 @@ export default function BottomNav() {
   ]
 
   const navItems = userMode === 'creator' ? creatorNav : investorNav
+
+  if (!isAuthenticated) return null
 
   return (
     <>

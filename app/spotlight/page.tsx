@@ -4,33 +4,59 @@
 import { motion, useScroll, useTransform } from 'framer-motion'
 import { TrendingUp, TrendingDown, ChevronDown, Users, Zap } from 'lucide-react'
 import Link from 'next/link'
-import { creators } from '@/lib/mock-data/creators'
 import { getMomentum, getMomentumTier } from '@/lib/mock-data/momentum'
-import { getMomentumDrivers } from '@/lib/mock-data/momentum-drivers'
+import { getMomentumDrivers, type MomentumDriver } from '@/lib/mock-data/momentum-drivers'
 import { getEarlySpotters } from '@/lib/mock-data/spots'
 import { getGenresForCreator } from '@/lib/mock-data/genres'
 import TradeSheet from '@/components/trading/TradeSheet'
 import { useTradeSheet } from '@/hooks/useTradeSheet'
+import { useSpotlightCreator } from '@/hooks/useSpotlightCreator'
+import type { Creator } from '@/types'
 
-// Today's Spotlight creator — in production this would come from a daily editorial API
-const SPOTLIGHT_TICKER = 'APDHILLON'
+type WhyCard = { heading: string; body: string }
 
-const EDITORIAL_IMAGE = 'https://images.unsplash.com/photo-1493225457124-a3eb4598d050?auto=format&fit=crop&w=1200&q=85'
+function buildWhyCards(creator: Creator, drivers: MomentumDriver[]): WhyCard[] {
+  const cards: WhyCard[] = [
+    { heading: 'Why they matter.', body: creator.bio },
+  ]
 
-const WHY_CARDS = [
-  {
-    heading: 'Bridging worlds.',
-    body: 'AP Dhillon is doing something no one has done before — taking the soul of Punjabi music and scaling it to global pop audiences without losing an ounce of its identity.',
-  },
-  {
-    heading: 'The numbers don\'t lie.',
-    body: 'From 2M to 14M followers in 18 months. His Spotify monthly listeners have grown 340% since his first viral track. This isn\'t a moment. It\'s a movement.',
-  },
-  {
-    heading: 'The West Coast effect.',
-    body: 'Growing up in Canada gave Dhillon the cultural fluency to fuse Punjabi R&B with production that feels native to the Billboard Hot 100. That dual citizenship — cultural and sonic — is his superpower.',
-  },
-]
+  const growthStats = drivers
+    .filter(d => d.category === 'growth' && (d.value || d.delta))
+    .slice(0, 2)
+    .map(d => `${d.label}${d.value ? ': ' + d.value : ''}${d.delta ? ' (' + d.delta + ')' : ''}`)
+    .join('. ')
+
+  if (growthStats) {
+    cards.push({
+      heading: "The numbers don't lie.",
+      body: `${growthStats}. The data paints a clear picture — this isn't a flash in the pan, it's a trajectory.`,
+    })
+  }
+
+  const nextCatalysts = drivers
+    .filter(d => ['catalysts', 'events'].includes(d.category))
+    .slice(0, 2)
+    .map(d => d.label)
+
+  if (nextCatalysts.length > 0) {
+    const joined = nextCatalysts.length === 1
+      ? nextCatalysts[0]
+      : nextCatalysts[0] + ' and ' + nextCatalysts[1]
+    cards.push({
+      heading: "What's next.",
+      body: `${joined}. These are the kinds of milestones that redefine a creator's trajectory — and the early spotters are already paying attention.`,
+    })
+  }
+
+  if (cards.length === 1) {
+    cards.push({
+      heading: 'On the rise.',
+      body: creator.story ?? 'Momentum is building. The community has noticed, and the signals are pointing up.',
+    })
+  }
+
+  return cards
+}
 
 const DRIVER_CATEGORY_COLORS: Record<string, string> = {
   growth: 'text-emerald-400',
@@ -40,16 +66,23 @@ const DRIVER_CATEGORY_COLORS: Record<string, string> = {
   events: 'text-orange-400',
 }
 
+const EDITORIAL_IMAGE_MAP: Record<string, string> = {
+  APDHILLON:   'https://images.unsplash.com/photo-1493225457124-a3eb4598d050?auto=format&fit=crop&w=1200&q=85',
+  SABRINA:     'https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?auto=format&fit=crop&w=1200&q=85',
+  TYLERTC:     'https://images.unsplash.com/photo-1571330735066-03aaa9429d89?auto=format&fit=crop&w=1200&q=85',
+  PESOPLUMA:   'https://images.unsplash.com/photo-1493225457124-a3eb4598d050?auto=format&fit=crop&w=1200&q=85',
+  NEWJEANS:    'https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?auto=format&fit=crop&w=1200&q=85',
+}
+const FALLBACK_IMAGE = 'https://images.unsplash.com/photo-1493225457124-a3eb4598d050?auto=format&fit=crop&w=1200&q=85'
+
 export default function SpotlightPage() {
   const trade = useTradeSheet()
   const { scrollY } = useScroll()
+  const { creator, loading: spotlightLoading, error: spotlightError, retry: retrySpotlight } = useSpotlightCreator()
 
   const heroOpacity = useTransform(scrollY, [0, 280], [1, 0])
   const heroScale = useTransform(scrollY, [0, 280], [1, 1.08])
   const heroY = useTransform(scrollY, [0, 280], [0, -60])
-
-  const creator = creators.find(c => c.ticker === SPOTLIGHT_TICKER)
-  if (!creator) return null
 
   const { score, delta } = getMomentum(creator.ticker)
   const tier = getMomentumTier(score)
@@ -58,8 +91,24 @@ export default function SpotlightPage() {
   const drivers = getMomentumDrivers(creator.ticker)
   const spotters = getEarlySpotters(creator.ticker, 5)
   const genres = getGenresForCreator(creator.ticker)
+  const whyCards = buildWhyCards(creator, drivers)
+  const editorialImage = EDITORIAL_IMAGE_MAP[creator.ticker] ?? FALLBACK_IMAGE
+
+  if (spotlightLoading) {
+    return (
+      <div className="min-h-screen bg-hype-bg animate-pulse">
+        <div className="h-[92vh] max-h-[700px] bg-white/5" />
+        <div className="px-5 py-8 space-y-4">
+          <div className="h-4 w-24 bg-white/8 rounded-full" />
+          <div className="h-8 w-48 bg-white/10 rounded-xl" />
+          <div className="h-16 bg-white/5 rounded-2xl" />
+        </div>
+      </div>
+    )
+  }
 
   function openSpot() { trade.openBuy(creator!) }
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   function openRelease() { trade.openSell(creator!) }
 
   return (
@@ -73,7 +122,7 @@ export default function SpotlightPage() {
           style={{ scale: heroScale, y: heroY }}
         >
           <img
-            src={EDITORIAL_IMAGE}
+            src={editorialImage}
             alt={creator.name}
             className="w-full h-full object-cover object-top"
           />
@@ -160,6 +209,21 @@ export default function SpotlightPage() {
       {/* ── EDITORIAL BODY ───────────────────────────────────────────────── */}
       <div className="px-5 pb-32">
 
+        {/* Fallback notice — shown only when personalisation API failed */}
+        {spotlightError && (
+          <div className="pt-4 pb-2 flex items-center justify-between">
+            <p className="text-white/30 text-[10px] font-semibold uppercase tracking-widest">
+              Featuring today&apos;s pick · Personalisation unavailable
+            </p>
+            <button
+              onClick={retrySpotlight}
+              className="text-white/30 text-[10px] font-semibold uppercase tracking-widest hover:text-white/50 transition-colors"
+            >
+              Retry
+            </button>
+          </div>
+        )}
+
         {/* Editorial teaser */}
         <div className="py-8 border-b border-hype-border">
           <p className="text-white/40 text-[10px] font-semibold uppercase tracking-widest mb-3">
@@ -176,7 +240,7 @@ export default function SpotlightPage() {
             The story
           </p>
           <div className="space-y-8">
-            {WHY_CARDS.map((card, i) => (
+            {whyCards.map((card, i) => (
               <motion.div
                 key={i}
                 initial={{ opacity: 0, y: 16 }}

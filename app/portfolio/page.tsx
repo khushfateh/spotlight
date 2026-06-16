@@ -18,8 +18,6 @@ import type { Holding } from '@/types'
 
 const narratives: Record<string, string> = {
   APDHILLON: 'spotted before his North American tour sold out.',
-  MRBEAST: 'spotted before the Netflix partnership was announced.',
-  SPEED: 'spotted before the Ronaldo collab made him global.',
   LILNASX: 'spotted early ahead of the album that sent streams up 340%.',
 }
 

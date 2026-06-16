@@ -41,12 +41,16 @@ export type Creator = {
     youtube?: string
     spotify?: string
     twitch?: string
+    twitter?: string
   }
   revenueMetrics: {
     streams?: string
     subscribers?: string
     monthlyListeners?: string
     viewsPerMonth?: string
+    concertRevenue?: string
+    festivalRevenue?: string
+    merch?: string
   }
   priceHistory: PricePoint[]
   fundraisingGoal?: number

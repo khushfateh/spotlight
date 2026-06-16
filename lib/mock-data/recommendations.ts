@@ -1,5 +1,3 @@
-import type { MockUser } from './users'
-
 export type ReasonType =
   | 'because_spotted'
   | 'genre_match'
@@ -81,7 +79,7 @@ const userRecommendations: Record<string, HomeSection[]> = {
       title: 'Because You Spotted Sabrina Carpenter',
       subtitle: 'Creators in the same pop universe',
       reasonLabel: 'Based on your early discovery',
-      tickers: ['DOJACAT', 'NEWJEANS', 'ICESPICE', 'CHARLI'],
+      tickers: ['DOJACAT', 'NEWJEANS', 'ICESPICE'],
       layout: 'horizontal',
       reasonType: 'because_spotted',
     },
@@ -106,7 +104,7 @@ const userRecommendations: Record<string, HomeSection[]> = {
       id: 'similar-users',
       title: 'Trending Among Spotters Like You',
       subtitle: 'Pop and fashion taste-makers are spotting...',
-      tickers: ['VALKYRAE', 'POKIMANE', 'LILNASX'],
+      tickers: ['LILNASX', 'CORPSE'],
       layout: 'horizontal',
       reasonType: 'similar_users',
     },
@@ -122,20 +120,20 @@ const userRecommendations: Record<string, HomeSection[]> = {
 
   jordan: [
     {
-      id: 'because-spotted-xqc',
-      title: 'Because You Spotted xQc',
-      subtitle: 'Streaming-native creators on the rise',
+      id: 'because-spotted-icespice',
+      title: 'Because You Spotted Ice Spice',
+      subtitle: 'Hip-hop artists breaking through',
       reasonLabel: 'Based on your early discovery',
-      tickers: ['KAICENAT', 'VALKYRAE', 'SPEED', 'POKIMANE'],
+      tickers: ['LILNASX', 'SZA', 'WEEKND'],
       layout: 'horizontal',
       reasonType: 'because_spotted',
     },
     {
-      id: 'rising-in-gaming',
-      title: 'Rising in Gaming & Streaming',
+      id: 'rising-in-hiphop',
+      title: 'Rising in Hip-Hop & R&B',
       subtitle: 'Biggest moves in your scene this week',
-      reasonLabel: 'Because you follow Gaming',
-      tickers: ['KAICENAT', 'SPEED', 'VALKYRAE'],
+      reasonLabel: 'Because you follow Hip-Hop',
+      tickers: ['ICESPICE', 'LILNASX', 'SZA'],
       layout: 'horizontal',
       reasonType: 'rising_in_genre',
     },
@@ -143,15 +141,15 @@ const userRecommendations: Record<string, HomeSection[]> = {
       id: 'near-breakout',
       title: 'Near Breakout',
       subtitle: 'Approaching Icon tier fast',
-      tickers: ['KAICENAT', 'MRBEAST', 'SPEED'],
+      tickers: ['ICESPICE', 'SZA', 'DIPLO'],
       layout: 'horizontal',
       reasonType: 'near_breakout',
     },
     {
       id: 'similar-users',
       title: 'Trending Among Spotters Like You',
-      subtitle: 'Gaming and streaming spotters are watching...',
-      tickers: ['MRBEAST', 'SIDEMEN', 'CORPSE'],
+      subtitle: 'Music spotters are watching...',
+      tickers: ['WEEKND', 'CORPSE', 'BURNA'],
       layout: 'horizontal',
       reasonType: 'similar_users',
     },
