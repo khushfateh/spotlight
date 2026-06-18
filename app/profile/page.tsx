@@ -212,8 +212,10 @@ export default function ProfilePage() {
     .map(ticker => getCreatorByTicker(ticker))
     .filter(Boolean)
 
-  // Vault entries — from useVault hook (real Supabase data or mock holdings)
+  // Vault entries — only show creators the user is currently spotting
+  const activeTickerSet = new Set(activeSpottedTickers.map(t => t.toUpperCase()))
   const vaultEntries = vaultItems
+    .filter(e => activeTickerSet.has(e.ticker.toUpperCase()))
     .map(e => {
       const creator = getCreatorByTicker(e.ticker)
       if (!creator) return null
