@@ -7,6 +7,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { getMomentum, getMomentumTier } from '@/lib/mock-data/momentum'
 import type { Creator } from '@/types'
 import type { VaultEntry } from '@/hooks/useVault'
+import SpotSharePrompt from '@/components/sharing/SpotSharePrompt'
 
 type Phase = 'vault' | 'reflection' | 'return' | 'chapter' | 'capsule' | 'done'
 
@@ -198,11 +199,15 @@ export default function RediscoveryCinematic({
   entry,
   onRediscover,
   onDone,
+  userId,
+  userName,
 }: {
   creator: Creator
   entry: VaultEntry
   onRediscover: () => void
   onDone: () => void
+  userId?: string
+  userName?: string
 }) {
   const [mounted, setMounted] = useState(false)
   const [phase, setPhase] = useState<Phase>('vault')
@@ -611,6 +616,14 @@ export default function RediscoveryCinematic({
                   >
                     Begin Chapter {ROMAN[chapterNum - 1] ?? chapterNum}
                   </button>
+                  {userId && userName && (
+                    <SpotSharePrompt
+                      creator={creator}
+                      userId={userId}
+                      userName={userName}
+                      shareType="rediscovered"
+                    />
+                  )}
                 </motion.div>
               </motion.div>
             )}

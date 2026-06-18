@@ -3,8 +3,8 @@
 import { useState } from 'react'
 import type { Creator, TradeOrder } from '@/types'
 import { supabase } from '@/lib/supabase/client'
-import { logSpot, removeSpot } from '@/lib/services/spotService'
-import { spotCreator } from '@/lib/services/spotterService'
+import { logSpot, removeSpot, archiveSpot } from '@/lib/services/spotService'
+import { spotCreator, moveOnCreator } from '@/lib/services/spotterService'
 import { logCreatorView } from '@/lib/services/interactionService'
 import { logDiscoveryCard } from '@/lib/services/vaultService'
 import { getMomentum, getMomentumTier } from '@/lib/mock-data/momentum'
@@ -82,7 +82,11 @@ export function useTradeSheet() {
           if (!r) logSpot(uid, creator.ticker).catch(() => {})
           logCreatorView(uid, creator.ticker).catch(() => {})
         } else {
-          removeSpot(uid, creator.ticker).catch(() => {})
+          // moveOnCreator RPC updates user_artist_spots (is_currently_spotted=false)
+          // and deletes from spots. Fall back to removeSpot if RPC not yet migrated.
+          const r = await moveOnCreator(uid, creator.ticker, 0).catch(() => null)
+          if (!r) removeSpot(uid, creator.ticker).catch(() => {})
+          archiveSpot(uid, creator.ticker, 0).catch(() => {})
         }
       })
     }

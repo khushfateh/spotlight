@@ -150,8 +150,11 @@ export async function getUserCollection(userId: string): Promise<SpotCollection>
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const all = (data as Record<string, any>[]).map(mapRow)
   return {
+    // Currently active, first-time spot
     active: all.filter(r => r.isCurrentlySpotted && !r.hasRediscovered),
-    movedOn: all.filter(r => !r.isCurrentlySpotted),
-    rediscovered: all.filter(r => r.hasRediscovered),
+    // Moved on and never rediscovered — simple one-chapter story
+    movedOn: all.filter(r => !r.isCurrentlySpotted && !r.hasRediscovered),
+    // Currently active after at least one rediscovery — disappears on next move-on
+    rediscovered: all.filter(r => r.isCurrentlySpotted && r.hasRediscovered),
   }
 }

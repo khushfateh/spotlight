@@ -463,6 +463,57 @@ export interface Database {
         }
         Relationships: []
       }
+      share_cards: {
+        Row: {
+          id: string
+          share_slug: string
+          user_id: string | null
+          creator_id: string | null
+          share_type: string
+          title: string | null
+          subtitle: string | null
+          caption: string | null
+          metadata: Json
+          created_at: string
+          view_count: number
+          last_viewed_at: string | null
+        }
+        Insert: {
+          id?: string
+          share_slug?: string
+          user_id?: string | null
+          creator_id?: string | null
+          share_type: string
+          title?: string | null
+          subtitle?: string | null
+          caption?: string | null
+          metadata?: Json
+          created_at?: string
+          view_count?: number
+          last_viewed_at?: string | null
+        }
+        Update: {
+          view_count?: number
+          last_viewed_at?: string | null
+        }
+        Relationships: []
+      }
+      share_events: {
+        Row: {
+          id: string
+          share_card_id: string | null
+          event_type: string
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          share_card_id?: string | null
+          event_type: string
+          created_at?: string
+        }
+        Update: Record<string, never>
+        Relationships: []
+      }
       user_artist_spots: {
         Row: {
           id: string
@@ -511,6 +562,10 @@ export interface Database {
     }
     Views: Record<string, never>
     Functions: {
+      increment_share_view: {
+        Args: { p_slug: string }
+        Returns: void
+      }
       spot_or_rediscover: {
         Args: { p_user_id: string; p_creator_id: string }
         Returns: { spotter_number: number; card_status: string }

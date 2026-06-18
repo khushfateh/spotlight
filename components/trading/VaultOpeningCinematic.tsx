@@ -6,6 +6,7 @@ import { createPortal } from 'react-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import type { Creator } from '@/types'
 import type { VaultEntry } from '@/hooks/useVault'
+import SpotSharePrompt from '@/components/sharing/SpotSharePrompt'
 
 type Phase = 'ambient' | 'opening' | 'achieve' | 'detail'
 
@@ -321,10 +322,14 @@ export default function VaultOpeningCinematic({
   creator,
   entry,
   onClose,
+  userId,
+  userName,
 }: {
   creator: Creator
   entry: VaultEntry
   onClose: () => void
+  userId?: string
+  userName?: string
 }) {
   const [mounted, setMounted] = useState(false)
   const [phase, setPhase] = useState<Phase>('ambient')
@@ -497,26 +502,40 @@ export default function VaultOpeningCinematic({
             )}
           </AnimatePresence>
 
-          {/* ── DETAIL: close button ────────────────────────────────────── */}
+          {/* ── DETAIL: close button + share ────────────────────────── */}
           <AnimatePresence>
             {phase === 'detail' && (
-              <motion.button
+              <motion.div
                 key="close-btn"
                 initial={{ opacity: 0, y: 8 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0 }}
                 transition={{ duration: 0.4, delay: 0.3 }}
-                onClick={handleClose}
                 style={{
                   position: 'absolute', bottom: 44,
-                  fontSize: 13, fontWeight: 600, letterSpacing: '0.06em',
-                  color: 'rgba(255,255,255,0.45)', background: 'rgba(255,255,255,0.05)',
-                  border: '1px solid rgba(255,255,255,0.1)', borderRadius: 28,
-                  padding: '11px 36px', cursor: 'pointer',
+                  display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12,
                 }}
               >
-                Close Vault
-              </motion.button>
+                {userId && userName && (
+                  <SpotSharePrompt
+                    creator={creator}
+                    userId={userId}
+                    userName={userName}
+                    shareType="discovery_record"
+                  />
+                )}
+                <button
+                  onClick={handleClose}
+                  style={{
+                    fontSize: 13, fontWeight: 600, letterSpacing: '0.06em',
+                    color: 'rgba(255,255,255,0.45)', background: 'rgba(255,255,255,0.05)',
+                    border: '1px solid rgba(255,255,255,0.1)', borderRadius: 28,
+                    padding: '11px 36px', cursor: 'pointer',
+                  }}
+                >
+                  Close Vault
+                </button>
+              </motion.div>
             )}
           </AnimatePresence>
         </motion.div>

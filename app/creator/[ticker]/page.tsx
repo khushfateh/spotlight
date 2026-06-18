@@ -23,6 +23,8 @@ import { getEarlySpotters } from '@/lib/mock-data/spots'
 import { logCreatorView } from '@/lib/services/interactionService'
 import { useVault } from '@/hooks/useVault'
 import { useCreatorSpotifyData } from '@/hooks/useCreatorSpotifyData'
+import { createShareCard, type ShareCard } from '@/lib/services/shareService'
+import ShareSheet from '@/components/sharing/ShareSheet'
 
 type Tab = 'Overview' | 'Community' | 'Updates'
 
@@ -33,6 +35,9 @@ export default function CreatorProfilePage({ params }: { params: Promise<{ ticke
   const [isWatched, setIsWatched] = useState(false)
   const [isMoveOnOpen, setIsMoveOnOpen] = useState(false)
   const [isRediscovering, setIsRediscovering] = useState(false)
+  const [shareCard, setShareCard] = useState<ShareCard | null>(null)
+  const [shareSheetOpen, setShareSheetOpen] = useState(false)
+  const [shareLoading, setShareLoading] = useState(false)
   const trade = useTradeSheet()
   const { currentUser } = useAuth()
   const { getByTicker } = useVault()
@@ -76,6 +81,29 @@ export default function CreatorProfilePage({ params }: { params: Promise<{ ticke
     catalysts: 'text-hype-gold',
     discussion: 'text-purple-400',
     events: 'text-orange-400',
+  }
+
+  async function handleShareSpot() {
+    if (!currentUser || !creator) return
+    if (shareCard) { setShareSheetOpen(true); return }
+    setShareLoading(true)
+    const card = await createShareCard(currentUser.id, creator.ticker, 'first_spot', {
+      creatorName: creator.name,
+      creatorTicker: creator.ticker,
+      creatorCategory: creator.category,
+      creatorImageUrl: creator.imageUrl,
+      coverColor: creator.coverColor,
+      spotterRank: mySpot?.spotterRank ?? 0,
+      score,
+      tier,
+      spotDate: mySpot?.spotDate?.toISOString() ?? new Date().toISOString(),
+      userName: currentUser.name?.split(' ')[0] ?? 'You',
+    })
+    setShareLoading(false)
+    if (card) {
+      setShareCard(card)
+      setShareSheetOpen(true)
+    }
   }
 
   return (
@@ -208,9 +236,34 @@ export default function CreatorProfilePage({ params }: { params: Promise<{ ticke
               </Button>
             )}
 
-            {/* ── Secondary: Move On — tiny, muted, nudges against it ─── */}
+            {/* ── Secondary: Move On + Share — tiny, muted ─────────── */}
             {isSpotted(creator.ticker) && (
-              <div className="flex justify-center pt-0.5">
+              <div className="flex justify-center gap-2 pt-0.5">
+                <button
+                  onClick={handleShareSpot}
+                  disabled={shareLoading}
+                  style={{
+                    fontSize: 11,
+                    fontWeight: 500,
+                    letterSpacing: '0.06em',
+                    color: 'rgba(201,168,76,0.6)',
+                    background: 'rgba(201,168,76,0.04)',
+                    border: '1px solid rgba(201,168,76,0.15)',
+                    borderRadius: 20,
+                    padding: '7px 16px',
+                    cursor: shareLoading ? 'default' : 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 5,
+                  }}
+                >
+                  {shareLoading ? (
+                    <span className="w-3 h-3 rounded-full border border-hype-gold/30 border-t-hype-gold/80 animate-spin inline-block" />
+                  ) : (
+                    <Share2 size={11} />
+                  )}
+                  Share
+                </button>
                 <button
                   onClick={() => setIsMoveOnOpen(true)}
                   style={{
@@ -239,6 +292,10 @@ export default function CreatorProfilePage({ params }: { params: Promise<{ ticke
                   Move On
                 </button>
               </div>
+            )}
+
+            {shareSheetOpen && shareCard && (
+              <ShareSheet shareCard={shareCard} onClose={() => setShareSheetOpen(false)} />
             )}
 
             {mySpot?.isArchived && (
@@ -559,6 +616,8 @@ export default function CreatorProfilePage({ params }: { params: Promise<{ ticke
           entry={mySpot}
           onRediscover={() => rediscover(creator.ticker)}
           onDone={() => setIsRediscovering(false)}
+          userId={currentUser?.id}
+          userName={currentUser?.name?.split(' ')[0] ?? 'You'}
         />
       )}
     </>

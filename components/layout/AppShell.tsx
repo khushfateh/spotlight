@@ -9,7 +9,8 @@ import { UserProvider } from '@/context/UserContext'
 import { SpotlightCursor } from '@/components/effects/SpotlightCursor'
 
 // These routes render without app chrome (no TopBar / BottomNav)
-const AUTH_FLOW_ROUTES = ['/login', '/signup', '/onboarding']
+// /share is the public social sharing page — accessible without auth
+const AUTH_FLOW_ROUTES = ['/login', '/signup', '/onboarding', '/share']
 
 // Inner shell — rendered inside the providers so it can read auth state
 function InnerShell({ children }: { children: ReactNode }) {

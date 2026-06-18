@@ -91,7 +91,12 @@ export async function archiveSpot(userId: string, ticker: string, durationDays: 
     .update({ first_moved_on_at: now })
     .match({ user_id: userId, creator_id: creatorId })
     .is('first_moved_on_at', null)
-  // DELETE uses existing RLS policy → triggers realtime
+  // Mark spots as archived BEFORE deleting — triggers a realtime UPDATE event.
+  // Supabase realtime DELETE events require REPLICA IDENTITY FULL to match column
+  // filters; UPDATE events work reliably without it. The UPDATE fires, fetchSpots()
+  // re-runs with the spot_status='active' filter, and the creator disappears from
+  // "My Spots" immediately. The subsequent DELETE just cleans up the row.
+  await supabase.from('spots').update({ spot_status: 'archived' }).match({ user_id: userId, creator_id: creatorId })
   await supabase.from('spots').delete().match({ user_id: userId, creator_id: creatorId })
   await supabase.from('user_activity').insert({
     user_id: userId,
@@ -116,8 +121,6 @@ export async function rediscoverSpot(userId: string, ticker: string): Promise<vo
     .from('discovery_cards')
     .update({ spot_status: 'active', latest_respotted_at: now, rediscovery_count: nextCount })
     .match({ user_id: userId, creator_id: creatorId })
-  // Re-insert into spots (triggers realtime on INSERT)
-  await supabase.from('spots').insert({ user_id: userId, creator_id: creatorId })
   await supabase.from('user_activity').insert({
     user_id: userId,
     activity_type: 'rediscovered',
@@ -132,6 +135,7 @@ export async function getUserSpottedTickers(userId: string): Promise<string[]> {
     .from('spots')
     .select('creator_id')
     .eq('user_id', userId)
+    .eq('spot_status', 'active')
   if (error || !data || data.length === 0) return []
 
   const creatorIds = data.map(r => r.creator_id)

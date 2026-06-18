@@ -73,10 +73,13 @@ export function useSpots() {
     // Optimistic: remove immediately so UI updates without waiting for realtime
     setSpottedTickers(prev => prev.filter(t => t !== ticker.toUpperCase()))
     if (isSupabaseMode && currentUser) {
-      // RPC handles user_artist_spots + spots DELETE + analytics
-      moveOnCreator(currentUser.id, ticker, durationDays).catch(() => {})
-      // Also update discovery_cards for vault/cinematic experience
-      archiveSpot(currentUser.id, ticker, durationDays).catch(() => {})
+      // Both ops are awaited so that by the time the user can navigate away from
+      // the cinematic, user_artist_spots.is_currently_spotted=false is committed
+      // and the profile's fetchCollection() on mount sees the correct state.
+      // archiveSpot first: marks spots.spot_status='archived' (reliable realtime UPDATE)
+      // then deletes the row. moveOnCreator second: updates user_artist_spots.
+      await archiveSpot(currentUser.id, ticker, durationDays).catch(() => {})
+      await moveOnCreator(currentUser.id, ticker, durationDays).catch(() => {})
     }
   }
 

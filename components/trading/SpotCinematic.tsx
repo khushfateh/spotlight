@@ -8,6 +8,7 @@ import { useAuth } from '@/context/AuthContext'
 import { getMomentum, getMomentumTier } from '@/lib/mock-data/momentum'
 import { getSpotterRank } from '@/lib/mock-data/spots'
 import GoldDiscoveryCard from '@/components/trading/GoldDiscoveryCard'
+import SpotSharePrompt from '@/components/sharing/SpotSharePrompt'
 import type { Creator } from '@/types'
 
 type Phase = 'reveal' | 'card' | 'vault'
@@ -255,6 +256,14 @@ export default function SpotCinematic({
                   >
                     Done
                   </button>
+                  {currentUser && (
+                    <SpotSharePrompt
+                      creator={creator}
+                      userId={currentUser.id}
+                      userName={currentUser.name?.split(' ')[0] ?? 'You'}
+                      shareType="first_spot"
+                    />
+                  )}
                 </motion.div>
               </motion.div>
             )}

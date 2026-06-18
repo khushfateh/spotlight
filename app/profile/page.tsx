@@ -708,6 +708,8 @@ export default function ProfilePage() {
           creator={vaultOpen.creator}
           entry={vaultOpen.entry}
           onClose={() => setVaultOpen(null)}
+          userId={currentUser?.id}
+          userName={(currentUser?.name ?? user.name).split(' ')[0] || 'You'}
         />
       )}
     </div>
