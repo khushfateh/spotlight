@@ -15,6 +15,8 @@ export const holdings: Holding[] = [
     pnl: 700.00,
     pnlPercent: 133.33,
     momentumAtSpot: 45,
+    spotDate: '2025-12-24T14:32:00Z',
+    spotterRank: 41,
   },
   {
     creatorId: 'lilnasx',
@@ -30,6 +32,8 @@ export const holdings: Holding[] = [
     pnl: 195.00,
     pnlPercent: 40.63,
     momentumAtSpot: 58,
+    spotDate: '2026-01-14T09:15:00Z',
+    spotterRank: 86,
   },
 ]
 

@@ -105,6 +105,8 @@ export type Holding = {
   pnl: number
   pnlPercent: number
   momentumAtSpot: number  // momentum score at time of discovery
+  spotDate: string        // ISO date string of when user spotted
+  spotterRank: number     // ordinal rank at time of spot
 }
 
 export type Transaction = {

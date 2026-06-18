@@ -94,3 +94,21 @@ export async function getSpottedCreatorIds(userId: string): Promise<string[]> {
     return []
   }
 }
+
+export async function getRediscoveredCreatorIds(userId: string): Promise<string[]> {
+  if (!IS_SUPABASE_ENABLED || !supabase) return []
+
+  try {
+    const { data, error } = await supabase
+      .from('user_artist_spots')
+      .select('creator_id')
+      .eq('user_id', userId)
+      .eq('has_rediscovered', true)
+
+    if (error || !data) return []
+    return data.map(row => row.creator_id as string)
+  } catch {
+    // Table may not exist yet (migration pending) — fail silently
+    return []
+  }
+}

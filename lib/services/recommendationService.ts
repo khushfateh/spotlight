@@ -162,7 +162,41 @@ export async function getPersonalizedHome(userId: string): Promise<HomeSection[]
     })
   }
 
-  // 5. Hidden Gem (low notoriety, high momentum, low spot count)
+  // 5. Because You Rediscovered (rediscovery signal — genre-adjacent creators)
+  if (profile.rediscoveredTickers.length > 0) {
+    const rediscoveredGenreIds = new Set<string>()
+    for (const ticker of profile.rediscoveredTickers) {
+      for (const genre of genres) {
+        if (genre.creatorTickers.includes(ticker.toUpperCase())) {
+          rediscoveredGenreIds.add(genre.id)
+        }
+      }
+    }
+    const rediscoveredRelatedTickers = excludeSpotted(
+      topN(
+        signalList.filter(s =>
+          s.genreIds.some(g => rediscoveredGenreIds.has(g)) &&
+          !profile.rediscoveredTickers.includes(s.ticker)
+        ),
+        s => scoreForHome(s, profile, similarTickers),
+        4
+      ),
+      profile
+    )
+    if (rediscoveredRelatedTickers.length >= 2) {
+      sections.push({
+        id: 'because-rediscovered',
+        title: 'Because You Rediscovered',
+        subtitle: 'Creators in the lane of your returning discoveries',
+        reasonLabel: 'Rediscovery signal',
+        tickers: rediscoveredRelatedTickers,
+        layout: 'horizontal',
+        reasonType: 'because_spotted',
+      })
+    }
+  }
+
+  // 6. Hidden Gem (low notoriety, high momentum, low spot count)
   const gemCandidates = signalList.filter(s => {
     const c = creators.find(cr => cr.ticker.toUpperCase() === s.ticker)
     const followers = c ? parseFollowers(c.followers) : 0

@@ -27,7 +27,7 @@ export default function NotificationsPage() {
   const read = notifications.filter(n => n.isRead)
 
   return (
-    <div className="px-4 pt-4 pb-2 space-y-5">
+    <div className="px-4 pt-4 pb-28 space-y-5">
       <div className="flex items-center justify-between">
         <h1 className="text-hype-text font-bold text-xl">Notifications</h1>
         {unread.length > 0 && (

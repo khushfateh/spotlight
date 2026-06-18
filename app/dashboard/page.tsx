@@ -22,7 +22,7 @@ export default function CreatorDashboardPage() {
   ]
 
   return (
-    <div className="px-4 pt-4 pb-2 space-y-5">
+    <div className="px-4 pt-4 pb-28 space-y-5">
       {/* Creator Identity */}
       <div className="elevated-card rounded-3xl p-5">
         <div className="flex items-center gap-3 mb-4">

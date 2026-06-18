@@ -1,4 +1,5 @@
 'use client'
+/* eslint-disable @next/next/no-img-element */
 
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -258,21 +259,40 @@ export default function OnboardingPage() {
                   <button
                     key={creator.ticker}
                     onClick={() => toggleCreator(creator.ticker)}
-                    className={`relative rounded-2xl p-3 flex flex-col items-center gap-2 text-center transition-all duration-200 border ${
+                    className={`relative rounded-2xl overflow-hidden text-center transition-all duration-200 border-2 ${
                       selected
-                        ? 'border-hype-gold bg-hype-gold/10'
-                        : 'border-white/10 bg-white/[0.04] hover:border-white/20'
+                        ? 'border-hype-gold'
+                        : 'border-transparent'
                     }`}
+                    style={{ aspectRatio: '3/4' }}
                   >
-                    {selected && (
-                      <div className="absolute top-1.5 right-1.5 w-4 h-4 rounded-full bg-hype-gold flex items-center justify-center">
-                        <Check size={9} className="text-[#0A0A0A]" />
+                    {/* Photo / fallback gradient */}
+                    {creator.imageUrl ? (
+                      <img
+                        src={creator.imageUrl}
+                        alt={creator.name}
+                        className="absolute inset-0 w-full h-full object-cover object-top"
+                      />
+                    ) : (
+                      <div className={`absolute inset-0 bg-gradient-to-br ${creator.coverColor} flex items-center justify-center text-white text-2xl font-black`}>
+                        {creator.avatar}
                       </div>
                     )}
-                    <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${creator.coverColor} flex items-center justify-center text-white text-sm font-black`}>
-                      {creator.avatar}
-                    </div>
-                    <p className="text-white text-[10px] font-semibold leading-tight">{creator.name}</p>
+
+                    {/* Bottom gradient for legibility */}
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-black/10" />
+
+                    {/* Selection tick */}
+                    {selected && (
+                      <div className="absolute top-2 right-2 w-5 h-5 rounded-full bg-hype-gold flex items-center justify-center z-10">
+                        <Check size={11} className="text-[#0A0A0A]" />
+                      </div>
+                    )}
+
+                    {/* Name */}
+                    <p className="absolute bottom-0 left-0 right-0 pb-2.5 px-2 text-white text-[11px] font-bold leading-tight z-10">
+                      {creator.name}
+                    </p>
                   </button>
                 )
               })}

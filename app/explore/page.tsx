@@ -20,6 +20,7 @@ import { cn } from '@/lib/utils'
 import { DiscoverStack } from '@/components/effects/DiscoverStack'
 import { useDiscoverFeed } from '@/hooks/useDiscoverFeed'
 import { useAuth } from '@/context/AuthContext'
+import { useSpots } from '@/hooks/useSpots'
 import { logCreatorSearch } from '@/lib/services/interactionService'
 import type { Creator, CreatorCategory } from '@/types'
 
@@ -80,7 +81,7 @@ function CreatorListRow({ creator, rank, onBuy }: { creator: Creator; rank: numb
 
         <button
           onClick={e => { e.preventDefault(); onBuy(creator) }}
-          className="flex-shrink-0 px-2.5 py-1.5 border border-hype-border text-hype-muted text-[10px] font-semibold rounded-lg opacity-0 group-hover:opacity-100 group-hover:bg-hype-gold group-hover:text-[#0A0A0A] group-hover:border-hype-gold transition-all"
+          className="flex-shrink-0 px-2.5 py-1.5 border border-hype-border text-hype-muted text-[10px] font-semibold rounded-lg hover:bg-hype-gold hover:text-[#0A0A0A] hover:border-hype-gold active:scale-95 transition-all"
         >
           Spot
         </button>
@@ -145,6 +146,7 @@ export default function ExplorePage() {
   }
 
   const { currentUser } = useAuth()
+  const { spottedTickers } = useSpots()
   const allCreators = getCreatorsByCategory('All' as CreatorCategory)
   const gainers = getTopGainers(5)
   const { engineCreators, loading: engineLoading } = useDiscoverFeed(activeLens)
@@ -448,6 +450,7 @@ export default function ExplorePage() {
             creators={discoverCreators}
             onBuy={trade.openBuy}
             onClose={() => setDiscoverMode(false)}
+            spottedTickers={spottedTickers}
           />
         )}
       </AnimatePresence>
@@ -460,6 +463,7 @@ export default function ExplorePage() {
         pendingOrder={trade.pendingOrder}
         isSubmitting={trade.isSubmitting}
         onClose={trade.close}
+        onSpotNow={trade.spotNow}
         onSubmitOrder={trade.submitOrder}
         onConfirmOrder={trade.confirmOrder}
         onReset={trade.reset}

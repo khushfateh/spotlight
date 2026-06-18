@@ -2,7 +2,11 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { useAuth } from '@/context/AuthContext'
-import { getUserSpottedTickers, logSpot, removeSpot } from '@/lib/services/spotService'
+import { getUserSpottedTickers, logSpot, removeSpot, archiveSpot, rediscoverSpot } from '@/lib/services/spotService'
+import { spotCreator, moveOnCreator } from '@/lib/services/spotterService'
+import { logDiscoveryCard } from '@/lib/services/vaultService'
+import { getMomentum, getMomentumTier } from '@/lib/mock-data/momentum'
+import { supabase } from '@/lib/supabase/client'
 
 export function useSpots() {
   const { currentUser, isSupabaseMode } = useAuth()
@@ -25,10 +29,36 @@ export function useSpots() {
     }
   }, [isSupabaseMode, currentUser, fetchSpots])
 
+  // Realtime: refetch whenever the spots table changes for this user
+  useEffect(() => {
+    if (!isSupabaseMode || !currentUser || !supabase) return
+    const sb = supabase
+    const channel = sb
+      .channel(`spots:${currentUser.id}`)
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'spots', filter: `user_id=eq.${currentUser.id}` },
+        () => { fetchSpots() },
+      )
+      .subscribe()
+    return () => { sb.removeChannel(channel) }
+  }, [isSupabaseMode, currentUser, fetchSpots])
+
   async function spot(ticker: string) {
+    // Optimistic update
     setSpottedTickers(prev => [...new Set([...prev, ticker.toUpperCase()])])
     if (isSupabaseMode && currentUser) {
-      await logSpot(currentUser.id, ticker)
+      // Try the new RPC first (requires spotter_system migration to be run).
+      // If it fails (migration not yet applied), fall back to direct spots insert
+      // so spots always persist regardless of migration state.
+      const result = await spotCreator(currentUser.id, ticker).catch(() => null)
+      if (!result) {
+        await logSpot(currentUser.id, ticker).catch(() => {})
+      }
+      const { score } = getMomentum(ticker)
+      const tier = getMomentumTier(score)
+      const spotterNum = result?.spotterNumber ?? 0
+      logDiscoveryCard(currentUser.id, ticker, spotterNum, score, tier).catch(() => {})
     }
   }
 
@@ -39,9 +69,33 @@ export function useSpots() {
     }
   }
 
+  async function moveOn(ticker: string, durationDays: number) {
+    // Optimistic: remove immediately so UI updates without waiting for realtime
+    setSpottedTickers(prev => prev.filter(t => t !== ticker.toUpperCase()))
+    if (isSupabaseMode && currentUser) {
+      // RPC handles user_artist_spots + spots DELETE + analytics
+      moveOnCreator(currentUser.id, ticker, durationDays).catch(() => {})
+      // Also update discovery_cards for vault/cinematic experience
+      archiveSpot(currentUser.id, ticker, durationDays).catch(() => {})
+    }
+  }
+
+  async function rediscover(ticker: string) {
+    // Optimistic: re-add to active spots immediately
+    setSpottedTickers(prev => [...new Set([...prev, ticker.toUpperCase()])])
+    if (isSupabaseMode && currentUser) {
+      // RPC detects rediscovery; falls back to direct insert if migration not yet run
+      const result = await spotCreator(currentUser.id, ticker).catch(() => null)
+      if (!result) {
+        await logSpot(currentUser.id, ticker).catch(() => {})
+      }
+      rediscoverSpot(currentUser.id, ticker).catch(() => {})
+    }
+  }
+
   function isSpotted(ticker: string) {
     return spottedTickers.includes(ticker.toUpperCase())
   }
 
-  return { spottedTickers, loading, spot, unspot, isSpotted, refetch: fetchSpots }
+  return { spottedTickers, loading, spot, unspot, moveOn, rediscover, isSpotted, refetch: fetchSpots }
 }

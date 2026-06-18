@@ -8,12 +8,18 @@ import { useUser } from '@/context/UserContext'
 import { useAuth } from '@/context/AuthContext'
 import { useUserPreferences } from '@/hooks/useUserPreferences'
 import { useSpots } from '@/hooks/useSpots'
+import { useSpotCollection } from '@/hooks/useSpotCollection'
 import { useGenres } from '@/hooks/useGenres'
 import { Badge } from '@/components/ui/Badge'
 import { getMomentum, getMomentumTier } from '@/lib/mock-data'
 import { genres as mockGenres } from '@/lib/mock-data/genres'
 import { getCreatorByTicker } from '@/lib/mock-data/creators'
 import { holdings } from '@/lib/mock-data'
+import GoldDiscoveryCard from '@/components/trading/GoldDiscoveryCard'
+import { SpotterCard } from '@/components/trading/SpotterCard'
+import VaultOpeningCinematic from '@/components/trading/VaultOpeningCinematic'
+import { useVault, type VaultEntry } from '@/hooks/useVault'
+import type { Creator } from '@/types'
 
 function getDiscoveryStatus(holdingCount: number, avgMomentum: number) {
   if (avgMomentum >= 80 && holdingCount >= 4) {
@@ -172,18 +178,19 @@ export default function ProfilePage() {
   const { currentUser, logout, isSupabaseMode } = useAuth()
   const { genreSlugs, saveGenres } = useUserPreferences()
   const { spottedTickers, loading: spotsLoading } = useSpots()
+  const { collection, loading: collectionLoading } = useSpotCollection()
+  const { entries: vaultItems, loading: vaultLoading } = useVault()
   const [genreSheetOpen, setGenreSheetOpen] = useState(false)
+  const [vaultOpen, setVaultOpen] = useState<{ entry: VaultEntry; creator: Creator } | null>(null)
 
   // In Supabase mode, use real spotted tickers; in mock mode, use holdings
   const mockSpottedTickers = holdings.map(h => h.ticker)
   const activeSpottedTickers = isSupabaseMode ? spottedTickers : mockSpottedTickers
   const creatorsSpottedCount = activeSpottedTickers.length || (currentUser?.creatorsSpotted ?? 0)
 
-  const avgMomentum = activeSpottedTickers.length
-    ? Math.round(activeSpottedTickers.reduce((sum, t) => sum + getMomentum(t).score, 0) / activeSpottedTickers.length)
-    : holdings.length
-      ? Math.round(holdings.reduce((sum, h) => sum + getMomentum(h.ticker).score, 0) / holdings.length)
-      : 0
+  const avgMomentum = vaultItems.length
+    ? Math.round(vaultItems.reduce((sum, e) => sum + e.currentScore, 0) / vaultItems.length)
+    : 0
 
   const status = getDiscoveryStatus(activeSpottedTickers.length, avgMomentum)
   const StatusIcon = status.icon
@@ -205,8 +212,19 @@ export default function ProfilePage() {
     .map(ticker => getCreatorByTicker(ticker))
     .filter(Boolean)
 
+  // Vault entries — from useVault hook (real Supabase data or mock holdings)
+  const vaultEntries = vaultItems
+    .map(e => {
+      const creator = getCreatorByTicker(e.ticker)
+      if (!creator) return null
+      return { creator, spotterRank: e.spotterRank, spotDate: e.spotDate, score: e.currentScore, tier: e.currentTier }
+    })
+    .filter((e): e is NonNullable<typeof e> => e !== null)
+
+  const vaultUserName = (currentUser?.name ?? user.name).split(' ')[0] || 'You'
+
   return (
-    <div className="px-4 pt-4 pb-2 space-y-5">
+    <div className="px-4 pt-4 pb-28 space-y-5">
 
       {/* Profile Card */}
       <div className="elevated-card rounded-3xl p-5">
@@ -309,6 +327,209 @@ export default function ProfilePage() {
           </div>
         )}
       </div>
+
+      {/* Discovery Vault */}
+      {(vaultLoading || vaultEntries.length > 0) && (
+        <div className="premium-card rounded-2xl p-4">
+          <div className="flex items-center justify-between mb-3">
+            <div>
+              <p className="text-hype-text font-semibold text-sm">Discovery Vault</p>
+              <p className="text-hype-dim text-[10px] mt-0.5">
+                {vaultLoading ? 'Loading…' : `${vaultEntries.length} card${vaultEntries.length !== 1 ? 's' : ''} · Swipe to explore`}
+              </p>
+            </div>
+            <div
+              className="px-2 py-1 rounded-lg"
+              style={{ background: 'rgba(201,168,76,0.08)', border: '1px solid rgba(201,168,76,0.18)' }}
+            >
+              <p style={{ fontSize: 9, letterSpacing: '0.18em', color: 'rgba(201,168,76,0.7)', fontWeight: 700, textTransform: 'uppercase' }}>
+                Auto-saved
+              </p>
+            </div>
+          </div>
+          <div
+            className="flex gap-4 overflow-x-auto pb-3"
+            style={{ scrollSnapType: 'x mandatory', WebkitOverflowScrolling: 'touch', marginLeft: -16, marginRight: -16, paddingLeft: 16, paddingRight: 16 }}
+          >
+            {vaultEntries.map(entry => {
+              const vaultEntry = vaultItems.find(v => v.ticker === entry.creator.ticker)
+              return (
+                <div key={entry.creator.ticker} style={{ flexShrink: 0, scrollSnapAlign: 'start' }}>
+                  <GoldDiscoveryCard
+                    creator={entry.creator}
+                    rank={entry.spotterRank}
+                    score={entry.score}
+                    tier={entry.tier}
+                    userName={vaultUserName}
+                    spotTime={entry.spotDate}
+                    onClick={vaultEntry ? () => setVaultOpen({ entry: vaultEntry, creator: entry.creator }) : undefined}
+                  />
+                </div>
+              )
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* Spotter Collections */}
+      {isSupabaseMode && (collectionLoading || collection.active.length > 0 || collection.movedOn.length > 0 || collection.rediscovered.length > 0) && (
+        <div className="space-y-3">
+
+          {/* Active Spots collection */}
+          {(collectionLoading || collection.active.length > 0) && (
+            <div className="premium-card rounded-2xl p-4">
+              <div className="flex items-center justify-between mb-3">
+                <div>
+                  <p className="text-hype-text font-semibold text-sm">Active Spots</p>
+                  {!collectionLoading && (
+                    <p className="text-hype-dim text-[10px] mt-0.5">{collection.active.length} currently spotting</p>
+                  )}
+                </div>
+                <div
+                  className="px-2 py-1 rounded-lg"
+                  style={{ background: 'rgba(201,168,76,0.08)', border: '1px solid rgba(201,168,76,0.18)' }}
+                >
+                  <p style={{ fontSize: 9, letterSpacing: '0.18em', color: 'rgba(201,168,76,0.7)', fontWeight: 700, textTransform: 'uppercase' }}>
+                    Gold
+                  </p>
+                </div>
+              </div>
+              {collectionLoading ? (
+                <div className="flex justify-center py-4">
+                  <div className="w-4 h-4 rounded-full border-2 border-white/20 border-t-hype-gold animate-spin" />
+                </div>
+              ) : collection.active.length === 0 ? (
+                <p className="text-hype-dim text-xs text-center py-3">No active spots yet.</p>
+              ) : (
+                <div className="space-y-2">
+                  {collection.active.map((rel, i) => (
+                    <SpotterCard key={rel.id} rel={rel} variant="active" delay={i * 0.04} />
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Moved On collection */}
+          {(collectionLoading || collection.movedOn.length > 0) && (
+            <div className="premium-card rounded-2xl p-4">
+              <div className="flex items-center justify-between mb-3">
+                <div>
+                  <p className="text-hype-text font-semibold text-sm">Moved On</p>
+                  {!collectionLoading && (
+                    <p className="text-hype-dim text-[10px] mt-0.5">{collection.movedOn.length} artists</p>
+                  )}
+                </div>
+                <div
+                  className="px-2 py-1 rounded-lg"
+                  style={{ background: 'rgba(150,160,180,0.06)', border: '1px solid rgba(150,160,180,0.14)' }}
+                >
+                  <p style={{ fontSize: 9, letterSpacing: '0.18em', color: 'rgba(150,160,180,0.6)', fontWeight: 700, textTransform: 'uppercase' }}>
+                    Silver
+                  </p>
+                </div>
+              </div>
+              {collectionLoading ? (
+                <div className="flex justify-center py-4">
+                  <div className="w-4 h-4 rounded-full border-2 border-white/20 border-t-hype-gold animate-spin" />
+                </div>
+              ) : collection.movedOn.length === 0 ? (
+                <p className="text-hype-dim text-xs text-center py-3">No moved-on spots yet.</p>
+              ) : (
+                <div className="space-y-2">
+                  {collection.movedOn.map((rel, i) => (
+                    <SpotterCard key={rel.id} rel={rel} variant="moved_on" delay={i * 0.04} />
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Rediscovered collection (permanent) */}
+          {(collectionLoading || collection.rediscovered.length > 0) && (
+            <div className="premium-card rounded-2xl p-4">
+              <div className="flex items-center justify-between mb-3">
+                <div>
+                  <p className="text-hype-text font-semibold text-sm">✦ Rediscovered</p>
+                  {!collectionLoading && (
+                    <p className="text-hype-dim text-[10px] mt-0.5">Permanent record · {collection.rediscovered.length} artists</p>
+                  )}
+                </div>
+                <div
+                  className="px-2 py-1 rounded-lg"
+                  style={{
+                    background: 'linear-gradient(135deg, rgba(200,210,225,0.07) 0%, rgba(201,168,76,0.05) 100%)',
+                    border: '1px solid rgba(200,210,225,0.2)',
+                  }}
+                >
+                  <p style={{ fontSize: 9, letterSpacing: '0.18em', color: 'rgba(200,210,225,0.7)', fontWeight: 700, textTransform: 'uppercase' }}>
+                    Prem. Silver
+                  </p>
+                </div>
+              </div>
+              {collectionLoading ? (
+                <div className="flex justify-center py-4">
+                  <div className="w-4 h-4 rounded-full border-2 border-white/20 border-t-hype-gold animate-spin" />
+                </div>
+              ) : collection.rediscovered.length === 0 ? (
+                <p className="text-hype-dim text-xs text-center py-3">Rediscover a creator to earn your first ✦.</p>
+              ) : (
+                <div className="space-y-2">
+                  {collection.rediscovered.map((rel, i) => (
+                    <SpotterCard key={rel.id} rel={rel} variant="rediscovered" delay={i * 0.04} />
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Discovery Legacy */}
+      {vaultItems.length > 0 && (() => {
+        const totalSpotted = vaultItems.length
+        const longestJourneyDays = vaultItems.reduce((max, e) => {
+          const days = e.spotDurationDays ??
+            Math.max(1, Math.floor(((e.archivedAt ?? new Date()).getTime() - e.spotDate.getTime()) / 86400000))
+          return Math.max(max, days)
+        }, 0)
+        const totalChapters = vaultItems.reduce((sum, e) => sum + (e.rediscoveryCount ?? 0) + 1, 0)
+        const breakoutWins = vaultItems.filter(e => e.currentScore - e.momentumAtSpot >= 28).length
+
+        return (
+          <div className="premium-card rounded-2xl p-4">
+            <div className="flex items-center gap-2 mb-4">
+              <Trophy size={14} className="text-hype-gold" />
+              <p className="text-hype-text font-semibold text-sm">Discovery Legacy</p>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              {([
+                { label: 'All-Time Spotted', value: totalSpotted, gold: true },
+                { label: 'Longest Journey', value: `${longestJourneyDays}d`, gold: false },
+                { label: 'Total Chapters', value: totalChapters, gold: totalChapters > totalSpotted },
+                { label: 'Breakout Wins', value: breakoutWins, gold: breakoutWins > 0 },
+              ] as const).map(({ label, value, gold }) => (
+                <div
+                  key={label}
+                  className="rounded-xl p-3"
+                  style={{ background: 'rgba(255,255,255,0.025)', border: '1px solid rgba(255,255,255,0.055)' }}
+                >
+                  <p
+                    className="font-black text-xl tabular leading-none mb-0.5"
+                    style={{ color: gold ? 'rgba(201,168,76,0.9)' : 'rgba(255,255,255,0.7)' }}
+                  >
+                    {value}
+                  </p>
+                  <p className="text-[9px] font-semibold uppercase tracking-wider"
+                    style={{ color: 'rgba(255,255,255,0.2)', letterSpacing: '0.14em' }}>
+                    {label}
+                  </p>
+                </div>
+              ))}
+            </div>
+          </div>
+        )
+      })()}
 
       {/* Discovery Score */}
       {discoveryScore > 0 && (
@@ -481,6 +702,14 @@ export default function ProfilePage() {
       </button>
 
       <GenreManagerSheet open={genreSheetOpen} onClose={() => setGenreSheetOpen(false)} />
+
+      {vaultOpen && (
+        <VaultOpeningCinematic
+          creator={vaultOpen.creator}
+          entry={vaultOpen.entry}
+          onClose={() => setVaultOpen(null)}
+        />
+      )}
     </div>
   )
 }

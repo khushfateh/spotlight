@@ -34,8 +34,10 @@ export async function getGenresByCategory(): Promise<Record<string, SupabaseGenr
   }, {})
 }
 
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+
 export async function getUserGenreIds(userId: string): Promise<string[]> {
-  if (!supabase) return []
+  if (!supabase || !UUID_RE.test(userId)) return []
   const { data, error } = await supabase
     .from('user_preferences')
     .select('genre_id')

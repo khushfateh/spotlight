@@ -22,10 +22,12 @@ function SwipeCard({
   creator,
   onLeft,
   onRight,
+  isSpotted = false,
 }: {
   creator: Creator
   onLeft: () => void
   onRight: () => void
+  isSpotted?: boolean
 }) {
   const x = useMotionValue(0)
   const rotate = useTransform(x, [-280, 280], [-14, 14])
@@ -72,12 +74,28 @@ function SwipeCard({
       <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/35 to-black/10 pointer-events-none" />
       <div className="absolute inset-0 bg-gradient-to-r from-black/50 to-transparent pointer-events-none" />
 
+      {/* Already spotted badge — permanent */}
+      {isSpotted && (
+        <div className="absolute top-5 left-5 pointer-events-none" style={{
+          display: 'inline-flex', alignItems: 'center', gap: 4,
+          padding: '5px 10px', borderRadius: 20,
+          background: 'rgba(201,168,76,0.18)',
+          border: '1px solid rgba(201,168,76,0.45)',
+          fontSize: 9, fontWeight: 700, letterSpacing: '0.12em',
+          textTransform: 'uppercase', color: 'rgba(201,168,76,0.95)',
+          textShadow: '0 0 10px rgba(201,168,76,0.35)',
+          backdropFilter: 'blur(4px)',
+        }}>
+          ✦ Spotted
+        </div>
+      )}
+
       {/* SPOT stamp — brightens as you drag right */}
       <motion.div
         style={{ opacity: backOpacity, rotate: -14, transformOrigin: 'center' }}
         className="absolute top-8 left-5 px-3 py-1.5 border-[2.5px] border-hype-gold text-hype-gold font-black text-lg tracking-[0.18em] rounded-xl pointer-events-none"
       >
-        SPOT
+        {isSpotted ? 'SPOT AGAIN' : 'SPOT'}
       </motion.div>
 
       {/* SKIP stamp — brightens as you drag left */}
@@ -124,10 +142,12 @@ export function DiscoverStack({
   creators,
   onBuy,
   onClose,
+  spottedTickers = [],
 }: {
   creators: Creator[]
   onBuy: (c: Creator) => void
   onClose: () => void
+  spottedTickers?: string[]
 }) {
   const [index, setIndex] = useState(0)
 
@@ -238,6 +258,7 @@ export function DiscoverStack({
                   creator={current}
                   onLeft={handleLeft}
                   onRight={handleRight}
+                  isSpotted={spottedTickers.includes(current.ticker.toUpperCase())}
                 />
               )}
             </AnimatePresence>

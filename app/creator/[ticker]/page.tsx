@@ -1,14 +1,18 @@
 'use client'
 
 import { use, useState, useEffect } from 'react'
+import { motion } from 'framer-motion'
 import { ArrowLeft, Star, Share2, TrendingUp, TrendingDown, Users, BarChart3, MessageCircle, Calendar, Zap } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import TradeSheet from '@/components/trading/TradeSheet'
+import MoveOnCinematic from '@/components/trading/MoveOnCinematic'
+import RediscoveryCinematic from '@/components/trading/RediscoveryCinematic'
 import PostCard from '@/components/community/PostCard'
 import { Avatar } from '@/components/ui/Avatar'
 import { Badge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
 import { useTradeSheet } from '@/hooks/useTradeSheet'
+import { useSpots } from '@/hooks/useSpots'
 import { useAuth } from '@/context/AuthContext'
 import { getCreatorByTicker } from '@/lib/mock-data'
 import { communityPosts } from '@/lib/mock-data'
@@ -17,6 +21,7 @@ import { getMomentum, getMomentumTier } from '@/lib/mock-data'
 import { getMomentumDrivers, driverCategoryLabel } from '@/lib/mock-data/momentum-drivers'
 import { getEarlySpotters } from '@/lib/mock-data/spots'
 import { logCreatorView } from '@/lib/services/interactionService'
+import { useVault } from '@/hooks/useVault'
 import { useCreatorSpotifyData } from '@/hooks/useCreatorSpotifyData'
 
 type Tab = 'Overview' | 'Community' | 'Updates'
@@ -26,8 +31,12 @@ export default function CreatorProfilePage({ params }: { params: Promise<{ ticke
   const router = useRouter()
   const [activeTab, setActiveTab] = useState<Tab>('Overview')
   const [isWatched, setIsWatched] = useState(false)
+  const [isMoveOnOpen, setIsMoveOnOpen] = useState(false)
+  const [isRediscovering, setIsRediscovering] = useState(false)
   const trade = useTradeSheet()
   const { currentUser } = useAuth()
+  const { getByTicker } = useVault()
+  const { isSpotted, moveOn, rediscover } = useSpots()
   const { snapshot: spotifyData } = useCreatorSpotifyData(ticker)
 
   useEffect(() => {
@@ -56,6 +65,10 @@ export default function CreatorProfilePage({ params }: { params: Promise<{ ticke
   const creatorPosts = communityPosts.filter(p => p.creatorId === creator.id)
   const drivers = getMomentumDrivers(creator.ticker)
   const spotters = getEarlySpotters(creator.ticker, 5)
+  const mySpot = getByTicker(creator.ticker)
+  const myDaysAgo = mySpot
+    ? Math.max(0, Math.floor((Date.now() - mySpot.spotDate.getTime()) / (1000 * 60 * 60 * 24)))
+    : null
 
   const DRIVER_COLORS: Record<string, string> = {
     growth: 'text-emerald-400',
@@ -67,7 +80,7 @@ export default function CreatorProfilePage({ params }: { params: Promise<{ ticke
 
   return (
     <>
-      <div className="pb-2">
+      <div className="pb-28">
         {/* Hero Header */}
         <div className={cn('relative h-52 bg-gradient-to-br overflow-hidden', creator.coverColor)}>
           {(spotifyData?.imageUrl ?? creator.imageUrl) && (
@@ -159,19 +172,94 @@ export default function CreatorProfilePage({ params }: { params: Promise<{ ticke
             </div>
           </div>
 
-          {/* Spot / Release */}
-          <div className="flex gap-3">
-            <Button variant="buy" size="lg" fullWidth onClick={() => trade.openBuy(creator)}>
-              Spot {firstName}
-            </Button>
-            <Button variant="sell" size="lg" fullWidth onClick={() => trade.openSell(creator)}>
-              Release
-            </Button>
+          {/* Spot / Move On */}
+          <div className="flex flex-col gap-2">
+            {/* ── Primary: Spot button (always full-width, dominant) ─── */}
+            {isSpotted(creator.ticker) ? (
+              <motion.button
+                disabled
+                animate={{ opacity: [0.82, 1, 0.82] }}
+                transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
+                style={{
+                  width: '100%',
+                  padding: '16px 0',
+                  borderRadius: 16,
+                  background: 'linear-gradient(135deg, rgba(201,168,76,0.13) 0%, rgba(201,168,76,0.06) 100%)',
+                  border: '1.5px solid rgba(201,168,76,0.5)',
+                  boxShadow: '0 0 24px rgba(201,168,76,0.14), inset 0 1px 0 rgba(255,255,255,0.06)',
+                  cursor: 'default',
+                  fontSize: 14,
+                  fontWeight: 700,
+                  letterSpacing: '0.14em',
+                  textTransform: 'uppercase',
+                  color: 'rgba(201,168,76,0.92)',
+                  textShadow: '0 0 18px rgba(201,168,76,0.45)',
+                }}
+              >
+                ✦ Spotted
+              </motion.button>
+            ) : mySpot?.isArchived ? (
+              <Button variant="buy" size="lg" fullWidth onClick={() => setIsRediscovering(true)}>
+                Spot {firstName}
+              </Button>
+            ) : (
+              <Button variant="buy" size="lg" fullWidth onClick={() => trade.openBuy(creator)}>
+                Spot {firstName}
+              </Button>
+            )}
+
+            {/* ── Secondary: Move On — tiny, muted, nudges against it ─── */}
+            {isSpotted(creator.ticker) && (
+              <div className="flex justify-center pt-0.5">
+                <button
+                  onClick={() => setIsMoveOnOpen(true)}
+                  style={{
+                    fontSize: 11,
+                    fontWeight: 500,
+                    letterSpacing: '0.06em',
+                    color: 'rgba(255,255,255,0.42)',
+                    background: 'rgba(255,255,255,0.04)',
+                    border: '1px solid rgba(255,255,255,0.1)',
+                    borderRadius: 20,
+                    padding: '7px 20px',
+                    cursor: 'pointer',
+                    transition: 'color 0.2s, border-color 0.2s',
+                  }}
+                  onMouseEnter={e => {
+                    const b = e.currentTarget as HTMLButtonElement
+                    b.style.color = 'rgba(255,255,255,0.6)'
+                    b.style.borderColor = 'rgba(255,255,255,0.2)'
+                  }}
+                  onMouseLeave={e => {
+                    const b = e.currentTarget as HTMLButtonElement
+                    b.style.color = 'rgba(255,255,255,0.42)'
+                    b.style.borderColor = 'rgba(255,255,255,0.1)'
+                  }}
+                >
+                  Move On
+                </button>
+              </div>
+            )}
+
+            {mySpot?.isArchived && (
+              <p className="text-center" style={{ fontSize: 10, color: 'rgba(255,255,255,0.18)', letterSpacing: '0.08em' }}>
+                Moved On · archived in your Vault · Rediscover to begin Chapter{' '}
+                {['I','II','III','IV','V'][(mySpot.rediscoveryCount ?? 0) + 1] ?? String((mySpot.rediscoveryCount ?? 0) + 2)}
+              </p>
+            )}
           </div>
 
-          <p className="text-hype-dim text-[10px] text-center">
-            Add to your Discoveries · Early access, not ownership · Mock only
-          </p>
+          {mySpot && myDaysAgo !== null ? (
+            <p className="text-center" style={{ fontSize: 10, color: 'rgba(201,168,76,0.6)' }}>
+              ✦ You spotted{' '}
+              <span style={{ fontWeight: 700 }}>{myDaysAgo} days ago</span>
+              {' · '}Spotter <span style={{ fontWeight: 700 }}>#{mySpot.spotterRank}</span>
+            </p>
+          ) : (
+            <p className="text-hype-dim text-[10px] text-center">
+              Add to your Discoveries · Early access, not ownership · Mock only
+            </p>
+          )}
 
           {/* Tabs */}
           <div className="flex gap-1 p-1 bg-hype-surface rounded-xl border border-hype-border">
@@ -450,10 +538,29 @@ export default function CreatorProfilePage({ params }: { params: Promise<{ ticke
         pendingOrder={trade.pendingOrder}
         isSubmitting={trade.isSubmitting}
         onClose={trade.close}
+        onSpotNow={trade.spotNow}
         onSubmitOrder={trade.submitOrder}
         onConfirmOrder={trade.confirmOrder}
         onReset={trade.reset}
       />
+
+      {isMoveOnOpen && mySpot && (
+        <MoveOnCinematic
+          creator={creator}
+          entry={mySpot}
+          onMoveOn={(days) => moveOn(creator.ticker, days)}
+          onDone={() => setIsMoveOnOpen(false)}
+        />
+      )}
+
+      {isRediscovering && mySpot && (
+        <RediscoveryCinematic
+          creator={creator}
+          entry={mySpot}
+          onRediscover={() => rediscover(creator.ticker)}
+          onDone={() => setIsRediscovering(false)}
+        />
+      )}
     </>
   )
 }

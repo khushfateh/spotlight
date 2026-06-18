@@ -7,7 +7,7 @@ import { markOnboardingComplete } from '@/lib/services/profileService'
 import type { SupabaseGenre } from '@/lib/supabase/types'
 
 export function useUserPreferences() {
-  const { currentUser, isSupabaseMode, updateInterests } = useAuth()
+  const { currentUser, isSupabaseMode, updateInterests, acknowledgeOnboarding } = useAuth()
   const [genres, setGenres] = useState<SupabaseGenre[]>([])
   const [loading, setLoading] = useState(false)
 
@@ -35,6 +35,7 @@ export function useUserPreferences() {
     if (isSupabaseMode && currentUser) {
       await markOnboardingComplete(currentUser.id)
     }
+    acknowledgeOnboarding()
   }
 
   const genreSlugs = isSupabaseMode

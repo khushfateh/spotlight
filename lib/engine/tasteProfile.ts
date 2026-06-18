@@ -1,9 +1,10 @@
 import { mockUsers } from '@/lib/mock-data/users'
 import { getUserViewedTickers, getUserSearchTerms } from '@/lib/mock-data/interactions'
 import { IS_SUPABASE_ENABLED } from '@/lib/supabase/client'
-import { getSpottedCreatorIds } from '@/lib/repositories/spotRepository'
+import { getSpottedCreatorIds, getRediscoveredCreatorIds } from '@/lib/repositories/spotRepository'
 import { getFollowedCreatorIds } from '@/lib/repositories/followRepository'
 import { getRecentlyViewedTickers } from '@/lib/repositories/activityRepository'
+import { getUserGenreSlugs } from '@/lib/services/genreService'
 import { creators as mockCreators } from '@/lib/mock-data/creators'
 import type { TasteProfile } from './types'
 
@@ -14,21 +15,27 @@ export function buildMockTasteProfile(userId: string): TasteProfile {
     userId: user.id,
     genreIds: user.interests,
     spottedTickers: user.spottedTickers,
-    followedCreatorTickers: [],   // follows not stored in mock users
+    followedCreatorTickers: [],
     viewedTickers: getUserViewedTickers(user.id),
     searchedTerms: getUserSearchTerms(user.id),
+    rediscoveredTickers: [],
   }
 }
 
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+
 // Async builder that reads from Supabase with mock fallback
 export async function buildTasteProfileAsync(userId: string): Promise<TasteProfile> {
-  if (!IS_SUPABASE_ENABLED) return buildMockTasteProfile(userId)
+  // Don't query Supabase with non-UUID IDs (e.g. mock demo IDs like 'khush')
+  if (!IS_SUPABASE_ENABLED || !UUID_RE.test(userId)) return buildMockTasteProfile(userId)
 
   try {
-    const [spottedCreatorIds, followedCreatorIds, viewedTickers] = await Promise.all([
+    const [spottedCreatorIds, followedCreatorIds, viewedTickers, savedGenreSlugs, rediscoveredCreatorIds] = await Promise.all([
       getSpottedCreatorIds(userId),
       getFollowedCreatorIds(userId),
       getRecentlyViewedTickers(userId, 20),
+      getUserGenreSlugs(userId),
+      getRediscoveredCreatorIds(userId),
     ])
 
     // Resolve creator IDs → tickers using mock data as the lookup table
@@ -42,7 +49,7 @@ export async function buildTasteProfileAsync(userId: string): Promise<TasteProfi
       .map(id => idToTicker.get(id))
       .filter((t): t is string => !!t)
 
-    // Infer genre preferences from spotted/followed/viewed creators
+    // Infer additional genre preferences from activity (spots/follows/views)
     const { genres } = await import('@/lib/mock-data/genres')
     const relevantTickers = new Set([
       ...spottedTickers,
@@ -57,18 +64,30 @@ export async function buildTasteProfileAsync(userId: string): Promise<TasteProfi
         }
       }
     }
-    const genreIds = [...genreScores.entries()]
+    const activityGenreIds = [...genreScores.entries()]
       .sort((a, b) => b[1] - a[1])
       .slice(0, 5)
       .map(([id]) => id)
 
+    // Priority: explicit onboarding preferences → activity-inferred → mock fallback
+    const mergedGenreIds = savedGenreSlugs.length > 0
+      ? [...new Set([...savedGenreSlugs, ...activityGenreIds])]
+      : activityGenreIds.length > 0
+        ? activityGenreIds
+        : buildMockTasteProfile(userId).genreIds
+
+    const rediscoveredTickers = rediscoveredCreatorIds
+      .map(id => idToTicker.get(id))
+      .filter((t): t is string => !!t)
+
     return {
       userId,
-      genreIds: genreIds.length > 0 ? genreIds : buildMockTasteProfile(userId).genreIds,
+      genreIds: mergedGenreIds,
       spottedTickers,
       followedCreatorTickers,
       viewedTickers,
       searchedTerms: [],
+      rediscoveredTickers,
     }
   } catch {
     return buildMockTasteProfile(userId)
@@ -82,7 +101,8 @@ export function buildTasteProfileFromData(
   spottedTickers: string[],
   followedCreatorTickers: string[],
   viewedTickers: string[],
-  searchedTerms: string[]
+  searchedTerms: string[],
+  rediscoveredTickers: string[] = []
 ): TasteProfile {
   return {
     userId,
@@ -91,5 +111,6 @@ export function buildTasteProfileFromData(
     followedCreatorTickers,
     viewedTickers,
     searchedTerms,
+    rediscoveredTickers,
   }
 }

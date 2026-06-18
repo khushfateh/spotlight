@@ -9,13 +9,14 @@ import {
   useMotionValue,
   useSpring,
 } from 'framer-motion'
-import { ArrowRight, ChevronRight, Info, Zap } from 'lucide-react'
+import { ArrowRight, ChevronDown, ChevronRight, Info, Zap } from 'lucide-react'
 import Link from 'next/link'
 import IPOCard from '@/components/ipo/IPOCard'
 import PostCard from '@/components/community/PostCard'
 import TradeSheet from '@/components/trading/TradeSheet'
 import { useTradeSheet } from '@/hooks/useTradeSheet'
 import { useAuth } from '@/context/AuthContext'
+import { useSpots } from '@/hooks/useSpots'
 import {
   getTrendingCreators,
   ipoCreators,
@@ -67,16 +68,34 @@ function TiltCard({ children, className }: { children: ReactNode; className?: st
   )
 }
 
+function SpottedBadge() {
+  return (
+    <span style={{
+      display: 'inline-flex', alignItems: 'center', gap: 3,
+      padding: '4px 9px', borderRadius: 20,
+      background: 'rgba(201,168,76,0.14)',
+      border: '1px solid rgba(201,168,76,0.38)',
+      fontSize: 8, fontWeight: 700, letterSpacing: '0.12em',
+      textTransform: 'uppercase', color: 'rgba(201,168,76,0.92)',
+      textShadow: '0 0 10px rgba(201,168,76,0.3)',
+    }}>
+      ✦ Spotted
+    </span>
+  )
+}
+
 function CinematicHero({
   featured,
   onBuy,
   discoveryCount,
   avgMomentum,
+  isFeaturedSpotted,
 }: {
   featured: Creator
   onBuy: (c: Creator) => void
   discoveryCount: number
   avgMomentum: number
+  isFeaturedSpotted: boolean
 }) {
   const heroRef = useRef<HTMLElement>(null)
   const { scrollYProgress } = useScroll({
@@ -87,6 +106,7 @@ function CinematicHero({
   const bgScale = useTransform(scrollYProgress, [0, 1], [1, 1.08])
   const contentY = useTransform(scrollYProgress, [0, 0.7], [0, -70])
   const contentOpacity = useTransform(scrollYProgress, [0, 0.5], [1, 0])
+  const scrollHintOpacity = useTransform(scrollYProgress, [0, 0.12], [1, 0])
   const { score: featuredScore, delta: featuredDelta } = getMomentum(featured.ticker)
   const featuredTier = getMomentumTier(featuredScore)
   const isFeaturedUp = featuredDelta >= 0
@@ -161,12 +181,26 @@ function CinematicHero({
           )}
 
           <div className="flex items-center gap-4">
-            <button
-              onClick={() => onBuy(featured)}
-              className="flex items-center gap-2 px-6 py-3.5 rounded-2xl bg-hype-gold text-[#0A0A0A] font-bold text-[13px] hover:bg-hype-gold-dim transition-all active:scale-[0.99] shadow-[0_4px_24px_rgba(201,168,76,0.3)]"
-            >
-              Spot {featured.name.split(' ')[0]} <ArrowRight size={14} />
-            </button>
+            {isFeaturedSpotted ? (
+              <div style={{
+                display: 'inline-flex', alignItems: 'center', gap: 6,
+                padding: '11px 22px', borderRadius: 14,
+                background: 'rgba(201,168,76,0.1)',
+                border: '1.5px solid rgba(201,168,76,0.45)',
+                fontSize: 13, fontWeight: 700, letterSpacing: '0.12em',
+                textTransform: 'uppercase', color: 'rgba(201,168,76,0.9)',
+                textShadow: '0 0 14px rgba(201,168,76,0.4)',
+              }}>
+                ✦ Spotted
+              </div>
+            ) : (
+              <button
+                onClick={() => onBuy(featured)}
+                className="flex items-center gap-2 px-6 py-3.5 rounded-2xl bg-hype-gold text-[#0A0A0A] font-bold text-[13px] hover:bg-hype-gold-dim transition-all active:scale-[0.99] shadow-[0_4px_24px_rgba(201,168,76,0.3)]"
+              >
+                Spot {featured.name.split(' ')[0]} <ArrowRight size={14} />
+              </button>
+            )}
             <div className="text-right">
               <p className="text-white font-black text-xl tabular tracking-tight leading-none">
                 {featuredScore}
@@ -178,6 +212,21 @@ function CinematicHero({
           </div>
         </div>
       </motion.div>
+
+      {/* Scroll hint — fades out once user starts scrolling */}
+      <motion.div
+        className="absolute bottom-[88px] left-0 right-0 flex justify-center pointer-events-none"
+        style={{ opacity: scrollHintOpacity }}
+      >
+        <motion.div
+          animate={{ y: [0, 6, 0] }}
+          transition={{ duration: 1.6, repeat: Infinity, ease: 'easeInOut' }}
+          className="flex flex-col items-center gap-1"
+        >
+          <span className="text-white/40 text-[10px] font-medium tracking-widest uppercase">Scroll</span>
+          <ChevronDown size={16} className="text-white/40" />
+        </motion.div>
+      </motion.div>
     </section>
   )
 }
@@ -186,10 +235,12 @@ function CreatorPortraitCard({
   creator,
   onBuy,
   delay = 0,
+  isSpotted = false,
 }: {
   creator: Creator
   onBuy: (c: Creator) => void
   delay?: number
+  isSpotted?: boolean
 }) {
   const { score, delta } = getMomentum(creator.ticker)
   const tier = getMomentumTier(score)
@@ -224,12 +275,18 @@ function CreatorPortraitCard({
                 <p className="text-white/50 text-[9px]">Score {creator.creatorScore}/100</p>
               </div>
 
-              <button
-                onClick={e => { e.preventDefault(); onBuy(creator) }}
-                className="absolute top-3 right-3 px-2.5 py-1 bg-hype-gold text-[#0A0A0A] text-[9px] font-bold rounded-full opacity-0 group-hover:opacity-100 transition-all duration-200 active:scale-95 hover:bg-hype-gold-dim"
-              >
-                Spot
-              </button>
+              {isSpotted ? (
+                <div className="absolute top-3 right-3">
+                  <SpottedBadge />
+                </div>
+              ) : (
+                <button
+                  onClick={e => { e.preventDefault(); onBuy(creator) }}
+                  className="absolute top-3 right-3 px-2.5 py-1 bg-hype-gold text-[#0A0A0A] text-[9px] font-bold rounded-full transition-all duration-200 active:scale-95 hover:bg-hype-gold-dim"
+                >
+                  Spot
+                </button>
+              )}
 
               <div className="absolute bottom-0 left-0 right-0 p-4">
                 <p className="text-white font-bold text-[14px] leading-tight tracking-tight">{creator.name}</p>
@@ -250,7 +307,7 @@ function CreatorPortraitCard({
   )
 }
 
-function FeaturedCreatorCard({ creator, onBuy }: { creator: Creator; onBuy: (c: Creator) => void }) {
+function FeaturedCreatorCard({ creator, onBuy, isSpotted = false }: { creator: Creator; onBuy: (c: Creator) => void; isSpotted?: boolean }) {
   const { score, delta } = getMomentum(creator.ticker)
   const tier = getMomentumTier(score)
   const isUp = delta >= 0
@@ -264,10 +321,11 @@ function FeaturedCreatorCard({ creator, onBuy }: { creator: Creator; onBuy: (c: 
       )}
       <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent" />
 
-      <div className="absolute top-4 left-4">
+      <div className="absolute top-4 left-4 flex items-center gap-2">
         <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-hype-gold/20 border border-hype-gold/30 text-hype-gold text-[9px] font-bold uppercase tracking-wider">
           <Zap size={8} /> {tier}
         </span>
+        {isSpotted && <SpottedBadge />}
       </div>
 
       <div className="absolute bottom-0 left-0 right-0 p-5 flex items-end justify-between gap-4">
@@ -283,10 +341,6 @@ function FeaturedCreatorCard({ creator, onBuy }: { creator: Creator; onBuy: (c: 
         </div>
       </div>
 
-      <button
-        onClick={() => onBuy(creator)}
-        className="absolute bottom-5 right-5 translate-y-14 group-hover:translate-y-0 transition-transform"
-      />
     </div>
   )
 }
@@ -294,9 +348,11 @@ function FeaturedCreatorCard({ creator, onBuy }: { creator: Creator; onBuy: (c: 
 function PersonalizedSection({
   section,
   onBuy,
+  spottedTickers,
 }: {
   section: HomeSection
   onBuy: (c: Creator) => void
+  spottedTickers: string[]
 }) {
   const sectionCreators = getCreatorsByTickers(section.tickers)
   if (sectionCreators.length === 0) return null
@@ -338,14 +394,24 @@ function PersonalizedSection({
 
       {section.layout === 'featured' && sectionCreators[0] && (
         <div className="px-5">
-          <FeaturedCreatorCard creator={sectionCreators[0]} onBuy={onBuy} />
+          <FeaturedCreatorCard
+            creator={sectionCreators[0]}
+            onBuy={onBuy}
+            isSpotted={spottedTickers.includes(sectionCreators[0].ticker.toUpperCase())}
+          />
         </div>
       )}
 
       {section.layout === 'horizontal' && (
         <div className="flex gap-4 pl-5 overflow-x-auto hide-scrollbar pb-2" style={{ paddingRight: 20 }}>
           {sectionCreators.map((c, i) => (
-            <CreatorPortraitCard key={c.id} creator={c} onBuy={onBuy} delay={i * 0.05} />
+            <CreatorPortraitCard
+              key={c.id}
+              creator={c}
+              onBuy={onBuy}
+              delay={i * 0.05}
+              isSpotted={spottedTickers.includes(c.ticker.toUpperCase())}
+            />
           ))}
         </div>
       )}
@@ -372,15 +438,17 @@ function SectionSkeleton() {
 
 export default function HomeFeed() {
   const trade = useTradeSheet()
-  const { currentUser } = useAuth()
+  const { currentUser, isSupabaseMode } = useAuth()
+  const { spottedTickers } = useSpots()
   const trending = getTrendingCreators(6)
   const featured = trending[0]
   const openIPOs = ipoCreators.filter(i => i.status === 'open').slice(0, 2)
   const posts = communityPosts.slice(0, 3)
 
-  const discoveryCount = holdings.length
-  const avgMomentum = holdings.length
-    ? Math.round(holdings.reduce((sum, h) => sum + getMomentum(h.ticker).score, 0) / holdings.length)
+  const activeTickers = isSupabaseMode ? spottedTickers : holdings.map(h => h.ticker)
+  const discoveryCount = activeTickers.length
+  const avgMomentum = activeTickers.length
+    ? Math.round(activeTickers.reduce((sum, t) => sum + getMomentum(t).score, 0) / activeTickers.length)
     : 0
 
   const { score: featuredScore } = getMomentum(featured?.ticker ?? '')
@@ -397,6 +465,7 @@ export default function HomeFeed() {
         onBuy={trade.openBuy}
         discoveryCount={discoveryCount}
         avgMomentum={avgMomentum}
+        isFeaturedSpotted={activeTickers.includes(featured.ticker.toUpperCase())}
       />
 
       <motion.div {...sectionReveal} className="px-5 py-5 border-b border-hype-border/50">
@@ -450,7 +519,7 @@ export default function HomeFeed() {
         </div>
       ) : (
         homeSections.map(section => (
-          <PersonalizedSection key={section.id} section={section} onBuy={trade.openBuy} />
+          <PersonalizedSection key={section.id} section={section} onBuy={trade.openBuy} spottedTickers={activeTickers} />
         ))
       )}
 
@@ -563,6 +632,7 @@ export default function HomeFeed() {
         pendingOrder={trade.pendingOrder}
         isSubmitting={trade.isSubmitting}
         onClose={trade.close}
+        onSpotNow={trade.spotNow}
         onSubmitOrder={trade.submitOrder}
         onConfirmOrder={trade.confirmOrder}
         onReset={trade.reset}

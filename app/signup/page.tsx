@@ -7,6 +7,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/context/AuthContext'
 import { SpotlightWordmark } from '@/components/ui/SpotlightLogo'
+import InstrumentBackdrop from '@/components/ui/InstrumentBackdrop'
 
 const ease = [0.16, 1, 0.3, 1] as const
 
@@ -300,10 +301,13 @@ export default function SignupPage() {
 
   return (
     <div className="relative min-h-screen flex flex-col overflow-hidden bg-[#0A0A0A]">
-      <div
-        className="absolute inset-0 pointer-events-none"
-        style={{ background: 'radial-gradient(ellipse 60% 45% at 50% 0%, rgba(201,168,76,0.14) 0%, transparent 65%)' }}
-      />
+      {/* Instrument backdrop — matches login page */}
+      <InstrumentBackdrop />
+      <div className="absolute inset-0 bg-gradient-to-t from-[#0A0A0A] via-[#0A0A0A]/82 to-transparent pointer-events-none" />
+      <div className="absolute inset-0 pointer-events-none"
+        style={{ background: 'radial-gradient(ellipse 80% 60% at 50% 65%, rgba(10,10,10,0.65) 0%, transparent 100%)' }} />
+      <div className="absolute inset-0 pointer-events-none"
+        style={{ background: 'radial-gradient(ellipse 55% 35% at 50% 0%, rgba(201,168,76,0.14) 0%, transparent 60%)' }} />
 
       {/* Bird animation — absolute layer */}
       <AnimatePresence>

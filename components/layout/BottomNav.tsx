@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Home, Compass, Star, PieChart, User, LayoutDashboard, Plus } from 'lucide-react'
+import { Home, Compass, Star, PieChart, User, LayoutDashboard, Plus, ArrowRight } from 'lucide-react'
 import { useUser } from '@/context/UserContext'
 import { useAuth } from '@/context/AuthContext'
 import { cn } from '@/lib/utils'
@@ -17,7 +17,7 @@ type NavItem = {
 export default function BottomNav() {
   const pathname = usePathname()
   const { userMode } = useUser()
-  const { isAuthenticated } = useAuth()
+  const { isAuthenticated, isLoading } = useAuth()
 
   const investorNav: NavItem[] = [
     { href: '/', label: 'Home', icon: <Home size={20} /> },
@@ -37,7 +37,38 @@ export default function BottomNav() {
 
   const navItems = userMode === 'creator' ? creatorNav : investorNav
 
-  if (!isAuthenticated) return null
+  // Don't render anything while auth is still resolving
+  if (isLoading) return <div className="h-[72px] safe-bottom" />
+
+  // Unauthenticated: show a login/join prompt bar so users can navigate
+  if (!isAuthenticated) {
+    return (
+      <>
+        <div className="h-[72px] safe-bottom" />
+        <nav className="fixed bottom-0 left-0 right-0 z-40 safe-bottom">
+          <div className="bg-hype-bg/98 backdrop-blur-md border-t border-hype-border">
+            <div className="max-w-lg mx-auto h-[56px] flex items-center gap-3 px-4">
+              <p className="flex-1 text-hype-secondary text-xs font-medium leading-tight">
+                Spot creators<br className="sm:hidden" /> before the world does.
+              </p>
+              <Link
+                href="/login"
+                className="px-3 py-1.5 text-hype-muted text-xs font-semibold border border-hype-border rounded-xl hover:border-hype-border-light transition-colors"
+              >
+                Log In
+              </Link>
+              <Link
+                href="/signup"
+                className="flex items-center gap-1 px-3.5 py-1.5 bg-hype-gold text-[#0A0A0A] text-xs font-bold rounded-xl shadow-[0_2px_10px_rgba(201,168,76,0.25)] active:scale-95 transition-transform"
+              >
+                Join <ArrowRight size={11} />
+              </Link>
+            </div>
+          </div>
+        </nav>
+      </>
+    )
+  }
 
   return (
     <>

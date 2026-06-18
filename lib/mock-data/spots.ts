@@ -71,3 +71,9 @@ export function getEarlySpotters(ticker: string, limit = 3): EarlySpotter[] {
     .sort((a, b) => b.daysAgo - a.daysAgo)
     .slice(0, limit)
 }
+
+// Deterministic mock spotter rank — how many people spotted before you
+export function getSpotterRank(ticker: string): number {
+  const seed = ticker.toUpperCase().split('').reduce((a, c) => a + c.charCodeAt(0), 0)
+  return (seed % 115) + 7
+}

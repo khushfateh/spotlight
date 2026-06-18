@@ -17,10 +17,12 @@ type AuthContextType = {
   isAuthenticated: boolean
   isLoading: boolean
   isSupabaseMode: boolean
+  isNewUser: boolean
   login: (userId: string) => void
   logout: () => void
   switchUser: (userId: string) => void
   updateInterests: (interests: string[]) => void
+  acknowledgeOnboarding: () => void
   allUsers: MockUser[]
   signIn: (email: string, password: string) => Promise<{ error?: string }>
   signUp: (email: string, password: string, name: string) => Promise<{ error?: string; confirmEmail?: boolean }>
@@ -34,46 +36,55 @@ const STORAGE_KEY = 'spotlight_user_id'
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [currentUser, setCurrentUser] = useState<MockUser | null>(null)
   const [isLoading, setIsLoading] = useState(true)
+  const [isNewUser, setIsNewUser] = useState(false)
   const [userOverrides, setUserOverrides] = useState<Partial<MockUser>>({})
 
   // ── Supabase mode ────────────────────────────────────────────────────
   const loadSupabaseUser = useCallback(async (userId: string, email: string) => {
-    let profile = await getProfile(userId)
+    try {
+      let profile = await getProfile(userId)
 
-    if (!profile) {
-      // Profile may not exist yet — try to create it, then re-fetch
-      await ensureProfile(userId, email)
-      profile = await getProfile(userId)
-    }
-
-    if (profile) {
-      const mockUser = profileToMockUser(profile, email)
-      const slugs = await getUserGenreSlugs(userId)
-      setCurrentUser({ ...mockUser, interests: slugs })
-    } else {
-      // Profile can't be read/created (RLS, new account, etc.) —
-      // still mark the user as authenticated with a synthetic profile
-      const displayName = email.split('@')[0]
-      const synthetic: MockUser = {
-        id: userId,
-        name: displayName,
-        username: `@${displayName}`,
-        initials: displayName.slice(0, 2).toUpperCase(),
-        avatar: '👤',
-        bio: '',
-        interests: [],
-        spottedTickers: [],
-        discoveryScore: 0,
-        creatorsSpotted: 0,
-        breakoutsIdentified: 0,
-        avgLeadDays: 0,
-        momentumAccuracy: 0,
-        discoveryRank: 'Newcomer',
-        badges: [],
-        joinedDaysAgo: 0,
-        coverColor: 'from-zinc-700 to-zinc-900',
+      if (!profile) {
+        // Profile may not exist yet — try to create it, then re-fetch
+        await ensureProfile(userId, email)
+        profile = await getProfile(userId)
       }
-      setCurrentUser(synthetic)
+
+      if (profile) {
+        const mockUser = profileToMockUser(profile, email)
+        const slugs = await getUserGenreSlugs(userId)
+        setCurrentUser({ ...mockUser, interests: slugs })
+        setIsNewUser(!profile.onboarding_complete)
+      } else {
+        // Profile can't be read/created (RLS, new account, etc.) —
+        // still mark the user as authenticated with a synthetic profile
+        const displayName = email.split('@')[0]
+        const synthetic: MockUser = {
+          id: userId,
+          name: displayName,
+          username: `@${displayName}`,
+          initials: displayName.slice(0, 2).toUpperCase(),
+          avatar: '👤',
+          bio: '',
+          interests: [],
+          spottedTickers: [],
+          discoveryScore: 0,
+          creatorsSpotted: 0,
+          breakoutsIdentified: 0,
+          avgLeadDays: 0,
+          momentumAccuracy: 0,
+          discoveryRank: 'Newcomer',
+          badges: [],
+          joinedDaysAgo: 0,
+          coverColor: 'from-zinc-700 to-zinc-900',
+        }
+        setCurrentUser(synthetic)
+        setIsNewUser(true) // no profile yet → treat as new
+      }
+    } catch (err) {
+      // Network error or RLS rejection on iOS — log and continue.
+      // isLoading will be set false by the caller; user stays unauthenticated.
+      console.error('[auth] loadSupabaseUser failed:', err)
     }
   }, [])
 
@@ -89,13 +100,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return
     }
 
-    // Supabase mode: check existing session
-    supabase.auth.getSession().then(async ({ data }) => {
-      if (data.session?.user) {
-        await loadSupabaseUser(data.session.user.id, data.session.user.email ?? '')
-      }
+    // Supabase mode: check existing session.
+    // IMPORTANT: .catch() is required — if getSession() rejects OR loadSupabaseUser
+    // throws (network failure on iOS), setIsLoading(false) must still run.
+    // Without it, isLoading stays true forever → TopBar/BottomNav stuck as spacers.
+    supabase.auth.getSession()
+      .then(async ({ data }) => {
+        if (data.session?.user) {
+          await loadSupabaseUser(data.session.user.id, data.session.user.email ?? '')
+        }
+        setIsLoading(false)
+      })
+      .catch(() => {
+        // getSession itself failed (offline, ITP block, etc.) — treat as unauthenticated
+        setIsLoading(false)
+      })
+
+    // Belt-and-suspenders: if auth still hasn't resolved after 8 s, unblock the UI.
+    // This prevents a permanently-stuck loading state if Supabase is unreachable.
+    const authTimeout = setTimeout(() => {
       setIsLoading(false)
-    })
+    }, 8000)
 
     // Listen for auth state changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
@@ -103,10 +128,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         await loadSupabaseUser(session.user.id, session.user.email ?? '')
       } else {
         setCurrentUser(null)
+        setIsNewUser(false)
       }
     })
 
-    return () => subscription.unsubscribe()
+    return () => {
+      clearTimeout(authTimeout)
+      subscription.unsubscribe()
+    }
   }, [loadSupabaseUser])
 
   // ── Mock mode: merge overrides ───────────────────────────────────────
@@ -140,6 +169,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   function switchUser(userId: string) {
     login(userId)
+  }
+
+  function acknowledgeOnboarding() {
+    setIsNewUser(false)
   }
 
   function updateInterests(interests: string[]) {
@@ -178,10 +211,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       isAuthenticated: !!currentUserWithOverrides,
       isLoading,
       isSupabaseMode: IS_SUPABASE_ENABLED,
+      isNewUser,
       login,
       logout,
       switchUser,
       updateInterests,
+      acknowledgeOnboarding,
       allUsers: mockUsers,
       signIn,
       signUp,

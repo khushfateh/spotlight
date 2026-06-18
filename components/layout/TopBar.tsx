@@ -20,7 +20,10 @@ export default function TopBar() {
       </Link>
 
       <div className="flex items-center gap-2">
-        {!isLoading && !isAuthenticated ? (
+        {isLoading ? (
+          // Auth resolving — show invisible spacer to prevent layout shift
+          <div className="w-16 h-8" />
+        ) : !isAuthenticated ? (
           <>
             <Link
               href="/login"

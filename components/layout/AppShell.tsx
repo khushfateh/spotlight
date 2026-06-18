@@ -15,22 +15,27 @@ const AUTH_FLOW_ROUTES = ['/login', '/signup', '/onboarding']
 function InnerShell({ children }: { children: ReactNode }) {
   const pathname = usePathname()
   const router = useRouter()
-  const { isAuthenticated, isLoading } = useAuth()
+  const { isAuthenticated, isLoading, isNewUser } = useAuth()
   const isAuthFlow = AUTH_FLOW_ROUTES.some(r => pathname.startsWith(r))
   const isHome = pathname === '/'
 
   useEffect(() => {
     if (isLoading) return
+    // New authenticated user who hasn't completed onboarding → always send to onboarding
+    if (isAuthenticated && isNewUser && !pathname.startsWith('/onboarding')) {
+      router.replace('/onboarding')
+      return
+    }
     // Unauthenticated on a protected page (not home, not auth-flow) → redirect home
     if (!isAuthenticated && !isHome && !isAuthFlow) {
       router.replace('/')
     }
-    // Authenticated on login/signup → go home (but NOT onboarding — user just enrolled)
+    // Authenticated on login/signup → go home
     const isLoginOrSignup = ['/login', '/signup'].some(r => pathname.startsWith(r))
     if (isAuthenticated && isLoginOrSignup) {
       router.replace('/')
     }
-  }, [isAuthenticated, isLoading, isHome, isAuthFlow, pathname, router])
+  }, [isAuthenticated, isLoading, isHome, isAuthFlow, isNewUser, pathname, router])
 
   // Auth-flow pages (login / signup / onboarding) — no chrome
   if (isAuthFlow) {
@@ -74,7 +79,9 @@ function InnerShell({ children }: { children: ReactNode }) {
       </div>
       <SpotlightCursor />
       <TopBar />
-      <main className="pt-14 relative z-10">
+      {/* No z-index on main — adding z-index here creates a stacking context that buries
+          fixed children (TradeSheet z-51) below sibling fixed elements (BottomNav z-40) on iOS. */}
+      <main className="pt-14 relative">
         <div className="md:flex md:min-h-screen">
           <DesktopSidebar />
           <div className="flex-1 md:ml-56 max-w-2xl md:max-w-none">

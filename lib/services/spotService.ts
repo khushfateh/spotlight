@@ -1,13 +1,38 @@
 import { supabase } from '@/lib/supabase/client'
+import { getCreatorByTicker } from '@/lib/mock-data/creators'
 
+// Looks up creator ID in Supabase. If not found, auto-inserts from mock data
+// so any creator present in the app always works regardless of which seed migrations ran.
 async function getCreatorIdByTicker(ticker: string): Promise<string | null> {
   if (!supabase) return null
+
+  const upper = ticker.toUpperCase()
   const { data } = await supabase
     .from('creators')
     .select('id')
-    .eq('ticker', ticker.toUpperCase())
+    .eq('ticker', upper)
     .single()
-  return data?.id ?? null
+
+  if (data?.id) return data.id
+
+  // Creator missing from DB — seed it from mock data so future ops succeed
+  const mock = getCreatorByTicker(upper)
+  if (!mock) return null
+
+  const { data: inserted } = await supabase
+    .from('creators')
+    .insert({
+      ticker: upper,
+      slug: upper.toLowerCase(),
+      name: mock.name,
+      category: mock.category,
+      bio: mock.bio ?? null,
+      image_url: mock.imageUrl ?? null,
+    })
+    .select('id')
+    .single()
+
+  return inserted?.id ?? null
 }
 
 
@@ -47,6 +72,57 @@ export async function removeSpot(userId: string, ticker: string): Promise<void> 
     activity_type: 'unspot',
     creator_id: creatorId,
     metadata: { ticker },
+  })
+}
+
+export async function archiveSpot(userId: string, ticker: string, durationDays: number): Promise<void> {
+  if (!supabase) return
+  const creatorId = await getCreatorIdByTicker(ticker)
+  if (!creatorId) return
+  const now = new Date().toISOString()
+  // Update discovery_cards: archive status + preserve history
+  await supabase
+    .from('discovery_cards')
+    .update({ moved_on_at: now, spot_duration_days: durationDays, spot_status: 'archived' })
+    .match({ user_id: userId, creator_id: creatorId })
+  // Set first_moved_on_at only on the first move-on (never overwrite)
+  await supabase
+    .from('discovery_cards')
+    .update({ first_moved_on_at: now })
+    .match({ user_id: userId, creator_id: creatorId })
+    .is('first_moved_on_at', null)
+  // DELETE uses existing RLS policy → triggers realtime
+  await supabase.from('spots').delete().match({ user_id: userId, creator_id: creatorId })
+  await supabase.from('user_activity').insert({
+    user_id: userId,
+    activity_type: 'move_on',
+    creator_id: creatorId,
+    metadata: { ticker, duration_days: durationDays },
+  })
+}
+
+export async function rediscoverSpot(userId: string, ticker: string): Promise<void> {
+  if (!supabase) return
+  const creatorId = await getCreatorIdByTicker(ticker)
+  if (!creatorId) return
+  const now = new Date().toISOString()
+  const { data: card } = await supabase
+    .from('discovery_cards')
+    .select('rediscovery_count')
+    .match({ user_id: userId, creator_id: creatorId })
+    .single()
+  const nextCount = (card?.rediscovery_count ?? 0) + 1
+  await supabase
+    .from('discovery_cards')
+    .update({ spot_status: 'active', latest_respotted_at: now, rediscovery_count: nextCount })
+    .match({ user_id: userId, creator_id: creatorId })
+  // Re-insert into spots (triggers realtime on INSERT)
+  await supabase.from('spots').insert({ user_id: userId, creator_id: creatorId })
+  await supabase.from('user_activity').insert({
+    user_id: userId,
+    activity_type: 'rediscovered',
+    creator_id: creatorId,
+    metadata: { ticker, chapter: nextCount + 1 },
   })
 }
 

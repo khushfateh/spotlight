@@ -51,7 +51,7 @@ export default function LaunchPage() {
 
   if (isSubmitted) {
     return (
-      <div className="px-4 pt-8 flex flex-col items-center text-center">
+      <div className="px-4 pt-8 pb-28 flex flex-col items-center text-center">
         <div className="w-20 h-20 rounded-full bg-hype-green/10 border border-hype-green/20 flex items-center justify-center mb-5">
           <Check size={36} className="text-hype-green" />
         </div>
@@ -93,7 +93,7 @@ export default function LaunchPage() {
   }
 
   return (
-    <div className="px-4 pt-4 pb-2">
+    <div className="px-4 pt-4 pb-28">
       {/* Progress Header */}
       <div className="mb-6">
         <div className="flex items-center justify-between mb-2">

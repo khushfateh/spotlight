@@ -5,6 +5,7 @@ export type TasteProfile = {
   followedCreatorTickers: string[]
   viewedTickers: string[]
   searchedTerms: string[]
+  rediscoveredTickers: string[]   // creators the user has rediscovered at least once
 }
 
 export type CreatorSignal = {

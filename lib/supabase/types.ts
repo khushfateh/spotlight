@@ -187,6 +187,9 @@ export interface Database {
           creator_id: string
           notes: string | null
           spotted_at: string
+          spot_status: string
+          archived_at: string | null
+          spot_duration_days: number | null
         }
         Insert: {
           id?: string
@@ -194,9 +197,15 @@ export interface Database {
           creator_id: string
           notes?: string | null
           spotted_at?: string
+          spot_status?: string
+          archived_at?: string | null
+          spot_duration_days?: number | null
         }
         Update: {
           notes?: string | null
+          spot_status?: string
+          archived_at?: string | null
+          spot_duration_days?: number | null
         }
         Relationships: []
       }
@@ -354,9 +363,167 @@ export interface Database {
         }
         Relationships: []
       }
+      discovery_cards: {
+        Row: {
+          id: string
+          user_id: string
+          creator_id: string
+          spotter_rank: number
+          momentum_at_spot: number
+          momentum_tier: string
+          spotted_at: string
+          moved_on_at: string | null
+          spot_duration_days: number | null
+          first_spotted_at: string | null
+          first_moved_on_at: string | null
+          latest_respotted_at: string | null
+          spot_status: string
+          rediscovery_count: number
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          creator_id: string
+          spotter_rank: number
+          momentum_at_spot?: number
+          momentum_tier?: string
+          spotted_at?: string
+          moved_on_at?: string | null
+          spot_duration_days?: number | null
+          first_spotted_at?: string | null
+          first_moved_on_at?: string | null
+          latest_respotted_at?: string | null
+          spot_status?: string
+          rediscovery_count?: number
+        }
+        Update: {
+          moved_on_at?: string | null
+          spot_duration_days?: number | null
+          first_spotted_at?: string | null
+          first_moved_on_at?: string | null
+          latest_respotted_at?: string | null
+          spot_status?: string
+          rediscovery_count?: number
+        }
+        Relationships: []
+      }
+      spot_chapters: {
+        Row: {
+          id: string
+          user_id: string
+          creator_id: string
+          chapter_number: number
+          started_at: string
+          ended_at: string | null
+          duration_days: number | null
+          event_type: string
+          spotter_rank: number | null
+          momentum_at_spot: number
+          momentum_tier: string
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          creator_id: string
+          chapter_number?: number
+          started_at?: string
+          ended_at?: string | null
+          duration_days?: number | null
+          event_type?: string
+          spotter_rank?: number | null
+          momentum_at_spot?: number
+          momentum_tier?: string
+        }
+        Update: {
+          ended_at?: string | null
+          duration_days?: number | null
+        }
+        Relationships: []
+      }
+      artist_spot_counters: {
+        Row: {
+          id: string
+          creator_id: string
+          next_spotter_number: number
+          total_spotter_count: number
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          creator_id: string
+          next_spotter_number?: number
+          total_spotter_count?: number
+          updated_at?: string
+        }
+        Update: {
+          next_spotter_number?: number
+          total_spotter_count?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      user_artist_spots: {
+        Row: {
+          id: string
+          user_id: string
+          creator_id: string
+          spotter_number: number
+          first_spotted_at: string
+          first_moved_on_at: string | null
+          latest_spotted_at: string
+          latest_moved_on_at: string | null
+          is_currently_spotted: boolean
+          has_ever_moved_on: boolean
+          has_rediscovered: boolean
+          rediscovered_at: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          creator_id: string
+          spotter_number: number
+          first_spotted_at?: string
+          first_moved_on_at?: string | null
+          latest_spotted_at?: string
+          latest_moved_on_at?: string | null
+          is_currently_spotted?: boolean
+          has_ever_moved_on?: boolean
+          has_rediscovered?: boolean
+          rediscovered_at?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          first_moved_on_at?: string | null
+          latest_spotted_at?: string
+          latest_moved_on_at?: string | null
+          is_currently_spotted?: boolean
+          has_ever_moved_on?: boolean
+          has_rediscovered?: boolean
+          rediscovered_at?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: Record<string, never>
-    Functions: Record<string, never>
+    Functions: {
+      spot_or_rediscover: {
+        Args: { p_user_id: string; p_creator_id: string }
+        Returns: { spotter_number: number; card_status: string }
+      }
+      move_on_creator: {
+        Args: { p_user_id: string; p_creator_id: string; p_duration_days?: number }
+        Returns: { spotter_number: number; card_status: string }
+      }
+      assign_spotter_number: {
+        Args: { p_creator_id: string }
+        Returns: number
+      }
+    }
     Enums: Record<string, never>
   }
 }
@@ -368,3 +535,5 @@ export type SupabaseSpot = Database['public']['Tables']['spots']['Row']
 export type SupabaseFollow = Database['public']['Tables']['follows']['Row']
 export type SupabaseActivity = Database['public']['Tables']['user_activity']['Row']
 export type SupabaseUserPreference = Database['public']['Tables']['user_preferences']['Row']
+export type SupabaseUserArtistSpot = Database['public']['Tables']['user_artist_spots']['Row']
+export type SupabaseArtistSpotCounter = Database['public']['Tables']['artist_spot_counters']['Row']

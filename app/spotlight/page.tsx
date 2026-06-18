@@ -109,7 +109,7 @@ export default function SpotlightPage() {
 
   function openSpot() { trade.openBuy(creator!) }
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  function openRelease() { trade.openSell(creator!) }
+  function openMoveOn() { trade.openSell(creator!) }
 
   return (
     <div className="min-h-screen bg-hype-bg relative">
@@ -375,6 +375,7 @@ export default function SpotlightPage() {
         pendingOrder={trade.pendingOrder}
         isSubmitting={trade.isSubmitting}
         onClose={trade.close}
+        onSpotNow={trade.spotNow}
         onSubmitOrder={trade.submitOrder}
         onConfirmOrder={trade.confirmOrder}
         onReset={trade.reset}
