@@ -80,10 +80,18 @@ export async function archiveSpot(userId: string, ticker: string, durationDays: 
   const creatorId = await getCreatorIdByTicker(ticker)
   if (!creatorId) return
   const now = new Date().toISOString()
-  // Update discovery_cards: archive status + preserve history
+  // Set moved_on_at + spot_duration_days first (columns from 20260616 migration — always present).
+  // These are split from spot_status so that a missing spot_status column (20260617 migration)
+  // never blocks moved_on_at from being written. The vault fallback uses moved_on_at to
+  // determine isArchived, so this must succeed even if spot_status doesn't exist yet.
   await supabase
     .from('discovery_cards')
-    .update({ moved_on_at: now, spot_duration_days: durationDays, spot_status: 'archived' })
+    .update({ moved_on_at: now, spot_duration_days: durationDays })
+    .match({ user_id: userId, creator_id: creatorId })
+  // Set spot_status separately — safe to fail if column doesn't exist yet
+  await supabase
+    .from('discovery_cards')
+    .update({ spot_status: 'archived' })
     .match({ user_id: userId, creator_id: creatorId })
   // Set first_moved_on_at only on the first move-on (never overwrite)
   await supabase
