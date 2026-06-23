@@ -9,8 +9,10 @@ import { UserProvider } from '@/context/UserContext'
 import { SpotlightCursor } from '@/components/effects/SpotlightCursor'
 
 // These routes render without app chrome (no TopBar / BottomNav)
-// /share is the public social sharing page — accessible without auth
 const AUTH_FLOW_ROUTES = ['/login', '/signup', '/onboarding', '/share']
+
+// These routes require a logged-in user — everything else is publicly browsable
+const PROTECTED_ROUTES = ['/profile', '/portfolio', '/launch', '/dashboard']
 
 // Inner shell — rendered inside the providers so it can read auth state
 function InnerShell({ children }: { children: ReactNode }) {
@@ -18,7 +20,7 @@ function InnerShell({ children }: { children: ReactNode }) {
   const router = useRouter()
   const { isAuthenticated, isLoading, isNewUser } = useAuth()
   const isAuthFlow = AUTH_FLOW_ROUTES.some(r => pathname.startsWith(r))
-  const isHome = pathname === '/'
+  const isProtected = PROTECTED_ROUTES.some(r => pathname.startsWith(r))
 
   useEffect(() => {
     if (isLoading) return
@@ -27,8 +29,8 @@ function InnerShell({ children }: { children: ReactNode }) {
       router.replace('/onboarding')
       return
     }
-    // Unauthenticated on a protected page (not home, not auth-flow) → redirect home
-    if (!isAuthenticated && !isHome && !isAuthFlow) {
+    // Unauthenticated on a protected page → redirect home
+    if (!isAuthenticated && isProtected) {
       router.replace('/')
     }
     // Authenticated on login/signup → go home
@@ -36,16 +38,15 @@ function InnerShell({ children }: { children: ReactNode }) {
     if (isAuthenticated && isLoginOrSignup) {
       router.replace('/')
     }
-  }, [isAuthenticated, isLoading, isHome, isAuthFlow, isNewUser, pathname, router])
+  }, [isAuthenticated, isLoading, isProtected, isNewUser, pathname, router])
 
   // Auth-flow pages (login / signup / onboarding) — no chrome
   if (isAuthFlow) {
     return <div className="min-h-screen bg-hype-bg">{children}</div>
   }
 
-  // Home is public — always render with chrome (TopBar adapts based on auth state)
-  // Protected routes: show spinner while auth resolves, then redirect if still unauthed
-  if (!isHome && (isLoading || !isAuthenticated)) {
+  // Protected routes only: show spinner while auth resolves, then redirect if unauthed
+  if (isProtected && (isLoading || !isAuthenticated)) {
     return (
       <div className="min-h-screen bg-hype-bg flex items-center justify-center">
         <div className="w-8 h-8 rounded-full border-2 border-hype-gold/30 border-t-hype-gold animate-spin" />
@@ -97,14 +98,17 @@ function InnerShell({ children }: { children: ReactNode }) {
 
 function DesktopSidebar() {
   const pathname = usePathname()
+  const { isAuthenticated } = useAuth()
 
-  const links = [
-    { href: '/', label: 'Home' },
-    { href: '/explore', label: 'Discover' },
-    { href: '/spotlight', label: 'Spotlight', highlight: true },
-    { href: '/portfolio', label: 'Discoveries' },
-    { href: '/profile', label: 'Profile' },
+  const allLinks = [
+    { href: '/', label: 'Home', protected: false },
+    { href: '/explore', label: 'Discover', protected: false },
+    { href: '/spotlight', label: 'Spotlight', highlight: true, protected: false },
+    { href: '/portfolio', label: 'Discoveries', protected: true },
+    { href: '/profile', label: 'Profile', protected: true },
   ]
+
+  const links = allLinks.filter(l => !l.protected || isAuthenticated)
 
   return (
     <div className="hidden md:flex md:flex-col md:w-56 md:fixed md:left-0 md:top-14 md:bottom-0 md:border-r md:border-hype-border md:bg-hype-bg md:py-6 md:px-4">
