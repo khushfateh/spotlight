@@ -134,6 +134,12 @@ function CinematicHero({
         )}
       </motion.div>
 
+      {/* Aurora overlay */}
+      <div className="absolute inset-0 pointer-events-none">
+        <div className="aurora-orb-1 absolute w-[600px] h-[600px] rounded-full blur-[120px]" style={{ background: 'radial-gradient(circle, rgba(107,33,168,0.4) 0%, transparent 70%)', top: '-20%', right: '-20%' }} />
+        <div className="aurora-orb-2 absolute w-[500px] h-[500px] rounded-full blur-[100px]" style={{ background: 'radial-gradient(circle, rgba(201,168,76,0.25) 0%, transparent 70%)', bottom: '10%', left: '-10%' }} />
+      </div>
+
       <div className="absolute inset-0 bg-gradient-to-t from-black via-black/50 to-black/20" />
       <div className="absolute inset-0 bg-gradient-to-r from-black/75 via-black/20 to-transparent" />
       <div
@@ -170,7 +176,7 @@ function CinematicHero({
           </div>
 
           <h1
-            className="text-white font-black tracking-tight leading-none mb-5"
+            className="text-white font-black tracking-tight leading-none mb-5 font-display text-glow-gold"
             style={{ fontSize: 'clamp(2.6rem, 12vw, 5.5rem)' }}
           >
             {featured.name.split(' ').map((word, i) => (
@@ -198,12 +204,14 @@ function CinematicHero({
                 ✦ Spotted
               </div>
             ) : (
-              <button
+              <motion.button
                 onClick={() => onBuy(featured)}
-                className="flex items-center gap-2 px-6 py-3.5 rounded-2xl bg-hype-gold text-[#0A0A0A] font-bold text-[13px] hover:bg-hype-gold-dim transition-all active:scale-[0.99] shadow-[0_4px_24px_rgba(201,168,76,0.3)]"
+                whileHover={{ scale: 1.03 }}
+                whileTap={{ scale: 0.97 }}
+                className="btn-magnetic flex items-center gap-2 px-6 py-3.5 rounded-2xl bg-hype-gold text-[#0A0A0A] font-bold text-[13px] hover:bg-hype-gold-dim transition-all shadow-[0_4px_24px_rgba(201,168,76,0.3)]"
               >
                 Spot {featured.name.split(' ')[0]} <ArrowRight size={14} />
-              </button>
+              </motion.button>
             )}
             <div className="text-right">
               <p className="text-white font-black text-xl tabular tracking-tight leading-none">
@@ -256,13 +264,18 @@ function CreatorPortraitCard({
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true }}
       transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1], delay }}
-      className="flex-shrink-0"
+      whileHover={{ scale: 1.02 }}
+      whileTap={{ scale: 0.98 }}
+      className="flex-shrink-0 card-hover"
       style={{ width: 176 }}
     >
       <TiltCard>
         <div className="relative group cursor-pointer">
           <Link href={`/creator/${creator.ticker.toLowerCase()}`}>
-            <div className="relative rounded-3xl overflow-hidden" style={{ height: 264 }}>
+            <div
+              className="relative rounded-3xl overflow-hidden border border-white/[0.08]"
+              style={{ height: 264, boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.08)' }}
+            >
               {creator.imageUrl ? (
                 <img
                   src={creator.imageUrl}
@@ -286,7 +299,7 @@ function CreatorPortraitCard({
               ) : (
                 <button
                   onClick={e => { e.preventDefault(); onBuy(creator) }}
-                  className="absolute top-3 right-3 px-2.5 py-1 bg-hype-gold text-[#0A0A0A] text-[9px] font-bold rounded-full transition-all duration-200 active:scale-95 hover:bg-hype-gold-dim"
+                  className="btn-magnetic absolute top-3 right-3 px-2.5 py-1 bg-hype-gold text-[#0A0A0A] text-[9px] font-bold rounded-full transition-all duration-200 active:scale-95 hover:bg-hype-gold-dim"
                 >
                   Spot
                 </button>
@@ -496,10 +509,11 @@ export default function HomeFeed() {
       />
 
       <motion.div {...sectionReveal} className="px-5 py-5 border-b border-hype-border/50">
-        <div className="flex items-center gap-2 mb-3">
-          <div className="w-1.5 h-1.5 rounded-full bg-hype-green" style={{ boxShadow: '0 0 6px #10B981' }} />
-          <span className="section-label">Live Momentum</span>
-        </div>
+        <div className="glass rounded-2xl p-4 mb-4">
+          <div className="flex items-center gap-2 mb-3">
+            <div className="w-2 h-2 rounded-full bg-hype-green" style={{ boxShadow: '0 0 8px #10B981, 0 0 16px rgba(16,185,129,0.4)' }} />
+            <span className="section-label tracking-[0.25em]">Live Momentum</span>
+          </div>
         <div className="flex gap-6 overflow-x-auto hide-scrollbar">
           {trending.slice(0, 5).map((c, i) => {
             const { score, delta } = getMomentum(c.ticker)
@@ -519,15 +533,16 @@ export default function HomeFeed() {
             )
           })}
         </div>
+        </div>
       </motion.div>
 
       <div className="px-5 pt-8 pb-3">
         <div className="flex items-baseline justify-between">
           <div>
-            <p className="text-white/30 text-[10px] font-semibold uppercase tracking-widest mb-1">
+            <p className="text-white/30 text-[10px] font-semibold uppercase tracking-[0.25em] mb-1">
               Your Daily Cultural Briefing
             </p>
-            <h2 className="text-white font-black text-2xl tracking-tight">
+            <h2 className="text-white font-black text-2xl tracking-tight font-display">
               {currentUser ? `Good morning, ${currentUser.name.split(' ')[0]}.` : 'What to watch today.'}
             </h2>
           </div>
@@ -554,7 +569,7 @@ export default function HomeFeed() {
         <p className="section-label text-hype-gold mb-4">This Week in Culture</p>
         <div className="flex items-start justify-between gap-4 mb-6">
           <div className="flex-1">
-            <h2 className="text-hype-text font-black text-2xl tracking-tight leading-tight mb-2">
+            <h2 className="text-hype-text font-black text-2xl tracking-tight leading-tight mb-2 font-display">
               {featured.name}
             </h2>
             <p className="text-hype-secondary text-sm leading-relaxed">
@@ -585,13 +600,15 @@ export default function HomeFeed() {
           </div>
         </div>
 
-        <button
+        <motion.button
           onClick={() => handleBuy(featured)}
-          className="w-full flex items-center justify-center gap-2 h-12 rounded-2xl bg-hype-gold text-[#0A0A0A] font-bold text-[13px] hover:bg-hype-gold-dim transition-all active:scale-[0.99] shadow-[0_4px_20px_rgba(201,168,76,0.18)]"
+          whileHover={{ scale: 1.02 }}
+          whileTap={{ scale: 0.97 }}
+          className="btn-magnetic w-full flex items-center justify-center gap-2 h-12 rounded-2xl bg-hype-gold text-[#0A0A0A] font-bold text-[13px] hover:bg-hype-gold-dim transition-all shadow-[0_4px_20px_rgba(201,168,76,0.25)]"
         >
           Spot {featured.name.split(' ')[0]}
           <ArrowRight size={14} />
-        </button>
+        </motion.button>
       </motion.section>
 
       <motion.section {...sectionReveal} className="py-8">

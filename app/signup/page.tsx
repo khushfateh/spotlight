@@ -315,6 +315,12 @@ export default function SignupPage() {
       <div className="absolute inset-0 pointer-events-none"
         style={{ background: 'radial-gradient(ellipse 55% 35% at 50% 0%, rgba(201,168,76,0.14) 0%, transparent 60%)' }} />
 
+      {/* Aurora orbs */}
+      <div className="absolute inset-0 pointer-events-none overflow-hidden">
+        <div className="aurora-orb-2 absolute w-[400px] h-[400px] rounded-full blur-[100px]" style={{ background: 'radial-gradient(circle, rgba(107,33,168,0.2) 0%, transparent 70%)', top: '-10%', left: '-15%' }} />
+        <div className="aurora-orb-3 absolute w-[350px] h-[350px] rounded-full blur-[90px]" style={{ background: 'radial-gradient(circle, rgba(15,118,110,0.2) 0%, transparent 70%)', bottom: '5%', right: '-10%' }} />
+      </div>
+
       {/* Bird animation — absolute layer */}
       <AnimatePresence>
         {stage === 'bird' && (
@@ -421,7 +427,7 @@ export default function SignupPage() {
             transition={{ duration: 0.7, ease, delay: 0.08 }}
             className="mb-8 mt-6"
           >
-            <h1 className="text-white font-black text-3xl tracking-tight leading-tight mb-2">
+            <h1 className="text-white font-black text-3xl tracking-tight leading-tight mb-2 font-display">
               Join SPOTLIGHT.
             </h1>
             <p className="text-white/40 text-sm">

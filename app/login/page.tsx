@@ -60,6 +60,12 @@ export default function LoginPage() {
       <div className="absolute inset-0 pointer-events-none"
         style={{ background: 'radial-gradient(ellipse 55% 35% at 50% 0%, rgba(201,168,76,0.14) 0%, transparent 60%)' }} />
 
+      {/* Aurora orbs */}
+      <div className="absolute inset-0 pointer-events-none overflow-hidden">
+        <div className="aurora-orb-1 absolute w-[400px] h-[400px] rounded-full blur-[100px]" style={{ background: 'radial-gradient(circle, rgba(107,33,168,0.25) 0%, transparent 70%)', top: '-10%', right: '-15%' }} />
+        <div className="aurora-orb-2 absolute w-[350px] h-[350px] rounded-full blur-[90px]" style={{ background: 'radial-gradient(circle, rgba(29,78,216,0.2) 0%, transparent 70%)', bottom: '10%', left: '-10%' }} />
+      </div>
+
       {/* Form */}
       <div className="relative z-10 flex flex-col items-center justify-center min-h-screen px-6 py-12">
 
@@ -86,7 +92,7 @@ export default function LoginPage() {
           transition={{ duration: 0.8, ease, delay: 0.1 }}
           className="text-center mb-10 max-w-xs"
         >
-          <h1 className="text-white font-black text-3xl tracking-tight leading-tight mb-3">
+          <h1 className="text-white font-black text-3xl tracking-tight leading-tight mb-3 font-display">
             Discover icons<br />before the world does.
           </h1>
           <p className="text-white/40 text-sm leading-relaxed">
@@ -98,7 +104,7 @@ export default function LoginPage() {
           initial={{ opacity: 0, y: 24 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, ease, delay: 0.2 }}
-          className="w-full max-w-sm"
+          className="w-full max-w-sm glass rounded-3xl p-6"
         >
           {/* Google sign-in */}
           <button

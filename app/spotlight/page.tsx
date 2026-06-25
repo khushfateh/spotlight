@@ -141,6 +141,12 @@ export default function SpotlightPage() {
           />
         </motion.div>
 
+        {/* Aurora overlay */}
+        <div className="absolute inset-0 pointer-events-none">
+          <div className="aurora-orb-1 absolute w-[500px] h-[500px] rounded-full blur-[120px]" style={{ background: 'radial-gradient(circle, rgba(107,33,168,0.35) 0%, transparent 70%)', top: '-15%', right: '-15%' }} />
+          <div className="aurora-orb-3 absolute w-[400px] h-[400px] rounded-full blur-[100px]" style={{ background: 'radial-gradient(circle, rgba(29,78,216,0.25) 0%, transparent 70%)', bottom: '20%', left: '-10%' }} />
+        </div>
+
         {/* Overlays */}
         <div className="absolute inset-0 bg-gradient-to-t from-hype-bg via-hype-bg/40 to-transparent" />
         <div className="absolute inset-0 bg-gradient-to-r from-hype-bg/50 via-transparent to-hype-bg/30" />
@@ -157,14 +163,14 @@ export default function SpotlightPage() {
             </span>
           </div>
 
-          <h1 className="text-white font-black text-5xl tracking-tight leading-none mb-2">
+          <h1 className="text-white font-black text-5xl tracking-tight leading-none mb-2 font-display">
             {creator.name}
           </h1>
 
           {/* Genre tags */}
           <div className="flex items-center gap-2 mb-4 flex-wrap">
             {genres.slice(0, 3).map(g => (
-              <span key={g.id} className="text-white/50 text-xs">
+              <span key={g.id} className="glass-gold text-white/70 text-xs px-2.5 py-0.5 rounded-full">
                 {g.label}
               </span>
             ))}
@@ -174,7 +180,7 @@ export default function SpotlightPage() {
           <div className="flex items-center gap-4 mb-6">
             <div>
               <p className="text-white/40 text-[10px] uppercase tracking-widest mb-0.5">Momentum</p>
-              <p className="text-white font-black text-4xl leading-none">{score}</p>
+              <p className="text-white font-black text-4xl leading-none text-glow-gold">{score}</p>
             </div>
             <div className="h-10 w-px bg-white/15" />
             <div>
@@ -193,12 +199,14 @@ export default function SpotlightPage() {
 
           {/* CTA buttons */}
           <div className="flex gap-3">
-            <button
+            <motion.button
               onClick={openSpot}
-              className="flex-1 h-12 rounded-2xl bg-hype-gold text-[#0A0A0A] font-bold text-sm shadow-[0_4px_20px_rgba(201,168,76,0.35)] hover:bg-hype-gold-dim transition-all active:scale-[0.98]"
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.97 }}
+              className="btn-magnetic glow-gold flex-1 h-12 rounded-2xl bg-hype-gold text-[#0A0A0A] font-bold text-sm hover:bg-hype-gold-dim transition-all"
             >
               Spot {firstName}
-            </button>
+            </motion.button>
             <button
               onClick={() => {}}
               className="px-5 h-12 rounded-2xl border border-white/20 text-white text-sm font-medium hover:border-white/40 transition-all"
@@ -239,7 +247,7 @@ export default function SpotlightPage() {
 
         {/* Editorial teaser */}
         <div className="py-8 border-b border-hype-border">
-          <p className="text-white/40 text-[10px] font-semibold uppercase tracking-widest mb-3">
+          <p className="text-white/40 text-[10px] font-semibold uppercase tracking-[0.25em] mb-3">
             Why they matter
           </p>
           <p className="text-white/85 text-lg font-medium leading-relaxed">
@@ -249,7 +257,7 @@ export default function SpotlightPage() {
 
         {/* Why They're Rising — editorial sections */}
         <div className="py-8 border-b border-hype-border">
-          <p className="text-white/40 text-[10px] font-semibold uppercase tracking-widest mb-6">
+          <p className="text-white/40 text-[10px] font-semibold uppercase tracking-[0.25em] mb-6">
             The story
           </p>
           <div className="space-y-8">
@@ -261,7 +269,7 @@ export default function SpotlightPage() {
                 viewport={{ once: true, margin: '-40px' }}
                 transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1], delay: i * 0.08 }}
               >
-                <h3 className="text-hype-gold font-black text-lg mb-2">{card.heading}</h3>
+                <h3 className="text-hype-gold font-black text-lg mb-2 font-display">{card.heading}</h3>
                 <p className="text-white/60 text-sm leading-relaxed">{card.body}</p>
               </motion.div>
             ))}
@@ -271,7 +279,7 @@ export default function SpotlightPage() {
         {/* Momentum Drivers */}
         {drivers.length > 0 && (
           <div className="py-8 border-b border-hype-border">
-            <p className="text-white/40 text-[10px] font-semibold uppercase tracking-widest mb-5">
+            <p className="text-white/40 text-[10px] font-semibold uppercase tracking-[0.25em] mb-5">
               What&apos;s driving momentum
             </p>
             <div className="space-y-3">
@@ -281,6 +289,7 @@ export default function SpotlightPage() {
                   initial={{ opacity: 0, x: -10 }}
                   whileInView={{ opacity: 1, x: 0 }}
                   viewport={{ once: true, margin: '-20px' }}
+                  whileHover={{ x: 4 }}
                   transition={{ duration: 0.4, delay: i * 0.05 }}
                   className="flex items-start justify-between gap-4 py-3 border-b border-hype-border/60 last:border-0"
                 >
@@ -317,7 +326,14 @@ export default function SpotlightPage() {
             </div>
             <div className="space-y-3">
               {spotters.map((spotter, i) => (
-                <div key={i} className="flex items-center gap-3">
+                <motion.div
+                  key={i}
+                  initial={{ opacity: 0, x: -12 }}
+                  whileInView={{ opacity: 1, x: 0 }}
+                  viewport={{ once: true, margin: '-20px' }}
+                  transition={{ duration: 0.4, delay: i * 0.08 }}
+                  className="flex items-center gap-3"
+                >
                   <div className="w-9 h-9 rounded-full bg-white/10 border border-white/10 flex items-center justify-center text-white text-xs font-bold flex-shrink-0">
                     {spotter.userAvatar}
                   </div>
@@ -330,7 +346,7 @@ export default function SpotlightPage() {
                     )}
                   </div>
                   <p className="text-white/35 text-xs flex-shrink-0">{spotter.daysAgo}d ago</p>
-                </div>
+                </motion.div>
               ))}
             </div>
           </div>
@@ -338,18 +354,18 @@ export default function SpotlightPage() {
 
         {/* Stats row */}
         <div className="py-8 border-b border-hype-border">
-          <p className="text-white/40 text-[10px] font-semibold uppercase tracking-widest mb-4">Creator stats</p>
+          <p className="text-white/40 text-[10px] font-semibold uppercase tracking-[0.25em] mb-4">Creator stats</p>
           <div className="grid grid-cols-3 gap-4">
-            <div className="rounded-2xl bg-hype-surface border border-hype-border p-4 text-center">
+            <div className="glass rounded-2xl p-4 text-center">
               <p className="text-white font-black text-xl">{creator.followers}</p>
               <p className="text-white/35 text-[10px] uppercase tracking-wider mt-1">Followers</p>
             </div>
-            <div className="rounded-2xl bg-hype-surface border border-hype-border p-4 text-center">
+            <div className="glass rounded-2xl p-4 text-center">
               <p className="text-white font-black text-xl">{creator.creatorScore}</p>
               <p className="text-white/35 text-[10px] uppercase tracking-wider mt-1">Creator Score</p>
             </div>
-            <div className="rounded-2xl bg-hype-surface border border-hype-border p-4 text-center">
-              <p className="text-hype-gold font-black text-sm">{tier}</p>
+            <div className="glass-gold rounded-2xl p-4 text-center">
+              <p className="text-hype-gold font-black text-sm text-glow-gold">{tier}</p>
               <p className="text-white/35 text-[10px] uppercase tracking-wider mt-1">Tier</p>
             </div>
           </div>
@@ -357,16 +373,18 @@ export default function SpotlightPage() {
 
         {/* CTA */}
         <div className="pt-8">
-          <p className="text-white/40 text-[10px] font-semibold uppercase tracking-widest mb-4 text-center">
+          <p className="text-white/40 text-[10px] font-semibold uppercase tracking-[0.25em] mb-4 text-center">
             You spotted it first.
           </p>
           <div className="flex gap-3">
-            <button
+            <motion.button
               onClick={openSpot}
-              className="flex-1 h-13 py-3.5 rounded-2xl bg-hype-gold text-[#0A0A0A] font-bold text-sm shadow-[0_4px_20px_rgba(201,168,76,0.3)] hover:bg-hype-gold-dim transition-all"
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.97 }}
+              className="btn-magnetic glow-gold-sm flex-1 h-13 py-3.5 rounded-2xl bg-hype-gold text-[#0A0A0A] font-bold text-sm hover:bg-hype-gold-dim transition-all"
             >
               Spot {firstName}
-            </button>
+            </motion.button>
             <Link
               href={`/creator/${creator.ticker.toLowerCase()}`}
               className="px-5 h-13 py-3.5 rounded-2xl border border-white/20 text-white text-sm font-medium hover:border-white/40 transition-all flex items-center justify-center"

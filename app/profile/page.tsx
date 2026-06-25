@@ -229,20 +229,20 @@ export default function ProfilePage() {
     <div className="px-4 pt-4 pb-28 space-y-5">
 
       {/* Profile Card */}
-      <div className="elevated-card rounded-3xl p-5">
+      <div className="elevated-card glass rounded-3xl p-5" style={{ borderColor: 'rgba(255,255,255,0.08)' }}>
         <div className="flex items-start gap-4">
           {currentUser ? (
-            <div className={`w-16 h-16 rounded-2xl bg-gradient-to-br ${currentUser.coverColor} flex items-center justify-center text-white text-xl font-black`}>
+            <div className={`w-16 h-16 rounded-2xl bg-gradient-to-br ${currentUser.coverColor} flex items-center justify-center text-white text-xl font-black`} style={{ boxShadow: '0 0 20px rgba(107,33,168,0.3)' }}>
               {currentUser.initials}
             </div>
           ) : (
-            <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-hype-purple to-hype-indigo flex items-center justify-center text-white text-xl font-bold">
+            <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-white text-xl font-bold" style={{ boxShadow: '0 0 20px rgba(168,85,247,0.3)' }}>
               {user.avatar}
             </div>
           )}
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 mb-0.5 flex-wrap">
-              <h2 className="text-hype-text font-bold text-lg">{user.name}</h2>
+              <h2 className="text-hype-text font-bold text-lg font-display">{user.name}</h2>
               <Badge variant="gold" size="sm">Pro</Badge>
             </div>
             <p className="text-hype-muted text-xs font-mono mb-1">{user.username}</p>
