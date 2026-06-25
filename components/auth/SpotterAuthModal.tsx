@@ -109,9 +109,9 @@ export default function SpotterAuthModal({ creator, onClose }: Props) {
   const [showDismissText, setShowDismissText] = useState(false)
   const [benefitCount, setBenefitCount] = useState(0)
 
-  // Phase 1 → 2 after 700ms
+  // Phase 1 → 2 after 1050ms (700ms × 1.5)
   useEffect(() => {
-    const t = setTimeout(() => setPhase('card'), 700)
+    const t = setTimeout(() => setPhase('card'), 1050)
     return () => clearTimeout(t)
   }, [])
 
@@ -210,7 +210,7 @@ export default function SpotterAuthModal({ creator, onClose }: Props) {
                 fontStyle: 'italic',
               }}
             >
-              Every discovery<br />deserves a name.
+              Claim your place in<br />{creator.name}&apos;s journey to success.
             </p>
           </motion.div>
         )}
