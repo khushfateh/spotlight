@@ -125,11 +125,16 @@ export async function refreshAllCreators(): Promise<{
   for (const row of rows) {
     if (!row.spotify_artist_id) continue
     await new Promise(r => setTimeout(r, 120))
-    const result = await syncCreatorBySpotifyArtistId(row.ticker, row.spotify_artist_id)
-    if (result.ok) synced.push(row.ticker)
-    else {
+    try {
+      const result = await syncCreatorBySpotifyArtistId(row.ticker, row.spotify_artist_id)
+      if (result.ok) synced.push(row.ticker)
+      else {
+        failed.push(row.ticker)
+        errors[row.ticker] = result.error
+      }
+    } catch (e) {
       failed.push(row.ticker)
-      errors[row.ticker] = result.error
+      errors[row.ticker] = e instanceof Error ? e.message : String(e)
     }
   }
 

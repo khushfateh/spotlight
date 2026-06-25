@@ -11,6 +11,12 @@ export async function spotifyFetch<T>(path: string, opts?: { noCache?: boolean }
     ...(opts?.noCache ? { cache: 'no-store' } : { next: { revalidate: 3600 } }),
   })
 
-  if (!res.ok) return null
+  if (!res.ok) {
+    if (opts?.noCache) {
+      // Surface real HTTP status for debugging
+      throw new Error(`Spotify HTTP ${res.status} for ${path}`)
+    }
+    return null
+  }
   return res.json() as Promise<T>
 }
