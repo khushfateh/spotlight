@@ -48,13 +48,13 @@ const LENSES: Lens[] = [
 
 // ── Creator list row ───────────────────────────────────────────────────────────
 
-function CreatorListRow({ creator, rank, onBuy }: { creator: Creator; rank: number; onBuy: (c: Creator) => void }) {
+function CreatorListRow({ creator, rank, onBuy, onSelect }: { creator: Creator; rank: number; onBuy: (c: Creator) => void; onSelect?: () => void }) {
   const { score, delta } = getMomentum(creator.ticker)
   const tier = getMomentumTier(score)
   const isDeltaUp = delta >= 0
 
   return (
-    <Link href={`/creator/${creator.ticker.toLowerCase()}`}>
+    <Link href={`/creator/${creator.ticker.toLowerCase()}`} onClick={onSelect}>
       <div className="flex items-center gap-3 px-4 py-3.5 hover:bg-hype-surface-2 transition-colors group">
         <span className="text-hype-dim text-[11px] font-mono w-5 flex-shrink-0 text-center">{rank}</span>
 
@@ -437,7 +437,13 @@ export default function ExplorePage() {
           ) : filteredCreators.length > 0 ? (
             <div className="premium-card rounded-2xl overflow-hidden divide-y divide-hype-border/60">
               {filteredCreators.map((c, i) => (
-                <CreatorListRow key={c.id} creator={c} rank={i + 1} onBuy={handleBuy} />
+                <CreatorListRow
+                  key={c.id}
+                  creator={c}
+                  rank={i + 1}
+                  onBuy={handleBuy}
+                  onSelect={query.trim() ? () => logCreatorSearch(currentUser?.id ?? null, query.trim(), c.ticker) : undefined}
+                />
               ))}
             </div>
           ) : (
