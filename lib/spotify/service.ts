@@ -13,14 +13,15 @@ export async function searchArtist(query: string): Promise<SpotifyArtist[]> {
   return data?.artists.items ?? []
 }
 
-export async function getArtist(id: string): Promise<SpotifyArtist | null> {
-  return spotifyFetch<SpotifyArtist>(`/artists/${id}`)
+export async function getArtist(id: string, noCache?: boolean): Promise<SpotifyArtist | null> {
+  return spotifyFetch<SpotifyArtist>(`/artists/${id}`, noCache ? { noCache: true } : undefined)
 }
 
 // top-tracks requires user OAuth — not available with Client Credentials flow
-export async function getArtistAlbums(id: string): Promise<SpotifyAlbum[]> {
+export async function getArtistAlbums(id: string, noCache?: boolean): Promise<SpotifyAlbum[]> {
   const data = await spotifyFetch<{ items: SpotifyAlbum[] }>(
-    `/artists/${id}/albums?include_groups=album,single&market=US&limit=5`
+    `/artists/${id}/albums?include_groups=album,single&market=US&limit=5`,
+    noCache ? { noCache: true } : undefined
   )
   return data?.items ?? []
 }
