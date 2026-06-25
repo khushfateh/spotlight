@@ -20,6 +20,7 @@ import SpotterAuthModal from '@/components/auth/SpotterAuthModal'
 import { trackAnonymousSpotAttempt } from '@/lib/services/anonymousTrackingService'
 import { useSpots } from '@/hooks/useSpots'
 import {
+  creators,
   getTrendingCreators,
   ipoCreators,
   communityPosts,
@@ -30,6 +31,7 @@ import {
 } from '@/lib/mock-data'
 import { reasonTypeLabel, type HomeSection } from '@/lib/mock-data/recommendations'
 import { usePersonalizedFeed } from '@/hooks/usePersonalizedFeed'
+import { useMomentumRanking } from '@/hooks/useMomentumRanking'
 import RecommendationDebugPanel from '@/components/dev/RecommendationDebugPanel'
 import { cn } from '@/lib/utils'
 import type { Creator } from '@/types'
@@ -452,8 +454,21 @@ export default function HomeFeed() {
       trade.openBuy(creator)
     }
   }
+  const { entries: momentumEntries, hasData: hasMomentumData } = useMomentumRanking()
   const trending = getTrendingCreators(6)
-  const featured = trending[0]
+
+  // Real data: artist with highest positive follower change across all creators.
+  // Falls back to mock priceChangePercent24h ranking until the first Spotify sync runs.
+  const featured: Creator = (() => {
+    if (hasMomentumData && momentumEntries.length > 0) {
+      const top = momentumEntries.find(e => e.followersChangePct > 0) ?? momentumEntries[0]
+      const found = (creators as Creator[]).find(
+        c => c.ticker.toUpperCase() === top.ticker.toUpperCase()
+      )
+      if (found) return found
+    }
+    return trending[0]
+  })()
   const openIPOs = ipoCreators.filter(i => i.status === 'open').slice(0, 2)
   const posts = communityPosts.slice(0, 3)
 
