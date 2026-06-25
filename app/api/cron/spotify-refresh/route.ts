@@ -25,6 +25,12 @@ export async function GET(req: NextRequest) {
     failedTickers: result.failed,
     errors: result.errors,
     adminClientActive: result.adminClientActive,
+    env: {
+      hasSpotifyClientId: !!process.env.SPOTIFY_CLIENT_ID,
+      hasSpotifyClientSecret: !!process.env.SPOTIFY_CLIENT_SECRET,
+      hasSupabaseSecretKey: !!process.env.SUPABASE_SECRET_KEY,
+      hasCronSecret: !!process.env.CRON_SECRET,
+    },
     durationMs,
     timestamp: new Date().toISOString(),
   })
