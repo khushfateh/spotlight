@@ -15,10 +15,13 @@ export async function syncCreatorBySpotifyArtistId(
 ): Promise<SpotifySyncResult> {
   if (!db) return { ok: false, error: 'Supabase not configured' }
 
+  // Strip any whitespace/newlines that may have been stored in the DB
+  const cleanId = spotifyArtistId.replace(/\s+/g, '')
+
   // noCache=true: cron always needs live Spotify data, never stale cache
   const [artist, albums] = await Promise.all([
-    getArtist(spotifyArtistId, true),
-    getArtistAlbums(spotifyArtistId, true),
+    getArtist(cleanId, true),
+    getArtistAlbums(cleanId, true),
   ])
 
   if (!artist) return { ok: false, error: 'Spotify artist not found' }
