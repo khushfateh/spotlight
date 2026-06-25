@@ -3,12 +3,13 @@
 
 import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { X, CheckCircle, AlertCircle } from 'lucide-react'
+import { X, CheckCircle, AlertCircle, ArrowRight } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import SpotCinematic from '@/components/trading/SpotCinematic'
 import type { Creator, TradeOrder } from '@/types'
 import { cn } from '@/lib/utils'
 import { getMomentum, getMomentumTier } from '@/lib/mock-data/momentum'
+import { useRouter } from 'next/navigation'
 
 type TradeStep = 'form' | 'confirm' | 'success' | 'error'
 type Cinematic = 'curtains' | null
@@ -280,6 +281,7 @@ export default function TradeSheet({
   onClose, onSpotNow, onSubmitOrder, onConfirmOrder, onReset,
 }: TradeSheetProps) {
   const [cinematic, setCinematic] = useState<Cinematic>(null)
+  const router = useRouter()
 
   // Clear cinematic when success state arrives (after ~2.1s total)
   useEffect(() => {
@@ -386,6 +388,52 @@ export default function TradeSheet({
               <Button variant="buy" size="xl" fullWidth onClick={handleSpot}>
                 Spot {firstName}
               </Button>
+
+              {/* View Artist — premium ghost CTA */}
+              <button
+                onClick={() => { onClose(); router.push(`/creator/${creator.ticker.toLowerCase()}`) }}
+                className="group relative w-full mt-3 flex items-center justify-center gap-2 rounded-2xl overflow-hidden"
+                style={{
+                  padding: '13px 0',
+                  background: 'linear-gradient(135deg, rgba(201,168,76,0.07) 0%, rgba(201,168,76,0.03) 100%)',
+                  border: '1px solid rgba(201,168,76,0.22)',
+                  boxShadow: '0 0 20px rgba(201,168,76,0.06), inset 0 1px 0 rgba(255,255,255,0.04)',
+                  transition: 'border-color 0.2s, box-shadow 0.2s, background 0.2s',
+                }}
+                onMouseEnter={e => {
+                  const b = e.currentTarget
+                  b.style.borderColor = 'rgba(201,168,76,0.45)'
+                  b.style.boxShadow = '0 0 28px rgba(201,168,76,0.14), inset 0 1px 0 rgba(255,255,255,0.06)'
+                  b.style.background = 'linear-gradient(135deg, rgba(201,168,76,0.12) 0%, rgba(201,168,76,0.05) 100%)'
+                }}
+                onMouseLeave={e => {
+                  const b = e.currentTarget
+                  b.style.borderColor = 'rgba(201,168,76,0.22)'
+                  b.style.boxShadow = '0 0 20px rgba(201,168,76,0.06), inset 0 1px 0 rgba(255,255,255,0.04)'
+                  b.style.background = 'linear-gradient(135deg, rgba(201,168,76,0.07) 0%, rgba(201,168,76,0.03) 100%)'
+                }}
+              >
+                <span
+                  style={{
+                    fontSize: 13,
+                    fontWeight: 600,
+                    letterSpacing: '0.06em',
+                    color: 'rgba(201,168,76,0.82)',
+                  }}
+                >
+                  View Artist
+                </span>
+                <ArrowRight
+                  size={13}
+                  style={{
+                    color: 'rgba(201,168,76,0.6)',
+                    transform: 'translateX(0)',
+                    transition: 'transform 0.2s',
+                  }}
+                  className="group-hover:translate-x-0.5"
+                />
+              </button>
+
               <p className="text-hype-dim text-[10px] text-center mt-3">
                 Add to your discovery list · Not financial advice
               </p>
