@@ -1,5 +1,9 @@
 import { supabase } from '@/lib/supabase/client'
+import { supabaseAdmin } from '@/lib/supabase/admin'
 import { getArtist, getArtistAlbums, searchArtist } from './service'
+
+// Use admin client for server-side writes (bypasses RLS on creators table)
+const db = supabaseAdmin ?? supabase
 
 export type SpotifySyncResult =
   | { ok: true; artistId: string; name: string }
@@ -9,7 +13,7 @@ export async function syncCreatorBySpotifyArtistId(
   ticker: string,
   spotifyArtistId: string
 ): Promise<SpotifySyncResult> {
-  if (!supabase) return { ok: false, error: 'Supabase not configured' }
+  if (!db) return { ok: false, error: 'Supabase not configured' }
 
   const [artist, albums] = await Promise.all([
     getArtist(spotifyArtistId),
@@ -23,14 +27,14 @@ export async function syncCreatorBySpotifyArtistId(
   const normalizedTicker = ticker.toUpperCase()
 
   // Fetch creator UUID (needed for snapshot FK)
-  const { data: creatorRow } = await supabase
+  const { data: creatorRow } = await db
     .from('creators')
     .select('id')
     .eq('ticker', normalizedTicker)
     .single()
 
-  // Update creator with latest Spotify data (followers + popularity now included)
-  const { error: updateError } = await supabase
+  // Update creator with latest Spotify data
+  const { error: updateError } = await db
     .from('creators')
     .update({
       spotify_artist_id: artist.id,
@@ -49,7 +53,7 @@ export async function syncCreatorBySpotifyArtistId(
   // Cast to any until supabase types are regenerated after migration runs
   if (creatorRow?.id) {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    await (supabase as any).from('creator_stats_snapshots').insert({
+    await (db as any).from('creator_stats_snapshots').insert({
       creator_id: creatorRow.id,
       ticker: normalizedTicker,
       spotify_followers: artist.followers?.total ?? null,
@@ -74,9 +78,9 @@ export async function refreshSpotifyDataForCreators(tickers: string[]): Promise<
   synced: string[]
   failed: string[]
 }> {
-  if (!supabase) return { synced: [], failed: tickers }
+  if (!db) return { synced: [], failed: tickers }
 
-  const { data: rows } = await supabase
+  const { data: rows } = await db
     .from('creators')
     .select('ticker, spotify_artist_id')
     .in('ticker', tickers.map(t => t.toUpperCase()))
@@ -101,9 +105,9 @@ export async function refreshAllCreators(): Promise<{
   failed: string[]
   skipped: number
 }> {
-  if (!supabase) return { synced: [], failed: [], skipped: 0 }
+  if (!db) return { synced: [], failed: [], skipped: 0 }
 
-  const { data: rows } = await supabase
+  const { data: rows } = await db
     .from('creators')
     .select('ticker, spotify_artist_id')
     .not('spotify_artist_id', 'is', null)
