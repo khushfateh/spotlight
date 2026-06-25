@@ -140,7 +140,7 @@ export default function SpotterAuthModal({ creator, onClose }: Props) {
     if (!supabase) { router.push('/signup'); return }
     await supabase.auth.signInWithOAuth({
       provider: 'google',
-      options: { redirectTo: `${window.location.origin}/` },
+      options: { redirectTo: `${window.location.origin}/auth/callback` },
     })
   }
 
@@ -148,7 +148,7 @@ export default function SpotterAuthModal({ creator, onClose }: Props) {
     if (!supabase) { router.push('/signup'); return }
     await supabase.auth.signInWithOAuth({
       provider: 'apple',
-      options: { redirectTo: `${window.location.origin}/` },
+      options: { redirectTo: `${window.location.origin}/auth/callback` },
     })
   }
 
