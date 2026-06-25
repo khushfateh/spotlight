@@ -2,14 +2,18 @@ import { NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase/admin'
 import { supabase } from '@/lib/supabase/client'
 
+// Spotify Client Credentials doesn't return follower counts, so momentum is
+// based on release recency: a normalized score 0-100 where 100 = released today.
 export type MomentumEntry = {
   ticker: string
-  followersNow: number
-  followersPrev: number | null
-  followersChange: number
-  followersChangePct: number
-  popularity: number | null
+  followersNow: number         // always 0 — followers not available via Client Credentials
+  followersPrev: number | null // always null
+  followersChange: number      // always 0
+  followersChangePct: number   // repurposed as release recency score (0-100)
+  popularity: number | null    // always null — not returned by Client Credentials
   snappedAt: string
+  latestReleaseDate: string | null
+  daysSinceRelease: number | null
 }
 
 export type MomentumResponse = {
@@ -23,6 +27,17 @@ export const revalidate = 180
 
 const db = supabaseAdmin ?? supabase
 
+function releaseRecencyScore(releaseDate: string | null): number {
+  if (!releaseDate) return 0
+  const days = (Date.now() - new Date(releaseDate).getTime()) / (1000 * 60 * 60 * 24)
+  if (days < 0) return 0
+  if (days <= 7) return Math.round(100 - days * 2)        // 86–100
+  if (days <= 30) return Math.round(85 - (days - 7) * 2)  // 39–85
+  if (days <= 90) return Math.round(38 - (days - 30) / 2) // 8–38
+  if (days <= 365) return Math.round(7 - (days - 90) / 50) // 1–7
+  return 0
+}
+
 export async function GET() {
   if (!db) {
     return NextResponse.json<MomentumResponse>({
@@ -32,27 +47,22 @@ export async function GET() {
     })
   }
 
-  // Grab all snapshots from the last 8 hours so we can compare
-  // latest vs the one from ~3 hours ago (previous sync window)
-  const windowStart = new Date(Date.now() - 8 * 60 * 60 * 1000).toISOString()
-
-  type Snapshot = {
+  type CreatorRow = {
     ticker: string
-    spotify_followers: number | null
-    spotify_popularity: number | null
-    snapped_at: string
+    spotify_latest_release_date: string | null
+    spotify_last_synced_at: string | null
   }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: rawSnapshots, error } = await (db as any)
-    .from('creator_stats_snapshots')
-    .select('ticker, spotify_followers, spotify_popularity, snapped_at')
-    .gte('snapped_at', windowStart)
-    .order('snapped_at', { ascending: false })
+  const { data: rawRows, error } = await (db as any)
+    .from('creators')
+    .select('ticker, spotify_latest_release_date, spotify_last_synced_at')
+    .not('spotify_last_synced_at', 'is', null)
+    .order('spotify_latest_release_date', { ascending: false })
 
-  const snapshots = rawSnapshots as Snapshot[] | null
+  const rows = rawRows as CreatorRow[] | null
 
-  if (error || !snapshots?.length) {
+  if (error || !rows?.length) {
     return NextResponse.json<MomentumResponse>({
       entries: [],
       hasData: false,
@@ -60,42 +70,26 @@ export async function GET() {
     })
   }
 
-  // Group snapshots by ticker — already ordered newest-first
-  const byTicker = new Map<string, typeof snapshots>()
-  for (const s of snapshots) {
-    const arr = byTicker.get(s.ticker) ?? []
-    arr.push(s)
-    byTicker.set(s.ticker, arr)
-  }
+  const entries: MomentumEntry[] = rows.map(row => {
+    const releaseDate = row.spotify_latest_release_date ?? null
+    const daysSinceRelease = releaseDate
+      ? Math.round((Date.now() - new Date(releaseDate).getTime()) / (1000 * 60 * 60 * 24))
+      : null
+    const score = releaseRecencyScore(releaseDate)
 
-  const entries: MomentumEntry[] = []
+    return {
+      ticker: row.ticker,
+      followersNow: 0,
+      followersPrev: null,
+      followersChange: 0,
+      followersChangePct: score,
+      popularity: null,
+      snappedAt: row.spotify_last_synced_at ?? new Date().toISOString(),
+      latestReleaseDate: releaseDate,
+      daysSinceRelease,
+    }
+  }).filter(e => e.followersChangePct > 0)
 
-  for (const [ticker, snaps] of byTicker) {
-    const latest = snaps[0]
-    const prev = snaps.length > 1 ? snaps[snaps.length - 1] : null
-
-    if (!latest.spotify_followers) continue
-
-    const followersPrev = prev?.spotify_followers ?? null
-    const followersChange = followersPrev != null
-      ? latest.spotify_followers - followersPrev
-      : 0
-    const followersChangePct = followersPrev && followersPrev > 0
-      ? (followersChange / followersPrev) * 100
-      : 0
-
-    entries.push({
-      ticker,
-      followersNow: latest.spotify_followers,
-      followersPrev,
-      followersChange,
-      followersChangePct,
-      popularity: latest.spotify_popularity ?? null,
-      snappedAt: latest.snapped_at,
-    })
-  }
-
-  // Sort: highest positive % change first
   entries.sort((a, b) => b.followersChangePct - a.followersChangePct)
 
   return NextResponse.json<MomentumResponse>({
