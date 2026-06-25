@@ -62,6 +62,7 @@ function mockAuth(overrides: { isLoading?: boolean; isAuthenticated?: boolean } 
     signIn: vi.fn(),
     signUp: vi.fn(),
     signOut: vi.fn(),
+    signInWithGoogle: vi.fn(),
     ...overrides,
   })
 }

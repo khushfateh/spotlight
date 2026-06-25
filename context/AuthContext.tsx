@@ -7,6 +7,7 @@ import {
   signIn as sbSignIn,
   signUp as sbSignUp,
   signOut as sbSignOut,
+  signInWithGoogle as sbSignInWithGoogle,
   profileToMockUser,
 } from '@/lib/services/authService'
 import { getProfile, ensureProfile } from '@/lib/services/profileService'
@@ -27,6 +28,7 @@ type AuthContextType = {
   signIn: (email: string, password: string) => Promise<{ error?: string }>
   signUp: (email: string, password: string, name: string) => Promise<{ error?: string; confirmEmail?: boolean }>
   signOut: () => Promise<void>
+  signInWithGoogle: () => Promise<{ error?: string }>
 }
 
 const AuthContext = createContext<AuthContextType | null>(null)
@@ -205,6 +207,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await logout()
   }
 
+  async function signInWithGoogle(): Promise<{ error?: string }> {
+    if (!IS_SUPABASE_ENABLED) return { error: 'Google sign-in requires Supabase' }
+    return sbSignInWithGoogle()
+  }
+
   return (
     <AuthContext.Provider value={{
       currentUser: currentUserWithOverrides,
@@ -221,6 +228,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       signIn,
       signUp,
       signOut: handleSignOut,
+      signInWithGoogle,
     }}>
       {children}
     </AuthContext.Provider>
