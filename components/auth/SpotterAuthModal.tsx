@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { X, Check } from 'lucide-react'
 import { useRouter } from 'next/navigation'
-import { supabase } from '@/lib/supabase/client'
+import { signInWithGoogle, signInWithApple } from '@/lib/services/authService'
 import type { Creator } from '@/types'
 
 type Phase = 'pause' | 'card' | 'exiting'
@@ -137,19 +137,13 @@ export default function SpotterAuthModal({ creator, onClose }: Props) {
   }, [onClose])
 
   async function handleGoogle() {
-    if (!supabase) { router.push('/signup'); return }
-    await supabase.auth.signInWithOAuth({
-      provider: 'google',
-      options: { redirectTo: `${window.location.origin}/` },
-    })
+    const { error } = await signInWithGoogle('join')
+    if (error) router.push('/signup')
   }
 
   async function handleApple() {
-    if (!supabase) { router.push('/signup'); return }
-    await supabase.auth.signInWithOAuth({
-      provider: 'apple',
-      options: { redirectTo: `${window.location.origin}/` },
-    })
+    const { error } = await signInWithApple('join')
+    if (error) router.push('/signup')
   }
 
   return (

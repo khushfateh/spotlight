@@ -27,7 +27,12 @@ export default function LoginPage() {
     setAuthError(null)
     const { error } = await signIn(email, password)
     if (error) {
-      setAuthError(error)
+      const msg = error.toLowerCase()
+      if (msg.includes('invalid') || msg.includes('credentials') || msg.includes('password')) {
+        setAuthError("That doesn't seem right. Try again or reset your password.")
+      } else {
+        setAuthError(error)
+      }
       setIsLoading(false)
       return
     }
@@ -100,7 +105,7 @@ export default function LoginPage() {
             type="button"
             onClick={async () => {
               setIsLoading(true)
-              const { error } = await signInWithGoogle()
+              const { error } = await signInWithGoogle('login')
               if (error) { setAuthError(error); setIsLoading(false) }
             }}
             disabled={isLoading}

@@ -8,6 +8,7 @@ import {
   signUp as sbSignUp,
   signOut as sbSignOut,
   signInWithGoogle as sbSignInWithGoogle,
+  signInWithApple as sbSignInWithApple,
   profileToMockUser,
 } from '@/lib/services/authService'
 import { getProfile, ensureProfile } from '@/lib/services/profileService'
@@ -28,7 +29,8 @@ type AuthContextType = {
   signIn: (email: string, password: string) => Promise<{ error?: string }>
   signUp: (email: string, password: string, name: string) => Promise<{ error?: string; confirmEmail?: boolean }>
   signOut: () => Promise<void>
-  signInWithGoogle: () => Promise<{ error?: string }>
+  signInWithGoogle: (intent?: 'join' | 'login') => Promise<{ error?: string }>
+  signInWithApple: (intent?: 'join' | 'login') => Promise<{ error?: string }>
 }
 
 const AuthContext = createContext<AuthContextType | null>(null)
@@ -207,9 +209,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await logout()
   }
 
-  async function signInWithGoogle(): Promise<{ error?: string }> {
+  async function signInWithGoogle(intent: 'join' | 'login' = 'join'): Promise<{ error?: string }> {
     if (!IS_SUPABASE_ENABLED) return { error: 'Google sign-in requires Supabase' }
-    return sbSignInWithGoogle()
+    return sbSignInWithGoogle(intent)
+  }
+
+  async function signInWithApple(intent: 'join' | 'login' = 'join'): Promise<{ error?: string }> {
+    if (!IS_SUPABASE_ENABLED) return { error: 'Apple sign-in requires Supabase' }
+    return sbSignInWithApple(intent)
   }
 
   return (
@@ -229,6 +236,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       signUp,
       signOut: handleSignOut,
       signInWithGoogle,
+      signInWithApple,
     }}>
       {children}
     </AuthContext.Provider>

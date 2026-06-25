@@ -268,7 +268,7 @@ function ConfirmationScreen({ email }: { email: string }) {
 }
 
 // ── Main signup page ──────────────────────────────────────────────────────────
-type SignupStage = 'form' | 'bird' | 'waiting'
+type SignupStage = 'form' | 'bird' | 'waiting' | 'duplicate'
 
 export default function SignupPage() {
   const router = useRouter()
@@ -287,6 +287,12 @@ export default function SignupPage() {
     setAuthError(null)
     const result = await signUp(email, password, name)
     if (result.error) {
+      const msg = result.error.toLowerCase()
+      if (msg.includes('already') || msg.includes('registered') || msg.includes('in use')) {
+        setIsLoading(false)
+        setStage('duplicate')
+        return
+      }
       setAuthError(result.error)
       setIsLoading(false)
       return
@@ -317,6 +323,60 @@ export default function SignupPage() {
             email={email}
             onDone={() => setStage('waiting')}
           />
+        )}
+      </AnimatePresence>
+
+      {/* Duplicate email screen */}
+      <AnimatePresence>
+        {stage === 'duplicate' && (
+          <motion.div
+            key="duplicate"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="absolute inset-0 bg-[#0A0A0A] z-40 flex flex-col items-center justify-center px-6"
+          >
+            <div
+              className="absolute inset-0 pointer-events-none"
+              style={{ background: 'radial-gradient(ellipse 55% 35% at 50% 0%, rgba(201,168,76,0.10) 0%, transparent 60%)' }}
+            />
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.65, ease: [0.16, 1, 0.3, 1] }}
+              className="relative z-10 w-full max-w-sm text-center"
+            >
+              <div className="mb-8"><SpotlightWordmark /></div>
+              <motion.div
+                initial={{ scale: 0.7, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                transition={{ duration: 0.5, delay: 0.1, ease: [0.16, 1, 0.3, 1] }}
+                className="w-14 h-14 rounded-2xl mx-auto mb-5 flex items-center justify-center"
+                style={{ background: 'rgba(201,168,76,0.08)', border: '1px solid rgba(201,168,76,0.22)', boxShadow: '0 0 32px rgba(201,168,76,0.10)' }}
+              >
+                <span style={{ fontSize: 24, color: 'rgba(201,168,76,0.85)' }}>✦</span>
+              </motion.div>
+              <h1 className="text-white font-black text-2xl tracking-tight leading-tight mb-3">
+                Looks like you already<br />have a SPOTLIGHT account.
+              </h1>
+              <p className="text-white/40 text-sm leading-relaxed mb-8 max-w-xs mx-auto">
+                Continue your journey instead.
+              </p>
+              <div className="space-y-3">
+                <Link
+                  href="/login"
+                  className="w-full h-12 rounded-2xl bg-hype-gold text-[#0A0A0A] font-bold text-sm flex items-center justify-center gap-2 shadow-[0_4px_24px_rgba(201,168,76,0.28)] hover:bg-hype-gold-dim transition-all"
+                >
+                  Go to Log In <ArrowRight size={15} />
+                </Link>
+                <button
+                  onClick={() => setStage('form')}
+                  className="w-full h-12 rounded-2xl border border-white/10 text-white/40 text-sm hover:border-white/20 hover:text-white/55 transition-all"
+                >
+                  Use a different email
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
         )}
       </AnimatePresence>
 
@@ -380,7 +440,7 @@ export default function SignupPage() {
               type="button"
               onClick={async () => {
                 setIsLoading(true)
-                const { error } = await signInWithGoogle()
+                const { error } = await signInWithGoogle('join')
                 if (error) { setAuthError(error); setIsLoading(false) }
               }}
               disabled={isLoading}

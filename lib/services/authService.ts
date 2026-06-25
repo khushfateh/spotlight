@@ -84,11 +84,23 @@ export async function signOut(): Promise<void> {
   await supabase.auth.signOut()
 }
 
-export async function signInWithGoogle(): Promise<{ error?: string }> {
+export async function signInWithGoogle(intent: 'join' | 'login' = 'join'): Promise<{ error?: string }> {
   if (!supabase) return { error: 'Supabase not configured' }
+  localStorage.setItem('spotlight_auth_intent', intent)
   const { error } = await supabase.auth.signInWithOAuth({
     provider: 'google',
-    options: { redirectTo: `${window.location.origin}/` },
+    options: { redirectTo: `${window.location.origin}/auth/callback` },
+  })
+  if (error) return { error: error.message }
+  return {}
+}
+
+export async function signInWithApple(intent: 'join' | 'login' = 'join'): Promise<{ error?: string }> {
+  if (!supabase) return { error: 'Supabase not configured' }
+  localStorage.setItem('spotlight_auth_intent', intent)
+  const { error } = await supabase.auth.signInWithOAuth({
+    provider: 'apple',
+    options: { redirectTo: `${window.location.origin}/auth/callback` },
   })
   if (error) return { error: error.message }
   return {}
