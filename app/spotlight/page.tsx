@@ -1,6 +1,7 @@
 'use client'
 /* eslint-disable @next/next/no-img-element */
 
+import { useState } from 'react'
 import { motion, useScroll, useTransform } from 'framer-motion'
 import { TrendingUp, TrendingDown, ChevronDown, Users, Zap } from 'lucide-react'
 import Link from 'next/link'
@@ -11,6 +12,9 @@ import { getGenresForCreator } from '@/lib/mock-data/genres'
 import TradeSheet from '@/components/trading/TradeSheet'
 import { useTradeSheet } from '@/hooks/useTradeSheet'
 import { useSpotlightCreator } from '@/hooks/useSpotlightCreator'
+import { useAuth } from '@/context/AuthContext'
+import SpotterAuthModal from '@/components/auth/SpotterAuthModal'
+import { trackAnonymousSpotAttempt } from '@/lib/services/anonymousTrackingService'
 import type { Creator } from '@/types'
 
 type WhyCard = { heading: string; body: string }
@@ -77,6 +81,8 @@ const FALLBACK_IMAGE = 'https://images.unsplash.com/photo-1493225457124-a3eb4598
 
 export default function SpotlightPage() {
   const trade = useTradeSheet()
+  const { isAuthenticated } = useAuth()
+  const [showSpotterAuth, setShowSpotterAuth] = useState(false)
   const { scrollY } = useScroll()
   const { creator, loading: spotlightLoading, error: spotlightError, retry: retrySpotlight } = useSpotlightCreator()
 
@@ -107,7 +113,14 @@ export default function SpotlightPage() {
     )
   }
 
-  function openSpot() { trade.openBuy(creator!) }
+  function openSpot() {
+    if (!isAuthenticated) {
+      trackAnonymousSpotAttempt(creator.ticker, 'spotlight_page').catch(() => {})
+      setShowSpotterAuth(true)
+    } else {
+      trade.openBuy(creator!)
+    }
+  }
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   function openMoveOn() { trade.openSell(creator!) }
 
@@ -380,6 +393,10 @@ export default function SpotlightPage() {
         onConfirmOrder={trade.confirmOrder}
         onReset={trade.reset}
       />
+
+      {showSpotterAuth && (
+        <SpotterAuthModal creator={creator} onClose={() => setShowSpotterAuth(false)} />
+      )}
     </div>
   )
 }

@@ -7,6 +7,8 @@ import { useRouter } from 'next/navigation'
 import TradeSheet from '@/components/trading/TradeSheet'
 import MoveOnCinematic from '@/components/trading/MoveOnCinematic'
 import RediscoveryCinematic from '@/components/trading/RediscoveryCinematic'
+import SpotterAuthModal from '@/components/auth/SpotterAuthModal'
+import { trackAnonymousSpotAttempt } from '@/lib/services/anonymousTrackingService'
 import PostCard from '@/components/community/PostCard'
 import { Avatar } from '@/components/ui/Avatar'
 import { Badge } from '@/components/ui/Badge'
@@ -38,8 +40,9 @@ export default function CreatorProfilePage({ params }: { params: Promise<{ ticke
   const [shareCard, setShareCard] = useState<ShareCard | null>(null)
   const [shareSheetOpen, setShareSheetOpen] = useState(false)
   const [shareLoading, setShareLoading] = useState(false)
+  const [showSpotterAuth, setShowSpotterAuth] = useState(false)
   const trade = useTradeSheet()
-  const { currentUser } = useAuth()
+  const { currentUser, isAuthenticated } = useAuth()
   const { getByTicker } = useVault()
   const { isSpotted, moveOn, rediscover } = useSpots()
   const { snapshot: spotifyData } = useCreatorSpotifyData(ticker)
@@ -227,11 +230,35 @@ export default function CreatorProfilePage({ params }: { params: Promise<{ ticke
                 ✦ Spotted
               </motion.button>
             ) : mySpot?.isArchived ? (
-              <Button variant="buy" size="lg" fullWidth onClick={() => setIsRediscovering(true)}>
+              <Button
+                variant="buy"
+                size="lg"
+                fullWidth
+                onClick={() => {
+                  if (!isAuthenticated) {
+                    trackAnonymousSpotAttempt(creator.ticker, 'creator_page').catch(() => {})
+                    setShowSpotterAuth(true)
+                  } else {
+                    setIsRediscovering(true)
+                  }
+                }}
+              >
                 Spot {firstName}
               </Button>
             ) : (
-              <Button variant="buy" size="lg" fullWidth onClick={() => trade.openBuy(creator)}>
+              <Button
+                variant="buy"
+                size="lg"
+                fullWidth
+                onClick={() => {
+                  if (!isAuthenticated) {
+                    trackAnonymousSpotAttempt(creator.ticker, 'creator_page').catch(() => {})
+                    setShowSpotterAuth(true)
+                  } else {
+                    trade.openBuy(creator)
+                  }
+                }}
+              >
                 Spot {firstName}
               </Button>
             )}
@@ -619,6 +646,10 @@ export default function CreatorProfilePage({ params }: { params: Promise<{ ticke
           userId={currentUser?.id}
           userName={currentUser?.name?.split(' ')[0] ?? 'You'}
         />
+      )}
+
+      {showSpotterAuth && (
+        <SpotterAuthModal creator={creator} onClose={() => setShowSpotterAuth(false)} />
       )}
     </>
   )

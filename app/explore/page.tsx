@@ -7,6 +7,8 @@ import { Search, X, Layers, TrendingUp, Gem, Zap, Star, Flame } from 'lucide-rea
 import Link from 'next/link'
 import TradeSheet from '@/components/trading/TradeSheet'
 import { useTradeSheet } from '@/hooks/useTradeSheet'
+import SpotterAuthModal from '@/components/auth/SpotterAuthModal'
+import { trackAnonymousSpotAttempt } from '@/lib/services/anonymousTrackingService'
 import {
   getCreatorsByCategory,
   getTrendingCreators,
@@ -145,7 +147,17 @@ export default function ExplorePage() {
     setActiveGenre(null)
   }
 
-  const { currentUser } = useAuth()
+  const [spotterAuthCreator, setSpotterAuthCreator] = useState<Creator | null>(null)
+  const { currentUser, isAuthenticated } = useAuth()
+
+  function handleBuy(creator: Creator) {
+    if (!isAuthenticated) {
+      trackAnonymousSpotAttempt(creator.ticker, 'explore_page').catch(() => {})
+      setSpotterAuthCreator(creator)
+    } else {
+      trade.openBuy(creator)
+    }
+  }
   const { spottedTickers } = useSpots()
   const allCreators = getCreatorsByCategory('All' as CreatorCategory)
   const gainers = getTopGainers(5)
@@ -425,7 +437,7 @@ export default function ExplorePage() {
           ) : filteredCreators.length > 0 ? (
             <div className="premium-card rounded-2xl overflow-hidden divide-y divide-hype-border/60">
               {filteredCreators.map((c, i) => (
-                <CreatorListRow key={c.id} creator={c} rank={i + 1} onBuy={trade.openBuy} />
+                <CreatorListRow key={c.id} creator={c} rank={i + 1} onBuy={handleBuy} />
               ))}
             </div>
           ) : (
@@ -448,7 +460,7 @@ export default function ExplorePage() {
         {discoverMode && (
           <DiscoverStack
             creators={discoverCreators}
-            onBuy={trade.openBuy}
+            onBuy={handleBuy}
             onClose={() => setDiscoverMode(false)}
             spottedTickers={spottedTickers}
           />
@@ -468,6 +480,10 @@ export default function ExplorePage() {
         onConfirmOrder={trade.confirmOrder}
         onReset={trade.reset}
       />
+
+      {spotterAuthCreator && (
+        <SpotterAuthModal creator={spotterAuthCreator} onClose={() => setSpotterAuthCreator(null)} />
+      )}
     </>
   )
 }
