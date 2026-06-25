@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server'
+import { supabaseAdmin } from '@/lib/supabase/admin'
 import { supabase } from '@/lib/supabase/client'
 
 export type MomentumEntry = {
@@ -20,8 +21,10 @@ export type MomentumResponse = {
 // Cache for 3 minutes — short enough to feel live, long enough to not hammer the DB
 export const revalidate = 180
 
+const db = supabaseAdmin ?? supabase
+
 export async function GET() {
-  if (!supabase) {
+  if (!db) {
     return NextResponse.json<MomentumResponse>({
       entries: [],
       hasData: false,
@@ -41,7 +44,7 @@ export async function GET() {
   }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: rawSnapshots, error } = await (supabase as any)
+  const { data: rawSnapshots, error } = await (db as any)
     .from('creator_stats_snapshots')
     .select('ticker, spotify_followers, spotify_popularity, snapped_at')
     .gte('snapped_at', windowStart)
