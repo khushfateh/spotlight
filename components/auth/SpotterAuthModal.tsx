@@ -109,9 +109,9 @@ export default function SpotterAuthModal({ creator, onClose }: Props) {
   const [showDismissText, setShowDismissText] = useState(false)
   const [benefitCount, setBenefitCount] = useState(0)
 
-  // Phase 1 → 2 after 1050ms (700ms × 1.5)
+  // Phase 1 → 2 after 1250ms
   useEffect(() => {
-    const t = setTimeout(() => setPhase('card'), 1050)
+    const t = setTimeout(() => setPhase('card'), 1250)
     return () => clearTimeout(t)
   }, [])
 
