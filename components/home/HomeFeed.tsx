@@ -457,11 +457,11 @@ export default function HomeFeed() {
   const { entries: momentumEntries, hasData: hasMomentumData } = useMomentumRanking()
   const trending = getTrendingCreators(6)
 
-  // Real data: artist with highest positive follower change across all creators.
-  // Falls back to mock priceChangePercent24h ranking until the first Spotify sync runs.
+  // Real data: artist with highest momentum score across all creators.
+  // Falls back to mock priceChangePercent24h ranking until community signals accrue.
   const featured: Creator = (() => {
     if (hasMomentumData && momentumEntries.length > 0) {
-      const top = momentumEntries.find(e => e.followersChangePct > 0) ?? momentumEntries[0]
+      const top = momentumEntries.find(e => e.score > 0) ?? momentumEntries[0]
       const found = (creators as Creator[]).find(
         c => c.ticker.toUpperCase() === top.ticker.toUpperCase()
       )
