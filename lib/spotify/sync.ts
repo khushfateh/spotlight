@@ -104,27 +104,33 @@ export async function refreshAllCreators(): Promise<{
   synced: string[]
   failed: string[]
   skipped: number
+  errors: Record<string, string>
+  adminClientActive: boolean
 }> {
-  if (!db) return { synced: [], failed: [], skipped: 0 }
+  const adminClientActive = !!supabaseAdmin
+  if (!db) return { synced: [], failed: [], skipped: 0, errors: {}, adminClientActive }
 
   const { data: rows } = await db
     .from('creators')
     .select('ticker, spotify_artist_id')
     .not('spotify_artist_id', 'is', null)
 
-  if (!rows?.length) return { synced: [], failed: [], skipped: 0 }
+  if (!rows?.length) return { synced: [], failed: [], skipped: 0, errors: {}, adminClientActive }
 
   const synced: string[] = []
   const failed: string[] = []
+  const errors: Record<string, string> = {}
 
   for (const row of rows) {
     if (!row.spotify_artist_id) continue
-    // Small delay between calls to be polite to Spotify's API
     await new Promise(r => setTimeout(r, 120))
     const result = await syncCreatorBySpotifyArtistId(row.ticker, row.spotify_artist_id)
     if (result.ok) synced.push(row.ticker)
-    else failed.push(row.ticker)
+    else {
+      failed.push(row.ticker)
+      errors[row.ticker] = result.error
+    }
   }
 
-  return { synced, failed, skipped: 0 }
+  return { synced, failed, skipped: 0, errors, adminClientActive }
 }

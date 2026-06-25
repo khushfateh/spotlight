@@ -23,6 +23,8 @@ export async function GET(req: NextRequest) {
     synced: result.synced.length,
     failed: result.failed.length,
     failedTickers: result.failed,
+    errors: result.errors,
+    adminClientActive: result.adminClientActive,
     durationMs,
     timestamp: new Date().toISOString(),
   })
