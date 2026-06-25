@@ -1,7 +1,7 @@
 'use client'
 /* eslint-disable @next/next/no-img-element */
 
-import { useRef, type ReactNode } from 'react'
+import { useRef, useState, type ReactNode } from 'react'
 import {
   motion,
   useScroll,
@@ -16,6 +16,8 @@ import PostCard from '@/components/community/PostCard'
 import TradeSheet from '@/components/trading/TradeSheet'
 import { useTradeSheet } from '@/hooks/useTradeSheet'
 import { useAuth } from '@/context/AuthContext'
+import SpotterAuthModal from '@/components/auth/SpotterAuthModal'
+import { trackAnonymousSpotAttempt } from '@/lib/services/anonymousTrackingService'
 import { useSpots } from '@/hooks/useSpots'
 import {
   getTrendingCreators,
@@ -438,8 +440,18 @@ function SectionSkeleton() {
 
 export default function HomeFeed() {
   const trade = useTradeSheet()
-  const { currentUser, isSupabaseMode } = useAuth()
+  const { currentUser, isAuthenticated, isSupabaseMode } = useAuth()
   const { spottedTickers } = useSpots()
+  const [spotterAuthCreator, setSpotterAuthCreator] = useState<Creator | null>(null)
+
+  function handleBuy(creator: Creator) {
+    if (!isAuthenticated) {
+      trackAnonymousSpotAttempt(creator.ticker, 'home_feed').catch(() => {})
+      setSpotterAuthCreator(creator)
+    } else {
+      trade.openBuy(creator)
+    }
+  }
   const trending = getTrendingCreators(6)
   const featured = trending[0]
   const openIPOs = ipoCreators.filter(i => i.status === 'open').slice(0, 2)
@@ -462,7 +474,7 @@ export default function HomeFeed() {
     <>
       <CinematicHero
         featured={featured}
-        onBuy={trade.openBuy}
+        onBuy={handleBuy}
         discoveryCount={discoveryCount}
         avgMomentum={avgMomentum}
         isFeaturedSpotted={activeTickers.includes(featured.ticker.toUpperCase())}
@@ -519,7 +531,7 @@ export default function HomeFeed() {
         </div>
       ) : (
         homeSections.map(section => (
-          <PersonalizedSection key={section.id} section={section} onBuy={trade.openBuy} spottedTickers={activeTickers} />
+          <PersonalizedSection key={section.id} section={section} onBuy={handleBuy} spottedTickers={activeTickers} />
         ))
       )}
 
@@ -559,7 +571,7 @@ export default function HomeFeed() {
         </div>
 
         <button
-          onClick={() => trade.openBuy(featured)}
+          onClick={() => handleBuy(featured)}
           className="w-full flex items-center justify-center gap-2 h-12 rounded-2xl bg-hype-gold text-[#0A0A0A] font-bold text-[13px] hover:bg-hype-gold-dim transition-all active:scale-[0.99] shadow-[0_4px_20px_rgba(201,168,76,0.18)]"
         >
           Spot {featured.name.split(' ')[0]}
@@ -581,7 +593,7 @@ export default function HomeFeed() {
         </div>
         <div className="flex gap-4 pl-5 overflow-x-auto hide-scrollbar pb-2" style={{ paddingRight: 20 }}>
           {trending.map((c, i) => (
-            <CreatorPortraitCard key={c.id} creator={c} onBuy={trade.openBuy} delay={i * 0.06} />
+            <CreatorPortraitCard key={c.id} creator={c} onBuy={handleBuy} delay={i * 0.06} />
           ))}
         </div>
       </motion.section>
@@ -639,6 +651,10 @@ export default function HomeFeed() {
       />
 
       <RecommendationDebugPanel />
+
+      {spotterAuthCreator && (
+        <SpotterAuthModal creator={spotterAuthCreator} onClose={() => setSpotterAuthCreator(null)} />
+      )}
     </>
   )
 }
