@@ -40,15 +40,15 @@ const ease = [0.16, 1, 0.3, 1] as const
 const spring = { type: 'spring' as const, stiffness: 70, damping: 18 }
 
 const slideLeft = {
-  initial: { opacity: 0, y: 32 },
-  whileInView: { opacity: 1 as number, y: 0 as number },
-  viewport: { once: true, amount: 0.1 },
+  initial: { opacity: 0, x: -60 },
+  whileInView: { opacity: 1 as number, x: 0 as number },
+  viewport: { once: true, amount: 0.12 },
   transition: spring,
 }
 const slideRight = {
-  initial: { opacity: 0, y: 32 },
-  whileInView: { opacity: 1 as number, y: 0 as number },
-  viewport: { once: true, amount: 0.1 },
+  initial: { opacity: 0, x: 60 },
+  whileInView: { opacity: 1 as number, x: 0 as number },
+  viewport: { once: true, amount: 0.12 },
   transition: spring,
 }
 
@@ -456,9 +456,9 @@ function PersonalizedSection({
 
   return (
     <motion.section
-      initial={{ opacity: 0, y: 32 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true, amount: 0.1 }}
+      initial={{ opacity: 0, x: fromLeft ? -60 : 60 }}
+      whileInView={{ opacity: 1, x: 0 }}
+      viewport={{ once: true, amount: 0.12 }}
       transition={spring}
       className="py-6 border-b border-hype-border/50"
     >
@@ -593,6 +593,8 @@ export default function HomeFeed() {
         avgMomentum={avgMomentum}
         isFeaturedSpotted={activeTickers.includes(featured.ticker.toUpperCase())}
       />
+
+      <div style={{ overflowX: 'clip' }}>
 
       {/* Live Momentum — slides from left */}
       <motion.div {...slideLeft} className="px-5 py-5 border-b border-hype-border/50">
@@ -745,6 +747,8 @@ export default function HomeFeed() {
           </p>
         </div>
       </motion.section>
+
+      </div>{/* end overflowX:clip wrapper */}
 
       <TradeSheet
         isOpen={trade.isOpen}
