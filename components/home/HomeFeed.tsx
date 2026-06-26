@@ -553,12 +553,12 @@ export default function HomeFeed() {
       trade.openBuy(creator)
     }
   }
-  const { entries: momentumEntries, hasData: hasMomentumData } = useMomentumRanking()
+  const { entries: momentumEntries, hasData: hasMomentumData, loading: momentumLoading } = useMomentumRanking()
   const trending = getTrendingCreators(6)
 
-  // Real data: artist with highest momentum score across all creators.
-  // Falls back to mock priceChangePercent24h ranking until community signals accrue.
-  const featured: Creator = (() => {
+  // Don't pick a hero until the momentum API has resolved — avoids the flash
+  // where trending[0] (wrong artist) renders for ~200ms before real data arrives.
+  const featured: Creator | null = momentumLoading ? null : (() => {
     if (hasMomentumData && momentumEntries.length > 0) {
       const top = momentumEntries.find(e => e.score > 0) ?? momentumEntries[0]
       const found = (creators as Creator[]).find(
@@ -568,6 +568,7 @@ export default function HomeFeed() {
     }
     return trending[0]
   })()
+
   const openIPOs = ipoCreators.filter(i => i.status === 'open').slice(0, 2)
   const posts = communityPosts.slice(0, 3)
 
@@ -581,6 +582,19 @@ export default function HomeFeed() {
 
   // ── Recommendation engine ─────────────────────────────────────────────────────
   const { sections: homeSections, loading: sectionsLoading } = usePersonalizedFeed()
+
+  if (momentumLoading) return (
+    <div className="-mt-14 bg-[#0A0A0A]" style={{ height: '100svh' }}>
+      <div className="absolute inset-0 animate-pulse" style={{ background: 'linear-gradient(to bottom, #111 0%, #0A0A0A 100%)' }} />
+      <div className="absolute bottom-0 left-0 px-5 pb-28 w-full">
+        <div className="h-3 w-28 bg-white/8 rounded-full mb-5 animate-pulse" />
+        <div className="h-14 w-64 bg-white/10 rounded-2xl mb-3 animate-pulse" />
+        <div className="h-14 w-48 bg-white/10 rounded-2xl mb-5 animate-pulse" />
+        <div className="h-4 w-72 bg-white/5 rounded-full mb-2 animate-pulse" />
+        <div className="h-12 w-36 bg-white/8 rounded-2xl mt-4 animate-pulse" />
+      </div>
+    </div>
+  )
 
   if (!featured) return null
 
