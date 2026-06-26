@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { Home, Compass, Star, PieChart, User, LayoutDashboard, Plus } from 'lucide-react'
+import { motion } from 'framer-motion'
 import { useUser } from '@/context/UserContext'
 import { useAuth } from '@/context/AuthContext'
 import { cn } from '@/lib/utils'
@@ -38,7 +39,7 @@ export default function BottomNav() {
   const navItems = userMode === 'creator' ? creatorNav : investorNav
 
   // Don't render anything while auth is still resolving
-  if (isLoading) return <div className="h-[72px] safe-bottom" />
+  if (isLoading) return <div className="h-[88px] safe-bottom" />
 
   // Unauthenticated: show public nav tabs (Home, Discover, Spotlight) — no Profile
   if (!isAuthenticated) {
@@ -49,37 +50,47 @@ export default function BottomNav() {
     ]
     return (
       <>
-        <div className="h-[72px] safe-bottom" />
-        <nav className="fixed bottom-0 left-0 right-0 z-40 safe-bottom">
-          <div className="bg-hype-bg/98 backdrop-blur-md border-t border-hype-border">
-            <div className="max-w-lg mx-auto flex items-center justify-around h-[56px] px-2">
-              {publicItems.map((item) => {
-                const isActive = item.href === '/' ? pathname === '/' : pathname.startsWith(item.href)
-                if (item.isCenter) {
-                  return (
-                    <Link key={item.href} href={item.href} className="flex flex-col items-center -mt-4">
-                      <div className={cn(
-                        'w-12 h-12 rounded-2xl flex items-center justify-center transition-all duration-200',
-                        isActive ? 'bg-hype-gold text-[#0A0A0A] shadow-lg' : 'bg-hype-gold text-[#0A0A0A] shadow-md',
-                      )}>
-                        {item.icon}
-                      </div>
-                      <span className="text-[9px] font-medium text-hype-muted mt-1 tracking-wide">{item.label}</span>
-                    </Link>
-                  )
-                }
+        <div className="h-[88px] safe-bottom" />
+        <nav className="fixed bottom-0 left-0 right-0 z-40 px-6 pb-4 pt-0 safe-bottom">
+          <div className="nav-pill max-w-[240px] mx-auto flex items-center justify-around h-[56px] px-2">
+            {publicItems.map((item) => {
+              const isActive = item.href === '/' ? pathname === '/' : pathname.startsWith(item.href)
+              if (item.isCenter) {
                 return (
-                  <Link key={item.href} href={item.href} className="flex flex-col items-center gap-1 px-3 py-1">
-                    <div className={cn('transition-all duration-150', isActive ? 'text-hype-gold' : 'text-hype-dim hover:text-hype-muted')}>
+                  <Link key={item.href} href={item.href} className="flex flex-col items-center -mt-4">
+                    <motion.div
+                      whileTap={{ scale: 0.85 }}
+                      className={cn(
+                        'w-12 h-12 rounded-2xl flex items-center justify-center transition-all duration-200 text-[#0A0A0A]',
+                        isActive ? 'glow-gold shadow-lg' : 'shadow-md',
+                      )}
+                      style={{
+                        background: 'linear-gradient(135deg, #C9A84C 0%, #F0D98B 50%, #C9A84C 100%)',
+                      }}
+                    >
                       {item.icon}
-                    </div>
-                    <span className={cn('text-[9px] font-medium tracking-wide transition-colors duration-150', isActive ? 'text-hype-gold' : 'text-hype-dim')}>
-                      {item.label}
-                    </span>
+                    </motion.div>
+                    <span className="text-[9px] font-medium text-hype-muted mt-1 tracking-wide">{item.label}</span>
                   </Link>
                 )
-              })}
-            </div>
+              }
+              return (
+                <Link key={item.href} href={item.href} className="flex flex-col items-center gap-1 px-3 py-1">
+                  <motion.div whileTap={{ scale: 0.85 }}>
+                    {isActive ? (
+                      <div className="nav-active-glow px-2 py-1">
+                        <div className="transition-all duration-150 scale-110 text-hype-gold">{item.icon}</div>
+                      </div>
+                    ) : (
+                      <div className="transition-all duration-150 text-hype-dim hover:text-hype-muted">{item.icon}</div>
+                    )}
+                  </motion.div>
+                  <span className={cn('text-[9px] font-medium tracking-wide transition-colors duration-150', isActive ? 'text-hype-gold' : 'text-hype-dim')}>
+                    {item.label}
+                  </span>
+                </Link>
+              )
+            })}
           </div>
         </nav>
       </>
@@ -88,56 +99,63 @@ export default function BottomNav() {
 
   return (
     <>
-      <div className="h-[72px] safe-bottom" />
+      <div className="h-[88px] safe-bottom" />
 
-      <nav className="fixed bottom-0 left-0 right-0 z-40 safe-bottom">
-        <div className="bg-hype-bg/98 backdrop-blur-md border-t border-hype-border">
-          <div className="max-w-lg mx-auto flex items-center justify-around h-[56px] px-2">
-            {navItems.map((item) => {
-              const isActive = item.href === '/'
-                ? pathname === '/'
-                : pathname.startsWith(item.href)
+      <nav className="fixed bottom-0 left-0 right-0 z-40 px-6 pb-4 pt-0 safe-bottom">
+        <div className="nav-pill max-w-[320px] mx-auto flex items-center justify-around h-[56px] px-2">
+          {navItems.map((item) => {
+            const isActive = item.href === '/'
+              ? pathname === '/'
+              : pathname.startsWith(item.href)
 
-              if (item.isCenter) {
-                return (
-                  <Link key={item.href} href={item.href} className="flex flex-col items-center -mt-4">
-                    <div
-                      className={cn(
-                        'w-12 h-12 rounded-2xl flex items-center justify-center transition-all duration-200',
-                        isActive
-                          ? 'bg-hype-gold text-[#0A0A0A] shadow-lg'
-                          : 'bg-hype-gold text-[#0A0A0A] shadow-md',
-                      )}
-                    >
-                      {item.icon}
-                    </div>
-                    <span className="text-[9px] font-medium text-hype-muted mt-1 tracking-wide">{item.label}</span>
-                  </Link>
-                )
-              }
-
+            if (item.isCenter) {
               return (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  className="flex flex-col items-center gap-1 px-3 py-1"
-                >
-                  <div className={cn(
-                    'transition-all duration-150',
-                    isActive ? 'text-hype-gold' : 'text-hype-dim hover:text-hype-muted',
-                  )}>
+                <Link key={item.href} href={item.href} className="flex flex-col items-center -mt-4">
+                  <motion.div
+                    whileTap={{ scale: 0.85 }}
+                    className={cn(
+                      'w-12 h-12 rounded-2xl flex items-center justify-center transition-all duration-200 text-[#0A0A0A]',
+                      isActive ? 'glow-gold shadow-lg' : 'glow-gold-sm shadow-md',
+                    )}
+                    style={{
+                      background: isActive
+                        ? 'linear-gradient(135deg, #C9A84C 0%, #F0D98B 50%, #C9A84C 100%)'
+                        : 'linear-gradient(135deg, #C9A84C 0%, #E8C97A 100%)',
+                    }}
+                  >
                     {item.icon}
-                  </div>
-                  <span className={cn(
-                    'text-[9px] font-medium tracking-wide transition-colors duration-150',
-                    isActive ? 'text-hype-gold' : 'text-hype-dim',
-                  )}>
-                    {item.label}
-                  </span>
+                  </motion.div>
+                  <span className="text-[9px] font-medium text-hype-muted mt-1 tracking-wide">{item.label}</span>
                 </Link>
               )
-            })}
-          </div>
+            }
+
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                className="flex flex-col items-center gap-1 px-3 py-1"
+              >
+                <motion.div whileTap={{ scale: 0.85 }}>
+                  {isActive ? (
+                    <div className="nav-active-glow px-2 py-1">
+                      <div className="transition-all duration-150 scale-110 text-hype-gold">{item.icon}</div>
+                    </div>
+                  ) : (
+                    <div className={cn('transition-all duration-150', 'text-hype-dim hover:text-hype-muted')}>
+                      {item.icon}
+                    </div>
+                  )}
+                </motion.div>
+                <span className={cn(
+                  'text-[9px] font-medium tracking-wide transition-colors duration-150',
+                  isActive ? 'text-hype-gold' : 'text-hype-dim',
+                )}>
+                  {item.label}
+                </span>
+              </Link>
+            )
+          })}
         </div>
       </nav>
     </>

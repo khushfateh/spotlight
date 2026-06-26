@@ -37,12 +37,19 @@ import { cn } from '@/lib/utils'
 import type { Creator } from '@/types'
 
 const ease = [0.16, 1, 0.3, 1] as const
+const spring = { type: 'spring' as const, stiffness: 70, damping: 18 }
 
-const sectionReveal = {
-  initial: { opacity: 0, y: 32 },
-  whileInView: { opacity: 1 as number, y: 0 as number },
-  viewport: { once: true, margin: '-50px' },
-  transition: { duration: 0.65, ease },
+const slideLeft = {
+  initial: { opacity: 0, x: -60 },
+  whileInView: { opacity: 1 as number, x: 0 as number },
+  viewport: { once: true, amount: 0.12 },
+  transition: spring,
+}
+const slideRight = {
+  initial: { opacity: 0, x: 60 },
+  whileInView: { opacity: 1 as number, x: 0 as number },
+  viewport: { once: true, amount: 0.12 },
+  transition: spring,
 }
 
 function TiltCard({ children, className }: { children: ReactNode; className?: string }) {
@@ -134,6 +141,12 @@ function CinematicHero({
         )}
       </motion.div>
 
+      {/* Aurora overlay */}
+      <div className="absolute inset-0 pointer-events-none">
+        <div className="aurora-orb-1 absolute w-[600px] h-[600px] rounded-full blur-[120px]" style={{ background: 'radial-gradient(circle, rgba(107,33,168,0.4) 0%, transparent 70%)', top: '-20%', right: '-20%' }} />
+        <div className="aurora-orb-2 absolute w-[500px] h-[500px] rounded-full blur-[100px]" style={{ background: 'radial-gradient(circle, rgba(201,168,76,0.25) 0%, transparent 70%)', bottom: '10%', left: '-10%' }} />
+      </div>
+
       <div className="absolute inset-0 bg-gradient-to-t from-black via-black/50 to-black/20" />
       <div className="absolute inset-0 bg-gradient-to-r from-black/75 via-black/20 to-transparent" />
       <div
@@ -170,7 +183,7 @@ function CinematicHero({
           </div>
 
           <h1
-            className="text-white font-black tracking-tight leading-none mb-5"
+            className="text-white font-black tracking-tight leading-none mb-5 font-display text-glow-gold"
             style={{ fontSize: 'clamp(2.6rem, 12vw, 5.5rem)' }}
           >
             {featured.name.split(' ').map((word, i) => (
@@ -198,12 +211,14 @@ function CinematicHero({
                 ✦ Spotted
               </div>
             ) : (
-              <button
+              <motion.button
                 onClick={() => onBuy(featured)}
-                className="flex items-center gap-2 px-6 py-3.5 rounded-2xl bg-hype-gold text-[#0A0A0A] font-bold text-[13px] hover:bg-hype-gold-dim transition-all active:scale-[0.99] shadow-[0_4px_24px_rgba(201,168,76,0.3)]"
+                whileHover={{ scale: 1.03 }}
+                whileTap={{ scale: 0.97 }}
+                className="btn-magnetic flex items-center gap-2 px-6 py-3.5 rounded-2xl bg-hype-gold text-[#0A0A0A] font-bold text-[13px] hover:bg-hype-gold-dim transition-all shadow-[0_4px_24px_rgba(201,168,76,0.3)]"
               >
                 Spot {featured.name.split(' ')[0]} <ArrowRight size={14} />
-              </button>
+              </motion.button>
             )}
             <div className="text-right">
               <p className="text-white font-black text-xl tabular tracking-tight leading-none">
@@ -252,17 +267,22 @@ function CreatorPortraitCard({
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      whileInView={{ opacity: 1, y: 0 }}
+      initial={{ opacity: 0, x: 64 }}
+      whileInView={{ opacity: 1, x: 0 }}
       viewport={{ once: true }}
-      transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1], delay }}
-      className="flex-shrink-0"
+      transition={{ type: 'spring', stiffness: 70, damping: 18, delay }}
+      whileHover={{ scale: 1.02 }}
+      whileTap={{ scale: 0.98 }}
+      className="flex-shrink-0 card-hover"
       style={{ width: 176 }}
     >
       <TiltCard>
         <div className="relative group cursor-pointer">
           <Link href={`/creator/${creator.ticker.toLowerCase()}`}>
-            <div className="relative rounded-3xl overflow-hidden" style={{ height: 264 }}>
+            <div
+              className="relative rounded-3xl overflow-hidden border border-white/[0.08]"
+              style={{ height: 264, boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.08)' }}
+            >
               {creator.imageUrl ? (
                 <img
                   src={creator.imageUrl}
@@ -286,7 +306,7 @@ function CreatorPortraitCard({
               ) : (
                 <button
                   onClick={e => { e.preventDefault(); onBuy(creator) }}
-                  className="absolute top-3 right-3 px-2.5 py-1 bg-hype-gold text-[#0A0A0A] text-[9px] font-bold rounded-full transition-all duration-200 active:scale-95 hover:bg-hype-gold-dim"
+                  className="btn-magnetic absolute top-3 right-3 px-2.5 py-1 bg-hype-gold text-[#0A0A0A] text-[9px] font-bold rounded-full transition-all duration-200 active:scale-95 hover:bg-hype-gold-dim"
                 >
                   Spot
                 </button>
@@ -308,6 +328,74 @@ function CreatorPortraitCard({
         </div>
       </TiltCard>
     </motion.div>
+  )
+}
+
+function HiddenGemCard({ creator, onBuy, isSpotted = false }: { creator: Creator; onBuy: (c: Creator) => void; isSpotted?: boolean }) {
+  const { score, delta } = getMomentum(creator.ticker)
+  const tier = getMomentumTier(score)
+  const isUp = delta >= 0
+  return (
+    <div
+      className="relative rounded-3xl overflow-hidden"
+      style={{
+        background: 'linear-gradient(135deg, rgba(15,12,8,0.96) 0%, rgba(25,18,8,0.98) 100%)',
+        border: '1px solid rgba(201,168,76,0.25)',
+        boxShadow: '0 0 40px rgba(201,168,76,0.08), inset 0 1px 0 rgba(201,168,76,0.12)',
+      }}
+    >
+      <div className="absolute top-0 left-0 right-0 h-[1px]" style={{ background: 'linear-gradient(90deg, transparent, rgba(201,168,76,0.6), transparent)' }} />
+      <div className="p-5">
+        <div className="flex items-center gap-5">
+          <div className="flex-shrink-0">
+            {creator.imageUrl ? (
+              <div className="w-20 h-20 rounded-full overflow-hidden" style={{ border: '2px solid rgba(201,168,76,0.4)', boxShadow: '0 0 20px rgba(201,168,76,0.2)' }}>
+                <img src={creator.imageUrl} alt={creator.name} className="w-full h-full object-cover object-center" />
+              </div>
+            ) : (
+              <div className={cn('w-20 h-20 rounded-full bg-gradient-to-br flex items-center justify-center text-white text-xl font-black', creator.coverColor)} style={{ border: '2px solid rgba(201,168,76,0.4)', boxShadow: '0 0 20px rgba(201,168,76,0.2)' }}>
+                {creator.avatar}
+              </div>
+            )}
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-white font-black text-xl leading-tight tracking-tight mb-0.5">{creator.name}</p>
+            <p className="text-white/40 text-[10px] font-semibold uppercase tracking-wider mb-3">{creator.category}</p>
+            <div className="flex items-center gap-3">
+              <div>
+                <p className="text-hype-gold font-black text-lg leading-none">{score}</p>
+                <p className="text-white/30 text-[9px] uppercase tracking-wider">Score</p>
+              </div>
+              <div className="w-px h-8 bg-white/10" />
+              <div>
+                <p className={`font-bold text-sm leading-none ${isUp ? 'text-emerald-400' : 'text-red-400'}`}>{isUp ? '+' : ''}{delta}</p>
+                <p className="text-white/30 text-[9px] uppercase tracking-wider">This week</p>
+              </div>
+              <div className="w-px h-8 bg-white/10" />
+              <div>
+                <p className="text-white/70 font-semibold text-xs leading-none">{tier}</p>
+                <p className="text-white/30 text-[9px] uppercase tracking-wider">Tier</p>
+              </div>
+            </div>
+          </div>
+        </div>
+        {creator.bio && (
+          <p className="text-white/45 text-xs leading-relaxed mt-4 line-clamp-2">{creator.bio}</p>
+        )}
+        <motion.button
+          onClick={() => onBuy(creator)}
+          whileHover={{ scale: 1.02 }}
+          whileTap={{ scale: 0.97 }}
+          className="mt-4 w-full h-11 rounded-2xl flex items-center justify-center gap-2 text-sm font-bold"
+          style={isSpotted
+            ? { background: 'rgba(201,168,76,0.1)', border: '1px solid rgba(201,168,76,0.3)', color: 'rgba(201,168,76,0.7)' }
+            : { background: 'linear-gradient(135deg, #C9A84C 0%, #E8C97A 100%)', color: '#0A0A0A' }
+          }
+        >
+          {isSpotted ? '✓ You spotted this gem' : `💎 Be first to spot ${creator.name.split(' ')[0]}`}
+        </motion.button>
+      </div>
+    </div>
   )
 }
 
@@ -353,22 +441,25 @@ function PersonalizedSection({
   section,
   onBuy,
   spottedTickers,
+  sectionIndex = 0,
 }: {
   section: HomeSection
   onBuy: (c: Creator) => void
   spottedTickers: string[]
+  sectionIndex?: number
 }) {
   const sectionCreators = getCreatorsByTickers(section.tickers)
   if (sectionCreators.length === 0) return null
 
   const reasonLabel = section.reasonLabel ?? (section.reasonType ? reasonTypeLabel[section.reasonType] : undefined)
+  const fromLeft = sectionIndex % 2 === 0
 
   return (
     <motion.section
-      initial={{ opacity: 0, y: 24 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true, margin: '-40px' }}
-      transition={{ duration: 0.6, ease }}
+      initial={{ opacity: 0, x: fromLeft ? -60 : 60 }}
+      whileInView={{ opacity: 1, x: 0 }}
+      viewport={{ once: true, amount: 0.12 }}
+      transition={spring}
       className="py-6 border-b border-hype-border/50"
     >
       <div className="px-5 mb-4">
@@ -398,11 +489,19 @@ function PersonalizedSection({
 
       {section.layout === 'featured' && sectionCreators[0] && (
         <div className="px-5">
-          <FeaturedCreatorCard
-            creator={sectionCreators[0]}
-            onBuy={onBuy}
-            isSpotted={spottedTickers.includes(sectionCreators[0].ticker.toUpperCase())}
-          />
+          {section.reasonType === 'hidden_gem' ? (
+            <HiddenGemCard
+              creator={sectionCreators[0]}
+              onBuy={onBuy}
+              isSpotted={spottedTickers.includes(sectionCreators[0].ticker.toUpperCase())}
+            />
+          ) : (
+            <FeaturedCreatorCard
+              creator={sectionCreators[0]}
+              onBuy={onBuy}
+              isSpotted={spottedTickers.includes(sectionCreators[0].ticker.toUpperCase())}
+            />
+          )}
         </div>
       )}
 
@@ -495,36 +594,42 @@ export default function HomeFeed() {
         isFeaturedSpotted={activeTickers.includes(featured.ticker.toUpperCase())}
       />
 
-      <motion.div {...sectionReveal} className="px-5 py-5 border-b border-hype-border/50">
-        <div className="flex items-center gap-2 mb-3">
-          <div className="w-1.5 h-1.5 rounded-full bg-hype-green" style={{ boxShadow: '0 0 6px #10B981' }} />
-          <span className="section-label">Live Momentum</span>
-        </div>
-        <div className="flex gap-6 overflow-x-auto hide-scrollbar">
-          {trending.slice(0, 5).map((c, i) => {
-            const { score, delta } = getMomentum(c.ticker)
-            const tier = getMomentumTier(score)
-            const up = delta >= 0
-            return (
-              <Link key={c.id} href={`/creator/${c.ticker.toLowerCase()}`} className="flex-shrink-0 group">
-                <p className="text-hype-dim text-[9px] font-mono tracking-wider mb-0.5">${c.ticker}</p>
-                <p className="text-hype-text text-sm font-black tabular group-hover:text-white transition-colors live-price" style={{ animationDelay: `${i * 0.55}s` }}>
-                  {score}
-                </p>
-                <p className="text-hype-gold text-[8px] font-semibold uppercase tracking-wider">{tier}</p>
-                <p className={cn('text-[10px] font-semibold tabular', up ? 'text-hype-green' : 'text-hype-red')}>
-                  {up ? '+' : ''}{delta} pts
-                </p>
-              </Link>
-            )
-          })}
+      <div style={{ overflowX: 'clip' }}>
+
+      {/* Live Momentum — slides from left */}
+      <motion.div {...slideLeft} className="px-5 py-5 border-b border-hype-border/50">
+        <div className="glass rounded-2xl p-4 mb-4">
+          <div className="flex items-center gap-2 mb-3">
+            <div className="w-2 h-2 rounded-full bg-hype-green" style={{ boxShadow: '0 0 8px #10B981, 0 0 16px rgba(16,185,129,0.4)' }} />
+            <span className="section-label tracking-[0.25em]">Live Momentum</span>
+          </div>
+          <div className="flex gap-6 overflow-x-auto hide-scrollbar">
+            {trending.slice(0, 5).map((c, i) => {
+              const { score, delta } = getMomentum(c.ticker)
+              const tier = getMomentumTier(score)
+              const up = delta >= 0
+              return (
+                <Link key={c.id} href={`/creator/${c.ticker.toLowerCase()}`} className="flex-shrink-0 group">
+                  <p className="text-hype-dim text-[9px] font-mono tracking-wider mb-0.5">${c.ticker}</p>
+                  <p className="text-hype-text text-sm font-black tabular group-hover:text-white transition-colors live-price" style={{ animationDelay: `${i * 0.55}s` }}>
+                    {score}
+                  </p>
+                  <p className="text-hype-gold text-[8px] font-semibold uppercase tracking-wider">{tier}</p>
+                  <p className={cn('text-[10px] font-semibold tabular', up ? 'text-hype-green' : 'text-hype-red')}>
+                    {up ? '+' : ''}{delta} pts
+                  </p>
+                </Link>
+              )
+            })}
+          </div>
         </div>
       </motion.div>
 
-      <div className="px-5 pt-8 pb-3">
+      {/* Daily briefing header — slides from right */}
+      <motion.div {...slideRight} className="px-5 pt-8 pb-3">
         <div className="flex items-baseline justify-between">
           <div>
-            <p className="text-white/30 text-[10px] font-semibold uppercase tracking-widest mb-1">
+            <p className="text-white/30 text-[10px] font-semibold uppercase tracking-[0.25em] mb-1">
               Your Daily Cultural Briefing
             </p>
             <h2 className="text-white font-black text-2xl tracking-tight">
@@ -532,7 +637,7 @@ export default function HomeFeed() {
             </h2>
           </div>
         </div>
-      </div>
+      </motion.div>
 
       {sectionsLoading ? (
         <>
@@ -545,12 +650,13 @@ export default function HomeFeed() {
           <p className="text-hype-dim text-xs">Spot some creators to personalise your feed</p>
         </div>
       ) : (
-        homeSections.map(section => (
-          <PersonalizedSection key={section.id} section={section} onBuy={handleBuy} spottedTickers={activeTickers} />
+        homeSections.map((section, i) => (
+          <PersonalizedSection key={section.id} section={section} onBuy={handleBuy} spottedTickers={activeTickers} sectionIndex={i} />
         ))
       )}
 
-      <motion.section {...sectionReveal} className="px-5 py-8 border-b border-hype-border/50">
+      {/* This Week in Culture — slides from left */}
+      <motion.section {...slideLeft} className="px-5 py-8 border-b border-hype-border/50">
         <p className="section-label text-hype-gold mb-4">This Week in Culture</p>
         <div className="flex items-start justify-between gap-4 mb-6">
           <div className="flex-1">
@@ -585,16 +691,19 @@ export default function HomeFeed() {
           </div>
         </div>
 
-        <button
+        <motion.button
           onClick={() => handleBuy(featured)}
-          className="w-full flex items-center justify-center gap-2 h-12 rounded-2xl bg-hype-gold text-[#0A0A0A] font-bold text-[13px] hover:bg-hype-gold-dim transition-all active:scale-[0.99] shadow-[0_4px_20px_rgba(201,168,76,0.18)]"
+          whileHover={{ scale: 1.02 }}
+          whileTap={{ scale: 0.97 }}
+          className="btn-magnetic w-full flex items-center justify-center gap-2 h-12 rounded-2xl bg-hype-gold text-[#0A0A0A] font-bold text-[13px] hover:bg-hype-gold-dim transition-all shadow-[0_4px_20px_rgba(201,168,76,0.25)]"
         >
           Spot {featured.name.split(' ')[0]}
           <ArrowRight size={14} />
-        </button>
+        </motion.button>
       </motion.section>
 
-      <motion.section {...sectionReveal} className="py-8">
+      {/* Culture Picks — header from right, cards stagger from right */}
+      <motion.section {...slideRight} className="py-8">
         <div className="px-5 mb-6 flex items-center justify-between">
           <div>
             <p className="text-hype-text font-black text-xl leading-none tracking-tight">Culture Picks</p>
@@ -608,40 +717,28 @@ export default function HomeFeed() {
         </div>
         <div className="flex gap-4 pl-5 overflow-x-auto hide-scrollbar pb-2" style={{ paddingRight: 20 }}>
           {trending.map((c, i) => (
-            <CreatorPortraitCard key={c.id} creator={c} onBuy={handleBuy} delay={i * 0.06} />
+            <CreatorPortraitCard key={c.id} creator={c} onBuy={handleBuy} delay={i * 0.08} />
           ))}
         </div>
       </motion.section>
 
-      {openIPOs.length > 0 && (
-        <motion.section {...sectionReveal} className="px-5 py-8 border-t border-hype-border/50">
-          <div className="mb-6 flex items-center justify-between">
-            <div>
-              <p className="text-hype-text font-black text-xl leading-none tracking-tight">Breaking Through</p>
-              <p className="text-hype-muted text-xs mt-1">Discover them first</p>
-            </div>
-            <Link href="/ipos">
-              <span className="text-hype-muted text-xs flex items-center gap-0.5 hover:text-hype-secondary transition-colors">
-                All Debuts <ChevronRight size={12} />
-              </span>
-            </Link>
-          </div>
-          <div className="space-y-4">
-            {openIPOs.map(ipo => (
-              <IPOCard key={ipo.id} ipo={ipo} />
-            ))}
-          </div>
-        </motion.section>
-      )}
-
-      <motion.section {...sectionReveal} className="px-5 py-8 border-t border-hype-border/50 pb-32">
+      {/* The Conversation — header from right, posts alternate sides */}
+      <motion.section {...slideRight} className="px-5 py-8 border-t border-hype-border/50 pb-32">
         <div className="mb-6">
           <p className="text-hype-text font-black text-xl leading-none tracking-tight">The Conversation</p>
           <p className="text-hype-muted text-xs mt-1">What the community is saying</p>
         </div>
         <div className="space-y-3">
-          {posts.map(post => (
-            <PostCard key={post.id} post={post} />
+          {posts.map((post, i) => (
+            <motion.div
+              key={post.id}
+              initial={{ opacity: 0, y: 20, x: i % 2 === 0 ? -24 : 24 }}
+              whileInView={{ opacity: 1, y: 0, x: 0 }}
+              viewport={{ once: true, amount: 0.1 }}
+              transition={{ ...spring, delay: i * 0.07 }}
+            >
+              <PostCard post={post} />
+            </motion.div>
           ))}
         </div>
         <div className="mt-10 text-center">
@@ -650,6 +747,8 @@ export default function HomeFeed() {
           </p>
         </div>
       </motion.section>
+
+      </div>{/* end overflowX:clip wrapper */}
 
       <TradeSheet
         isOpen={trade.isOpen}

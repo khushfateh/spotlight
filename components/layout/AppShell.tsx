@@ -56,101 +56,49 @@ function InnerShell({ children }: { children: ReactNode }) {
 
   return (
     <div className="min-h-screen bg-hype-bg">
-      {/* Global ambient — very slow, almost imperceptible depth */}
+      {/* Global aurora ambient orbs */}
       <div aria-hidden className="pointer-events-none fixed inset-0 overflow-hidden z-0">
         <div
           className="absolute ambient-orb-1"
           style={{
-            width: 700, height: 700,
+            width: 900, height: 900,
             borderRadius: '50%',
-            background: 'radial-gradient(circle, #C9A84C 0%, transparent 65%)',
-            filter: 'blur(100px)',
-            top: '-200px', left: '30%',
+            background: 'radial-gradient(circle, rgba(201,168,76,0.7) 0%, transparent 60%)',
+            filter: 'blur(130px)',
+            top: '-250px', left: '25%',
           }}
         />
         <div
           className="absolute ambient-orb-2"
           style={{
-            width: 500, height: 500,
+            width: 700, height: 700,
             borderRadius: '50%',
-            background: 'radial-gradient(circle, #6366F1 0%, transparent 65%)',
+            background: 'radial-gradient(circle, rgba(107,33,168,0.65) 0%, transparent 60%)',
+            filter: 'blur(140px)',
+            bottom: '5%', right: '-15%',
+          }}
+        />
+        <div
+          className="absolute ambient-orb-2"
+          style={{
+            width: 600, height: 600,
+            borderRadius: '50%',
+            background: 'radial-gradient(circle, rgba(29,78,216,0.5) 0%, transparent 65%)',
             filter: 'blur(120px)',
-            bottom: '10%', right: '-10%',
+            top: '40%', left: '-15%',
           }}
         />
       </div>
       <SpotlightCursor />
       <TopBar />
-      {/* No z-index on main — adding z-index here creates a stacking context that buries
-          fixed children (TradeSheet z-51) below sibling fixed elements (BottomNav z-40) on iOS. */}
-      <main className="pt-14 relative">
-        <div className="md:flex md:min-h-screen">
-          <DesktopSidebar />
-          <div className="flex-1 md:ml-56 max-w-2xl md:max-w-none">
-            {children}
-          </div>
-        </div>
+      <main className="pt-14 relative" style={{ overflowX: 'clip' }}>
+        {children}
       </main>
       <BottomNav />
     </div>
   )
 }
 
-function DesktopSidebar() {
-  const pathname = usePathname()
-  const { isAuthenticated } = useAuth()
-
-  const allLinks = [
-    { href: '/', label: 'Home', protected: false },
-    { href: '/explore', label: 'Discover', protected: false },
-    { href: '/spotlight', label: 'Spotlight', highlight: true, protected: false },
-    { href: '/portfolio', label: 'Discoveries', protected: true },
-    { href: '/profile', label: 'Profile', protected: true },
-  ]
-
-  const links = allLinks.filter(l => !l.protected || isAuthenticated)
-
-  return (
-    <div className="hidden md:flex md:flex-col md:w-56 md:fixed md:left-0 md:top-14 md:bottom-0 md:border-r md:border-hype-border md:bg-hype-bg md:py-6 md:px-4">
-      <nav className="space-y-0.5">
-        {links.map(({ href, label, highlight }) => {
-          const isActive = href === '/' ? pathname === '/' : pathname.startsWith(href)
-          return (
-            <a
-              key={href}
-              href={href}
-              className={cn(
-                'flex items-center gap-2 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-150',
-                isActive
-                  ? 'bg-hype-surface-2 text-hype-text border border-hype-border'
-                  : highlight
-                  ? 'text-hype-gold hover:bg-hype-gold/5'
-                  : 'text-hype-muted hover:text-hype-secondary hover:bg-hype-surface',
-              )}
-            >
-              {isActive && (
-                <span className="w-1 h-1 rounded-full bg-hype-gold flex-shrink-0" />
-              )}
-              {label}
-            </a>
-          )
-        })}
-      </nav>
-
-      <div className="mt-auto">
-        <div className="rounded-xl border border-hype-border p-3">
-          <p className="text-hype-dim text-[10px] leading-relaxed">
-            Cultural discovery platform. Not financial advice.
-          </p>
-        </div>
-      </div>
-    </div>
-  )
-}
-
-function cn(...classes: (string | boolean | undefined)[]) {
-  return classes.filter(Boolean).join(' ')
-}
 
 export default function AppShell({ children }: { children: ReactNode }) {
   return (

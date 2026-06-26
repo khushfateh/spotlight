@@ -1,248 +1,227 @@
 'use client'
 
+import { useState } from 'react'
 import { motion } from 'framer-motion'
 
 // ─── Grand Piano ──────────────────────────────────────────────────────────────
-// Light source: top-right (stage spotlight). Lid top face = brightest.
-// Body right/upper = mid-light. Left edge / legs = shadow.
 function GrandPiano() {
+  // Keyboard at TOP of SVG so it's visible when piano peeks from bottom-left corner
+  // 12 white keys (C D E F G A B C D E F G), each 13px wide with 1px gap
+  const KX = 12, KY = 18, WW = 13, WH = 76, WStep = 14, BW = 8, BH = 48
+  const wKeys = Array.from({ length: 12 }, (_, i) => KX + i * WStep)
+  // Black keys: between indices 0-1,1-2,3-4,4-5,5-6,7-8,8-9,10-11
+  const bKeys = [0,1,3,4,5,7,8,10].map(i => KX + i * WStep + WW - 3)
+
   return (
     <svg viewBox="0 0 420 320" fill="none" xmlns="http://www.w3.org/2000/svg">
       <defs>
-        {/* Lid: bright at the top-right open end, dims toward bottom-left */}
-        <linearGradient id="gp-lid" x1="390" y1="-20" x2="60" y2="225" gradientUnits="userSpaceOnUse">
-          <stop offset="0%"   stopColor="#F0D060" stopOpacity="0.95"/>
-          <stop offset="30%"  stopColor="#C9A84C" stopOpacity="0.78"/>
-          <stop offset="70%"  stopColor="#C9A84C" stopOpacity="0.50"/>
-          <stop offset="100%" stopColor="#8A6C2A" stopOpacity="0.22"/>
+        <linearGradient id="gp2-body" x1="182" y1="104" x2="412" y2="195" gradientUnits="userSpaceOnUse">
+          <stop offset="0%"   stopColor="#F0D060" stopOpacity="0.75"/>
+          <stop offset="55%"  stopColor="#C9A84C" stopOpacity="0.54"/>
+          <stop offset="100%" stopColor="#8A6820" stopOpacity="0.26"/>
         </linearGradient>
-        {/* Open lid prop panel */}
-        <linearGradient id="gp-lid-top" x1="295" y1="22" x2="185" y2="148" gradientUnits="userSpaceOnUse">
-          <stop offset="0%"   stopColor="#F5DC70" stopOpacity="0.88"/>
-          <stop offset="100%" stopColor="#C9A84C" stopOpacity="0.45"/>
+        <linearGradient id="gp2-lid" x1="248" y1="110" x2="412" y2="92" gradientUnits="userSpaceOnUse">
+          <stop offset="0%"   stopColor="#F5DC70" stopOpacity="0.90"/>
+          <stop offset="100%" stopColor="#C9A84C" stopOpacity="0.52"/>
         </linearGradient>
-        {/* Curved body: top is lit, bottom fades to shadow */}
-        <linearGradient id="gp-body" x1="185" y1="60" x2="28" y2="280" gradientUnits="userSpaceOnUse">
-          <stop offset="0%"   stopColor="#D4B050" stopOpacity="0.80"/>
-          <stop offset="45%"  stopColor="#C9A84C" stopOpacity="0.55"/>
-          <stop offset="100%" stopColor="#7A5A1A" stopOpacity="0.20"/>
-        </linearGradient>
-        {/* Keyboard: faces upward = well lit */}
-        <linearGradient id="gp-keys" x1="22" y1="252" x2="164" y2="252" gradientUnits="userSpaceOnUse">
-          <stop offset="0%"   stopColor="#C9A84C" stopOpacity="0.45"/>
-          <stop offset="50%"  stopColor="#E8C860" stopOpacity="0.70"/>
-          <stop offset="100%" stopColor="#C9A84C" stopOpacity="0.45"/>
-        </linearGradient>
-        {/* Glow bloom filter */}
-        <filter id="gp-bloom" x="-30%" y="-30%" width="160%" height="160%">
-          <feGaussianBlur stdDeviation="4" result="blur"/>
-          <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
-        </filter>
-        <filter id="gp-soft" x="-15%" y="-15%" width="130%" height="130%">
-          <feGaussianBlur stdDeviation="2.5" result="blur"/>
+        <filter id="gp2-glow" x="-20%" y="-20%" width="140%" height="140%">
+          <feGaussianBlur stdDeviation="7" result="blur"/>
           <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
         </filter>
       </defs>
 
-      {/* ── BLOOM layer (gives glowing halo around lit areas) ── */}
-      <path d={`M60,220 L60,80 Q62,48 98,38 L295,22 Q345,20 354,58 Q362,88 350,118 Q338,146 315,158 Q288,170 258,162 L185,148`}
-        stroke="#E8C84C" strokeWidth="10" strokeLinejoin="round" strokeOpacity="0.18" filter="url(#gp-bloom)" />
-      <path d={`M295,22 L390,-18`} stroke="#F0D060" strokeWidth="8" strokeLinecap="round" strokeOpacity="0.22" filter="url(#gp-bloom)" />
-      <rect x="22" y="252" width="142" height="22" rx="3" stroke="#E8C84C" strokeWidth="7" strokeOpacity="0.15" filter="url(#gp-soft)" />
+      {/* Keyboard housing — dark box so keys pop */}
+      <rect x="8" y={KY} width="174" height={WH + 8} rx="3"
+        fill="rgba(4,3,1,0.50)" stroke="rgba(201,168,76,0.68)" strokeWidth="2.2"/>
 
-      {/* ── MAIN STRUCTURE ── */}
-      {/* Lid outline — gradient: bright where spotlight hits the raised lid */}
-      <path d={`M60,220 L60,80 Q62,48 98,38 L295,22 Q345,20 354,58 Q362,88 350,118 Q338,146 315,158 Q288,170 258,162 L185,148`}
-        stroke="url(#gp-lid)" strokeWidth="2.4" strokeLinejoin="round" />
-
-      {/* Open lid panel (the face catching the most light) */}
-      <path d={`M295,22 L390,-18`} stroke="#F0D060" strokeWidth="2.2" strokeLinecap="round" strokeOpacity="0.92" />
-      <path d={`M185,148 L292,100`} stroke="url(#gp-lid-top)" strokeWidth="2.0" strokeLinecap="round" />
-
-      {/* Lid brace dashed */}
-      <path d="M228,22 L295,2" stroke="#C9A84C" strokeWidth="1.3" strokeDasharray="6,5" strokeLinecap="round" strokeOpacity="0.35"/>
-
-      {/* Curved body side — lit at top, shadow at bottom */}
-      <path d={`M60,80 Q30,90 22,130 Q14,168 28,204 Q44,240 80,252 L185,262 L185,148`}
-        stroke="url(#gp-body)" strokeWidth="2.4" fill="none" />
-      {/* Back straight edge — facing away from light → darker */}
-      <line x1="60" y1="80" x2="60" y2="220" stroke="#C9A84C" strokeWidth="2.2" strokeOpacity="0.32"/>
-      {/* Bottom edge */}
-      <path d="M28,252 Q56,268 80,270 L185,278 L185,262" stroke="#C9A84C" strokeWidth="2" strokeOpacity="0.40"/>
-
-      {/* ── SPECULAR HIGHLIGHT on lid rim (very thin, very bright) ── */}
-      <path d={`M98,38 L295,22 Q345,20 354,58`}
-        stroke="#FFF0A0" strokeWidth="0.9" strokeOpacity="0.55" strokeLinejoin="round"/>
-      {/* Specular on open lid edge */}
-      <path d={`M295,22 L390,-18`} stroke="#FFFFFF" strokeWidth="0.7" strokeLinecap="round" strokeOpacity="0.35"/>
-
-      {/* ── KEYBOARD (faces upward → good light) ── */}
-      <rect x="22" y="252" width="142" height="22" rx="3" stroke="url(#gp-keys)" strokeWidth="1.8"/>
-      {/* Key dividers */}
-      {Array.from({ length: 14 }).map((_, i) => (
-        <line key={i} x1={30 + i * 10} y1="252" x2={30 + i * 10} y2="274"
-          stroke="#C9A84C" strokeWidth="0.8" strokeOpacity={i < 7 ? 0.50 : 0.35}/>
+      {/* White keys */}
+      {wKeys.map((x, i) => (
+        <rect key={`w${i}`} x={x} y={KY + 2} width={WW} height={WH} rx="2.5"
+          fill="rgba(235,198,74,0.20)" stroke="rgba(201,168,76,0.50)" strokeWidth="0.9"/>
       ))}
-      {/* Black keys — lit on top face */}
-      {[0,1,3,4,5,7,8,10,11,12].map(i => (
-        <rect key={i} x={26 + i * 10} y="252" width="7" height="13" rx="1.5"
-          stroke="#D4B050" strokeWidth="1.1" strokeOpacity={i < 7 ? 0.62 : 0.45}/>
+      {/* White key dividers */}
+      {wKeys.slice(1).map((x, i) => (
+        <line key={`d${i}`} x1={x - 0.5} y1={KY + 2} x2={x - 0.5} y2={KY + WH + 2}
+          stroke="rgba(201,168,76,0.22)" strokeWidth="0.5"/>
+      ))}
+      {/* Black keys — rendered on top */}
+      {bKeys.map((x, i) => (
+        <rect key={`b${i}`} x={x} y={KY + 2} width={BW} height={BH} rx="2"
+          fill="rgba(5,4,1,0.95)" stroke="rgba(201,168,76,0.60)" strokeWidth="1.1"/>
       ))}
 
-      {/* ── PEDALS (in shadow below, darker) ── */}
-      <ellipse cx="80"  cy="310" rx="8" ry="4" stroke="#C9A84C" strokeWidth="1.2" strokeOpacity="0.32"/>
-      <ellipse cx="105" cy="310" rx="8" ry="4" stroke="#C9A84C" strokeWidth="1.2" strokeOpacity="0.32"/>
-      <ellipse cx="130" cy="310" rx="8" ry="4" stroke="#C9A84C" strokeWidth="1.2" strokeOpacity="0.32"/>
-      <line x1="80"  y1="274" x2="80"  y2="310" stroke="#C9A84C" strokeWidth="1.8" strokeOpacity="0.28"/>
-      <line x1="105" y1="274" x2="105" y2="310" stroke="#C9A84C" strokeWidth="1.8" strokeOpacity="0.28"/>
-      <line x1="130" y1="274" x2="130" y2="310" stroke="#C9A84C" strokeWidth="1.8" strokeOpacity="0.28"/>
+      {/* Fallboard (lid above keyboard — slightly open) */}
+      <path d="M8,14 L182,14 L182,18 L8,18 Z"
+        fill="rgba(201,168,76,0.14)" stroke="rgba(201,168,76,0.65)" strokeWidth="1.6"/>
+      <line x1="10" y1="15" x2="180" y2="15" stroke="rgba(255,248,140,0.32)" strokeWidth="0.7"/>
 
-      {/* ── LEGS ── */}
-      {/* Front-left leg: partially lit */}
-      <line x1="36"  y1="274" x2="30"  y2="308" stroke="#C9A84C" strokeWidth="3.2" strokeLinecap="round" strokeOpacity="0.50"/>
-      {/* Front-right leg: more lit */}
-      <line x1="164" y1="274" x2="168" y2="308" stroke="#D4B050" strokeWidth="3.2" strokeLinecap="round" strokeOpacity="0.60"/>
-      {/* Back leg: in shadow */}
-      <line x1="272" y1="168" x2="280" y2="200" stroke="#C9A84C" strokeWidth="3"   strokeLinecap="round" strokeOpacity="0.38"/>
+      {/* Grand piano body — D-shape below the keyboard */}
+      {/* Body ambient glow */}
+      <path d="M182,102 Q198,108 248,110 L388,102 Q416,100 418,138 Q420,168 408,194 Q394,218 364,228 Q326,240 288,234 L212,220 Q192,214 182,224"
+        stroke="rgba(201,168,76,0.16)" strokeWidth="22" strokeLinejoin="round" strokeLinecap="round" filter="url(#gp2-glow)"/>
 
-      {/* ── BODY SHEEN (reflected light on curved surface) ── */}
-      <path d="M55,96 Q38,140 42,206" stroke="#E8C84C" strokeWidth="1.2" strokeLinecap="round" strokeOpacity="0.28"/>
-      <path d="M68,94 Q52,136 54,200" stroke="#F0D060" strokeWidth="0.6" strokeLinecap="round" strokeOpacity="0.18"/>
+      {/* Body fill + outline */}
+      <path d="M182,102 Q198,108 248,110 L388,102 Q416,100 418,138 Q420,168 408,194 Q394,218 364,228 Q326,240 288,234 L212,220 Q192,214 182,224 L182,102 Z"
+        fill="rgba(201,168,76,0.070)" stroke="url(#gp2-body)" strokeWidth="2.4" strokeLinejoin="round"/>
+
+      {/* Body interior sheen */}
+      <path d="M190,115 Q240,118 320,112 L404,108 Q414,126 414,144"
+        stroke="rgba(255,242,140,0.14)" strokeWidth="1.2" fill="none" strokeLinecap="round"/>
+
+      {/* Left straight edge of body (where keyboard meets body) */}
+      <line x1="182" y1="102" x2="182" y2="224" stroke="rgba(201,168,76,0.40)" strokeWidth="1.8"/>
+
+      {/* Raised lid — angled above the body */}
+      <path d="M388,102 L412,84 L282,90 L248,110 Z"
+        fill="rgba(201,168,76,0.14)" stroke="url(#gp2-lid)" strokeWidth="2.0" strokeLinejoin="round"/>
+      {/* Lid specular edge */}
+      <line x1="388" y1="102" x2="412" y2="84" stroke="rgba(255,250,160,0.60)" strokeWidth="1.1" strokeLinecap="round"/>
+      {/* Lid inner edge sheen */}
+      <line x1="282" y1="90" x2="412" y2="84" stroke="rgba(255,244,140,0.22)" strokeWidth="0.8"/>
+
+      {/* Lid prop stick */}
+      <line x1="335" y1="96" x2="348" y2="116" stroke="rgba(201,168,76,0.68)" strokeWidth="2.0" strokeLinecap="round"/>
+
+      {/* Legs */}
+      <line x1="26" y1="234" x2="18" y2="264" stroke="rgba(201,168,76,0.60)" strokeWidth="5.5" strokeLinecap="round"/>
+      <line x1="148" y1="234" x2="148" y2="264" stroke="rgba(201,168,76,0.54)" strokeWidth="5.5" strokeLinecap="round"/>
+      <line x1="182" y1="198" x2="186" y2="236" stroke="rgba(201,168,76,0.46)" strokeWidth="4.5" strokeLinecap="round"/>
+
+      {/* Pedal rod + pedals */}
+      <path d="M38,258 Q88,264 136,258" stroke="rgba(201,168,76,0.44)" strokeWidth="2.2" fill="none" strokeLinecap="round"/>
+      {[56, 88, 120].map(cx => (
+        <ellipse key={cx} cx={cx} cy={263} rx={9} ry={4.5}
+          fill="rgba(201,168,76,0.11)" stroke="rgba(201,168,76,0.52)" strokeWidth="1.5"/>
+      ))}
     </svg>
   )
 }
 
 // ─── Alto Saxophone ───────────────────────────────────────────────────────────
-// Light source: top-right. Outer right curve = brightest.
-// Inner left curve = shadow. Keys on lit side brighter. Bell rim = bright.
 function Saxophone() {
+  const leftPads  = [96, 124, 154, 184, 214, 244, 272]
+  const rightPads = [112, 154, 202, 252]
+
   return (
     <svg viewBox="0 0 190 420" fill="none" xmlns="http://www.w3.org/2000/svg">
       <defs>
-        {/* Outer body: right curve faces light → bright at top-right, dark at bottom-left */}
-        <linearGradient id="sx-outer" x1="192" y1="80" x2="86" y2="370" gradientUnits="userSpaceOnUse">
+        <linearGradient id="sx2-body" x1="186" y1="74" x2="80" y2="376" gradientUnits="userSpaceOnUse">
           <stop offset="0%"   stopColor="#F0D060" stopOpacity="0.92"/>
-          <stop offset="25%"  stopColor="#D4B050" stopOpacity="0.78"/>
+          <stop offset="30%"  stopColor="#D4B050" stopOpacity="0.72"/>
+          <stop offset="70%"  stopColor="#C9A84C" stopOpacity="0.54"/>
+          <stop offset="100%" stopColor="#7A5818" stopOpacity="0.26"/>
+        </linearGradient>
+        <linearGradient id="sx2-bell" x1="188" y1="278" x2="76" y2="400" gradientUnits="userSpaceOnUse">
+          <stop offset="0%"   stopColor="#F0D060" stopOpacity="0.88"/>
           <stop offset="60%"  stopColor="#C9A84C" stopOpacity="0.58"/>
-          <stop offset="100%" stopColor="#8A6820" stopOpacity="0.28"/>
+          <stop offset="100%" stopColor="#8A6420" stopOpacity="0.20"/>
         </linearGradient>
-        {/* Inner body: in shadow */}
-        <linearGradient id="sx-inner" x1="104" y1="90" x2="94" y2="350" gradientUnits="userSpaceOnUse">
-          <stop offset="0%"   stopColor="#C9A84C" stopOpacity="0.35"/>
-          <stop offset="100%" stopColor="#8A6820" stopOpacity="0.12"/>
+        <linearGradient id="sx2-neck" x1="166" y1="12" x2="110" y2="76" gradientUnits="userSpaceOnUse">
+          <stop offset="0%"   stopColor="#F5DC70" stopOpacity="0.92"/>
+          <stop offset="100%" stopColor="#C9A84C" stopOpacity="0.62"/>
         </linearGradient>
-        {/* Bell: bright at opening rim, dims inside curve */}
-        <linearGradient id="sx-bell" x1="192" y1="276" x2="84" y2="365" gradientUnits="userSpaceOnUse">
-          <stop offset="0%"   stopColor="#F0D060" stopOpacity="0.85"/>
-          <stop offset="50%"  stopColor="#C9A84C" stopOpacity="0.58"/>
-          <stop offset="100%" stopColor="#8A6820" stopOpacity="0.22"/>
-        </linearGradient>
-        {/* Neck: upper area, well lit */}
-        <linearGradient id="sx-neck" x1="168" y1="12" x2="112" y2="78" gradientUnits="userSpaceOnUse">
-          <stop offset="0%"   stopColor="#F5DC70" stopOpacity="0.88"/>
-          <stop offset="100%" stopColor="#C9A84C" stopOpacity="0.55"/>
-        </linearGradient>
-        {/* Bloom glow */}
-        <filter id="sx-bloom" x="-30%" y="-30%" width="160%" height="160%">
-          <feGaussianBlur stdDeviation="4.5" result="blur"/>
+        <filter id="sx2-glow" x="-25%" y="-25%" width="150%" height="150%">
+          <feGaussianBlur stdDeviation="6" result="blur"/>
           <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
         </filter>
-        <filter id="sx-soft" x="-20%" y="-20%" width="140%" height="140%">
+        <filter id="sx2-pad" x="-40%" y="-40%" width="180%" height="180%">
           <feGaussianBlur stdDeviation="2.5" result="blur"/>
           <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
         </filter>
       </defs>
 
-      {/* ── BLOOM layer ── */}
-      <path d={`M112,78 Q108,100 104,138 Q100,178 98,220 Q96,268 98,306 Q102,340 120,360 Q148,380 168,368 Q190,354 192,328 Q194,300 178,276`}
-        stroke="#E8C84C" strokeWidth="12" fill="none" strokeLinecap="round" strokeOpacity="0.16" filter="url(#sx-bloom)"/>
-      <path d={`M178,276 Q168,260 150,258 Q126,256 108,268 Q88,282 86,306 Q84,330 100,346 Q116,362 142,362`}
-        stroke="#E8C84C" strokeWidth="10" fill="none" strokeOpacity="0.18" filter="url(#sx-bloom)"/>
-      <path d={`M148,12 Q162,10 168,22 L158,36 Q152,28 142,32 L130,48`}
-        stroke="#F0D060" strokeWidth="8" strokeLinecap="round" strokeOpacity="0.20" filter="url(#sx-soft)"/>
+      {/* ── BODY + BELL GLOW ── */}
+      <path d="M116,74 Q112,140 110,210 Q108,268 112,308 Q118,340 134,358 Q150,376 168,370 Q184,362 188,338 Q192,312 182,290 Q174,270 158,264"
+        stroke="rgba(201,168,76,0.18)" strokeWidth="26" fill="none" strokeLinecap="round" filter="url(#sx2-glow)"/>
 
-      {/* ── MOUTHPIECE + NECK ── */}
-      <path d={`M148,12 Q162,10 168,22 L158,36 Q152,28 142,32 L130,48`}
-        stroke="url(#sx-neck)" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/>
-      <path d={`M130,48 Q118,60 112,78`}
-        stroke="url(#sx-neck)" strokeWidth="2.6" strokeLinecap="round" fill="none"/>
+      {/* ── FILLED BODY SILHOUETTE (tube cross-section area) ── */}
+      <path d="M120,74 Q118,140 116,210 Q114,268 116,308 Q122,342 136,360 Q152,378 170,372 Q188,364 192,338 Q196,312 184,288 Q176,270 160,264 L158,270 Q172,278 178,300 Q184,322 180,342 Q176,362 162,370 Q146,376 132,364 Q118,350 112,318 Q106,292 106,252 L104,210 Q102,150 104,90 L108,74 Z"
+        fill="rgba(201,168,76,0.068)"/>
 
-      {/* ── SPECULAR on mouthpiece tip ── */}
-      <path d={`M158,20 Q164,14 168,22`} stroke="#FFF0A0" strokeWidth="0.8" strokeLinecap="round" strokeOpacity="0.60"/>
+      {/* ── OUTER BODY — right side (lit, facing spotlight) ── */}
+      <path d="M118,74 Q116,140 114,210 Q112,268 114,308 Q120,342 136,360 Q154,378 172,370 Q188,360 190,336 Q194,310 182,288 Q174,270 158,264"
+        stroke="url(#sx2-body)" strokeWidth="3.0" fill="none" strokeLinecap="round"/>
+      {/* Body specular highlight streak */}
+      <path d="M180,82 Q188,182 182,288" stroke="rgba(255,244,140,0.24)" strokeWidth="1.4" strokeLinecap="round"/>
+      <path d="M176,78 Q184,178 178,282" stroke="rgba(255,255,255,0.10)" strokeWidth="0.7" strokeLinecap="round"/>
 
-      {/* ── OUTER BODY (right convex side — faces the spotlight) ── */}
-      <path d={`M112,78 Q108,100 104,138 Q100,178 98,220 Q96,268 98,306 Q102,340 120,360 Q148,380 168,368 Q190,354 192,328 Q194,300 178,276`}
-        stroke="url(#sx-outer)" strokeWidth="2.6" fill="none" strokeLinecap="round"/>
+      {/* ── INNER BODY — left side (shadow) ── */}
+      <path d="M102,74 Q100,140 98,210 Q96,268 100,308 Q106,342 120,360 Q136,376 152,372"
+        stroke="rgba(201,168,76,0.40)" strokeWidth="2.0" fill="none" strokeLinecap="round"/>
 
-      {/* ── SPECULAR HIGHLIGHT on outer edge (very thin, very bright) ── */}
-      <path d={`M113,85 Q110,115 107,160 Q104,210 103,255 Q103,295 110,328 Q122,358 148,372`}
-        stroke="#FFF0A0" strokeWidth="0.8" strokeLinecap="round" strokeOpacity="0.42"/>
+      {/* ── BELL ── the most dramatic recognizable feature */}
+      {/* Bell filled silhouette */}
+      <path d="M158,264 Q142,252 124,252 Q104,252 88,266 Q68,282 66,308 Q64,336 80,356 Q96,376 124,380 Q152,382 170,364 Q186,346 186,318 Q186,298 174,280 Q168,270 158,264 L158,270 Q166,278 172,294 Q178,314 176,336 Q172,356 158,368 Q142,378 118,376 Q92,372 78,352 Q66,332 68,308 Q70,286 86,272 Q100,260 122,258 Q140,256 156,270 Z"
+        fill="rgba(201,168,76,0.065)"/>
+      {/* Bell outer stroke */}
+      <path d="M158,264 Q142,252 124,252 Q104,252 88,266 Q68,282 66,308 Q64,336 80,356 Q96,376 124,380 Q152,382 170,364 Q186,346 186,318 Q186,298 174,280 Q168,270 158,264"
+        stroke="url(#sx2-bell)" strokeWidth="2.8" fill="none"/>
+      {/* Bell inner rim */}
+      <path d="M68,304 Q66,328 78,350 Q92,374 122,378 Q150,380 168,362 Q182,348 182,320"
+        stroke="rgba(201,168,76,0.34)" strokeWidth="1.6" fill="none"/>
+      {/* Bell opening glow + specular */}
+      <ellipse cx="126" cy="378" rx="48" ry="9" stroke="rgba(201,168,76,0.18)" strokeWidth="7" filter="url(#sx2-glow)"/>
+      <path d="M184,296 Q192,318 186,344" stroke="rgba(255,244,130,0.52)" strokeWidth="1.6" strokeLinecap="round"/>
 
-      {/* ── INNER BODY (left concave side — in shadow) ── */}
-      <path d={`M104,90 Q100,128 96,176 Q92,230 94,284 Q96,320 112,344 Q136,368 158,360`}
-        stroke="url(#sx-inner)" strokeWidth="1.6" fill="none" strokeLinecap="round"/>
+      {/* ── NECK ── */}
+      {/* Neck fill (tube between mouthpiece and body) */}
+      <path d="M120,74 Q116,56 118,40 Q120,26 130,18 L140,10 L126,14 Q116,22 108,34 Q102,46 104,62 L106,74 Z"
+        fill="rgba(201,168,76,0.08)"/>
+      {/* Neck right side (lit) */}
+      <path d="M120,74 Q116,56 118,40 Q120,26 130,18 L140,10"
+        stroke="url(#sx2-neck)" strokeWidth="2.6" fill="none" strokeLinecap="round"/>
+      {/* Neck left side (shadow) */}
+      <path d="M104,74 Q100,58 102,42 Q104,30 114,22 L124,14"
+        stroke="rgba(201,168,76,0.50)" strokeWidth="2.0" fill="none" strokeLinecap="round"/>
 
-      {/* ── BELL (opening faces down-left, rim catches light on right) ── */}
-      <path d={`M178,276 Q168,260 150,258 Q126,256 108,268 Q88,282 86,306 Q84,330 100,346 Q116,362 142,362`}
-        stroke="url(#sx-bell)" strokeWidth="2.4" fill="none"/>
-      {/* Bell inner rim (shadow side) */}
-      <path d={`M86,300 Q84,318 92,332 Q106,354 134,360 Q156,364 172,354`}
-        stroke="#C9A84C" strokeWidth="1.3" fill="none" strokeOpacity="0.35"/>
-      {/* Bell rim specular */}
-      <path d={`M178,276 Q186,290 190,310`} stroke="#FFF0A0" strokeWidth="1" strokeLinecap="round" strokeOpacity="0.45"/>
+      {/* ── MOUTHPIECE ── */}
+      <path d="M140,10 Q152,7 158,16 L154,32 Q150,24 142,26 L126,32 Q122,36 120,42"
+        stroke="rgba(240,215,90,0.90)" strokeWidth="2.6" fill="rgba(201,168,76,0.12)" strokeLinecap="round" strokeLinejoin="round"/>
+      {/* Mouthpiece tip specular */}
+      <path d="M158,16 Q163,11 158,24" stroke="rgba(255,250,160,0.55)" strokeWidth="1.0" strokeLinecap="round"/>
 
-      {/* ── KEYS — left column (facing outward/left — partially lit) ── */}
-      {[100,126,154,182,210,238,264].map((y, i) => {
-        // Keys at top (closer to light) are brighter
-        const t = 1 - i / 7
-        const padOp = 0.30 + t * 0.30
-        const rimOp = 0.45 + t * 0.35
+      {/* ── OCTAVE / REGISTER KEY (distinctive sax feature) ── */}
+      <ellipse cx="116" cy="65" rx="9" ry="7" fill="rgba(201,168,76,0.08)" stroke="rgba(201,168,76,0.72)" strokeWidth="1.8"/>
+      <ellipse cx="116" cy="65" rx="4.5" ry="3.5" stroke="rgba(240,212,90,0.52)" strokeWidth="1.0"/>
+      <line x1="108" y1="66" x2="98" y2="74" stroke="rgba(201,168,76,0.50)" strokeWidth="1.4" strokeLinecap="round"/>
+
+      {/* ── KEY PADS — left column (facing viewer, most visible) ── */}
+      {leftPads.map((y, i) => {
+        const t = 1 - i / leftPads.length
+        const op = 0.55 + t * 0.28
         return (
           <g key={i}>
-            {/* Pad glow on brighter keys */}
-            {i < 3 && (
-              <ellipse cx="80" cy={y + 5} rx="12" ry="9"
-                stroke="#E8C84C" strokeWidth="4" strokeOpacity="0.12" filter="url(#sx-soft)"/>
-            )}
-            <line x1="104" y1={y} x2="88" y2={y + 4} stroke="#C9A84C" strokeWidth="1.1" strokeOpacity={0.30 + t * 0.20}/>
-            <ellipse cx="80" cy={y + 5} rx="10" ry="7" stroke="#C9A84C" strokeWidth="1.4" strokeOpacity={rimOp}/>
-            <ellipse cx="80" cy={y + 5} rx="5" ry="3.5" stroke="#D4B050" strokeWidth="0.8" strokeOpacity={padOp}/>
+            {i < 4 && <ellipse cx="76" cy={y + 5} rx="15" ry="11" stroke="rgba(201,168,76,0.10)" strokeWidth="7" filter="url(#sx2-pad)"/>}
+            <line x1="104" y1={y} x2="89" y2={y + 5} stroke="rgba(201,168,76,0.34)" strokeWidth="1.4" strokeLinecap="round"/>
+            <ellipse cx="76" cy={y + 5} rx="13" ry="10" fill="rgba(201,168,76,0.08)" stroke={`rgba(201,168,76,${op})`} strokeWidth="1.7"/>
+            <ellipse cx="76" cy={y + 5} rx="7" ry="5.5" stroke={`rgba(220,188,78,${op * 0.62})`} strokeWidth="1.0"/>
           </g>
         )
       })}
 
-      {/* ── KEYS — right column (facing right → more lit) ── */}
-      {[108,148,196,244].map((y, i) => {
-        const t = 1 - i / 4
-        const op = 0.45 + t * 0.35
+      {/* ── KEY PADS — right column ── */}
+      {rightPads.map((y, i) => {
+        const t = 1 - i / rightPads.length
+        const op = 0.54 + t * 0.28
         return (
           <g key={i}>
-            {i < 2 && (
-              <ellipse cx="134" cy={y + 3} rx="10" ry="7"
-                stroke="#E8C84C" strokeWidth="4" strokeOpacity="0.14" filter="url(#sx-soft)"/>
-            )}
-            <line x1="110" y1={y} x2="126" y2={y + 2} stroke="#D4B050" strokeWidth="1.1" strokeOpacity={op}/>
-            <ellipse cx="134" cy={y + 3} rx="8" ry="5.5" stroke="#D4B050" strokeWidth="1.3" strokeOpacity={op + 0.10}/>
+            <line x1="116" y1={y} x2="130" y2={y + 2} stroke="rgba(201,168,76,0.36)" strokeWidth="1.3" strokeLinecap="round"/>
+            <ellipse cx="140" cy={y + 4} rx="11" ry="8" fill="rgba(201,168,76,0.08)" stroke={`rgba(201,168,76,${op})`} strokeWidth="1.5"/>
           </g>
         )
       })}
-
-      {/* ── REGISTER KEY on neck ── */}
-      <ellipse cx="122" cy="65" rx="7" ry="5" stroke="#D4B050" strokeWidth="1.4" strokeOpacity="0.65"/>
-      <ellipse cx="122" cy="65" rx="3.5" ry="2.5" stroke="#F0D060" strokeWidth="0.8" strokeOpacity="0.50"/>
-      <line x1="116" y1="65" x2="108" y2="74" stroke="#C9A84C" strokeWidth="1.1" strokeOpacity="0.45"/>
 
       {/* ── THUMB REST ── */}
-      <rect x="114" y="200" width="16" height="8" rx="3" stroke="#C9A84C" strokeWidth="1.2" strokeOpacity="0.40"/>
+      <rect x="112" y="200" width="18" height="10" rx="4"
+        fill="rgba(201,168,76,0.14)" stroke="rgba(201,168,76,0.50)" strokeWidth="1.5"/>
 
-      {/* ── BODY SHEEN (inner glow reflection on the right face) ── */}
-      <path d="M178,100 Q185,180 182,270" stroke="#F0D060" strokeWidth="1" strokeLinecap="round" strokeOpacity="0.20"/>
-      <path d="M175,95 Q181,175 178,260" stroke="#FFFFFF" strokeWidth="0.5" strokeLinecap="round" strokeOpacity="0.12"/>
+      {/* ── BOW SPECULAR ── */}
+      <path d="M156,266 Q174,284 180,312" stroke="rgba(255,244,130,0.34)" strokeWidth="1.4" strokeLinecap="round"/>
     </svg>
   )
 }
 
-// ─── Violin (unchanged — already bright) ─────────────────────────────────────
+// ─── Violin ───────────────────────────────────────────────────────────────────
 function Violin() {
   const g = 'rgba(201,168,76,'
   return (
@@ -284,7 +263,7 @@ function Violin() {
   )
 }
 
-// ─── Flute (unchanged — already bright) ──────────────────────────────────────
+// ─── Flute ────────────────────────────────────────────────────────────────────
 function Flute() {
   const g = 'rgba(201,168,76,'
   const keys = [92, 118, 144, 170, 198, 224, 252, 280, 308, 336, 364, 392]
@@ -316,7 +295,7 @@ function Flute() {
   )
 }
 
-// ─── Spotlight cone above each instrument ─────────────────────────────────────
+// ─── Spotlight cone ───────────────────────────────────────────────────────────
 function SpotlightCone({ width = '120%', left = '-10%', brightness = 1 }: {
   width?: string; left?: string; brightness?: number
 }) {
@@ -332,47 +311,95 @@ function SpotlightCone({ width = '120%', left = '-10%', brightness = 1 }: {
 
 // ─── Full backdrop ────────────────────────────────────────────────────────────
 export default function InstrumentBackdrop() {
-  return (
-    <div className="absolute inset-0 overflow-hidden pointer-events-none select-none" aria-hidden>
+  const [hovered, setHovered] = useState<string | null>(null)
 
-      {/* Grand Piano — bottom-left, massive — spotlight brightness ×2 */}
-      <motion.div className="absolute" style={{ bottom: '-8%', left: '-8%', width: 460 }}
-        animate={{ y: [-4, 5, -4], rotate: ['-4deg', '-3deg', '-4deg'] }}
-        transition={{ duration: 11, repeat: Infinity, ease: 'easeInOut', delay: 0 }}>
-        <SpotlightCone width="130%" left="-15%" brightness={2.2} />
+  const pianoPlaying = {
+    y: [0, -10, -2, -12, -4, -8, 0],
+    rotate: ['-4deg', '-5deg', '-3.5deg', '-5.2deg', '-3.8deg', '-4.5deg', '-4deg'],
+  }
+  const saxPlaying = {
+    y: [-5, -14, -3, -16, -5, -12, -5],
+    rotate: ['4deg', '9deg', '2.5deg', '10deg', '3.5deg', '8deg', '4deg'],
+  }
+  const violinPlaying = {
+    y: [-3, -11, 0, -13, -1, -9, -3],
+    rotate: ['-10deg', '-5deg', '-15deg', '-6deg', '-14deg', '-7deg', '-10deg'],
+  }
+  const flutePlaying = {
+    y: [-2, 5, -5, 4, -4, 5, -2],
+    x: [-1, 4, -4, 3, -5, 3, -1],
+    rotate: ['-8deg', '-7deg', '-9.5deg', '-7deg', '-9deg', '-7.5deg', '-8deg'],
+  }
+
+  return (
+    <div className="absolute inset-0 overflow-hidden select-none" aria-hidden style={{ pointerEvents: 'none' }}>
+
+      {/* Grand Piano — bottom-left */}
+      <motion.div
+        className="absolute"
+        style={{ bottom: '-8%', left: '-8%', width: 460, pointerEvents: 'auto', cursor: 'pointer' }}
+        animate={hovered === 'piano' ? pianoPlaying : { y: [-4, 5, -4], rotate: ['-4deg', '-3deg', '-4deg'] }}
+        transition={hovered === 'piano'
+          ? { duration: 0.44, repeat: Infinity, repeatType: 'mirror', ease: 'easeInOut' }
+          : { duration: 11, repeat: Infinity, ease: 'easeInOut', delay: 0 }}
+        onMouseEnter={() => setHovered('piano')}
+        onMouseLeave={() => setHovered(null)}
+      >
+        <SpotlightCone width="130%" left="-15%" brightness={2.8} />
         <GrandPiano />
       </motion.div>
 
-      {/* Saxophone — right edge — spotlight brightness ×2 */}
-      <motion.div className="absolute" style={{ top: '10%', right: '3%', width: 152 }}
-        animate={{ y: [-5, 6, -5], rotate: ['4deg', '5.5deg', '4deg'] }}
-        transition={{ duration: 13, repeat: Infinity, ease: 'easeInOut', delay: 2.8 }}>
+      {/* Saxophone — right edge */}
+      <motion.div
+        className="absolute"
+        style={{ top: '10%', right: '3%', width: 152, pointerEvents: 'auto', cursor: 'pointer' }}
+        animate={hovered === 'sax' ? saxPlaying : { y: [-5, 6, -5], rotate: ['4deg', '5.5deg', '4deg'] }}
+        transition={hovered === 'sax'
+          ? { duration: 0.38, repeat: Infinity, repeatType: 'mirror', ease: 'easeInOut' }
+          : { duration: 13, repeat: Infinity, ease: 'easeInOut', delay: 2.8 }}
+        onMouseEnter={() => setHovered('sax')}
+        onMouseLeave={() => setHovered(null)}
+      >
         <SpotlightCone width="180%" left="-40%" brightness={2.2} />
         <Saxophone />
       </motion.div>
 
-      {/* Violin — upper-right, tilted */}
-      <motion.div className="absolute" style={{ top: '5%', right: '22%', width: 94 }}
-        animate={{ y: [-3, 5, -3], rotate: ['-10deg', '-8.5deg', '-10deg'] }}
-        transition={{ duration: 9.5, repeat: Infinity, ease: 'easeInOut', delay: 1.4 }}>
+      {/* Violin — upper-right */}
+      <motion.div
+        className="absolute"
+        style={{ top: '5%', right: '22%', width: 94, pointerEvents: 'auto', cursor: 'pointer' }}
+        animate={hovered === 'violin' ? violinPlaying : { y: [-3, 5, -3], rotate: ['-10deg', '-8.5deg', '-10deg'] }}
+        transition={hovered === 'violin'
+          ? { duration: 0.32, repeat: Infinity, repeatType: 'mirror', ease: 'easeInOut' }
+          : { duration: 9.5, repeat: Infinity, ease: 'easeInOut', delay: 1.4 }}
+        onMouseEnter={() => setHovered('violin')}
+        onMouseLeave={() => setHovered(null)}
+      >
         <SpotlightCone width="200%" left="-50%" brightness={1} />
         <Violin />
       </motion.div>
 
-      {/* Flute — upper area, diagonal sweep */}
-      <motion.div className="absolute" style={{ top: '21%', left: '7%', width: 390 }}
-        animate={{ y: [-2, 4, -2], rotate: ['-8deg', '-6.5deg', '-8deg'] }}
-        transition={{ duration: 15, repeat: Infinity, ease: 'easeInOut', delay: 4.2 }}>
+      {/* Flute — upper area */}
+      <motion.div
+        className="absolute"
+        style={{ top: '21%', left: '7%', width: 390, pointerEvents: 'auto', cursor: 'pointer' }}
+        animate={hovered === 'flute' ? flutePlaying : { y: [-2, 4, -2], rotate: ['-8deg', '-6.5deg', '-8deg'] }}
+        transition={hovered === 'flute'
+          ? { duration: 0.28, repeat: Infinity, repeatType: 'mirror', ease: 'easeInOut' }
+          : { duration: 15, repeat: Infinity, ease: 'easeInOut', delay: 4.2 }}
+        onMouseEnter={() => setHovered('flute')}
+        onMouseLeave={() => setHovered(null)}
+      >
         <SpotlightCone width="110%" left="-5%" brightness={1} />
         <Flute />
       </motion.div>
 
       {/* Stage floor */}
-      <div className="absolute bottom-0 left-0 right-0" style={{
+      <div className="absolute bottom-0 left-0 right-0 pointer-events-none" style={{
         height: '35%',
         background: 'linear-gradient(to top, rgba(201,168,76,0.028) 0%, transparent 100%)',
       }} />
-      <div className="absolute left-0 right-0" style={{
+      <div className="absolute left-0 right-0 pointer-events-none" style={{
         bottom: '30%', height: '1px',
         background: 'linear-gradient(90deg, transparent 0%, rgba(201,168,76,0.10) 25%, rgba(201,168,76,0.14) 50%, rgba(201,168,76,0.10) 75%, transparent 100%)',
       }} />

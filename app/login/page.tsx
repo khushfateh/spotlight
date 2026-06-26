@@ -9,6 +9,7 @@ import { useAuth } from '@/context/AuthContext'
 import { SpotlightWordmark } from '@/components/ui/SpotlightLogo'
 import { mockUsers } from '@/lib/mock-data/users'
 import InstrumentBackdrop from '@/components/ui/InstrumentBackdrop'
+import { SpotlightCursor } from '@/components/effects/SpotlightCursor'
 
 const ease = [0.16, 1, 0.3, 1] as const
 
@@ -49,6 +50,7 @@ export default function LoginPage() {
 
   return (
     <div className="relative min-h-screen flex flex-col overflow-hidden bg-[#0A0A0A]">
+      <SpotlightCursor />
 
       {/* Instrument backdrop — grand piano, saxophone, violin, flute */}
       <InstrumentBackdrop />
@@ -59,6 +61,12 @@ export default function LoginPage() {
         style={{ background: 'radial-gradient(ellipse 80% 60% at 50% 65%, rgba(10,10,10,0.65) 0%, transparent 100%)' }} />
       <div className="absolute inset-0 pointer-events-none"
         style={{ background: 'radial-gradient(ellipse 55% 35% at 50% 0%, rgba(201,168,76,0.14) 0%, transparent 60%)' }} />
+
+      {/* Aurora orbs */}
+      <div className="absolute inset-0 pointer-events-none overflow-hidden">
+        <div className="aurora-orb-1 absolute w-[400px] h-[400px] rounded-full blur-[100px]" style={{ background: 'radial-gradient(circle, rgba(107,33,168,0.25) 0%, transparent 70%)', top: '-10%', right: '-15%' }} />
+        <div className="aurora-orb-2 absolute w-[350px] h-[350px] rounded-full blur-[90px]" style={{ background: 'radial-gradient(circle, rgba(29,78,216,0.2) 0%, transparent 70%)', bottom: '10%', left: '-10%' }} />
+      </div>
 
       {/* Form */}
       <div className="relative z-10 flex flex-col items-center justify-center min-h-screen px-6 py-12">
@@ -98,7 +106,7 @@ export default function LoginPage() {
           initial={{ opacity: 0, y: 24 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, ease, delay: 0.2 }}
-          className="w-full max-w-sm"
+          className="w-full max-w-sm glass rounded-3xl p-6"
         >
           {/* Google sign-in */}
           <button
