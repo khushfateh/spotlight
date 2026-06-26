@@ -246,30 +246,42 @@ export default function SpotlightPage() {
         )}
 
         {/* Editorial teaser */}
-        <div className="py-8 border-b border-hype-border">
+        <motion.div
+          initial={{ opacity: 0, y: 28 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, amount: 0.1 }}
+          transition={{ type: 'spring', stiffness: 70, damping: 18 }}
+          className="py-8 border-b border-hype-border"
+        >
           <p className="text-white/40 text-[10px] font-semibold uppercase tracking-[0.25em] mb-3">
             Why they matter
           </p>
           <p className="text-white/85 text-lg font-medium leading-relaxed">
             {creator.bio}
           </p>
-        </div>
+        </motion.div>
 
-        {/* Why They're Rising — editorial sections */}
+        {/* Story cards — staggered fade-up with diagonal drift */}
         <div className="py-8 border-b border-hype-border">
-          <p className="text-white/40 text-[10px] font-semibold uppercase tracking-[0.25em] mb-6">
+          <motion.p
+            initial={{ opacity: 0, y: 16 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, amount: 0.1 }}
+            transition={{ type: 'spring', stiffness: 70, damping: 18 }}
+            className="text-white/40 text-[10px] font-semibold uppercase tracking-[0.25em] mb-6"
+          >
             The story
-          </p>
+          </motion.p>
           <div className="space-y-8">
             {whyCards.map((card, i) => (
               <motion.div
                 key={i}
-                initial={{ opacity: 0, y: 16 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true, margin: '-40px' }}
-                transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1], delay: i * 0.08 }}
+                initial={{ opacity: 0, y: 24, x: i % 2 === 0 ? -16 : 16 }}
+                whileInView={{ opacity: 1, y: 0, x: 0 }}
+                viewport={{ once: true, amount: 0.1 }}
+                transition={{ type: 'spring', stiffness: 70, damping: 18, delay: i * 0.06 }}
               >
-                <h3 className="text-hype-gold font-black text-lg mb-2 font-display">{card.heading}</h3>
+                <h3 className="text-hype-gold font-black text-lg mb-2">{card.heading}</h3>
                 <p className="text-white/60 text-sm leading-relaxed">{card.body}</p>
               </motion.div>
             ))}
@@ -278,7 +290,13 @@ export default function SpotlightPage() {
 
         {/* Momentum Drivers */}
         {drivers.length > 0 && (
-          <div className="py-8 border-b border-hype-border">
+          <motion.div
+            initial={{ opacity: 0, y: 28 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, amount: 0.1 }}
+            transition={{ type: 'spring', stiffness: 70, damping: 18 }}
+            className="py-8 border-b border-hype-border"
+          >
             <p className="text-white/40 text-[10px] font-semibold uppercase tracking-[0.25em] mb-5">
               What&apos;s driving momentum
             </p>
@@ -286,11 +304,11 @@ export default function SpotlightPage() {
               {drivers.map((driver, i) => (
                 <motion.div
                   key={i}
-                  initial={{ opacity: 0, x: -10 }}
-                  whileInView={{ opacity: 1, x: 0 }}
-                  viewport={{ once: true, margin: '-20px' }}
-                  whileHover={{ x: 4 }}
-                  transition={{ duration: 0.4, delay: i * 0.05 }}
+                  initial={{ opacity: 0, y: 16, x: i % 2 === 0 ? -12 : 12 }}
+                  whileInView={{ opacity: 1, y: 0, x: 0 }}
+                  viewport={{ once: true, amount: 0.1 }}
+                  whileHover={{ x: i % 2 === 0 ? 5 : -5 }}
+                  transition={{ type: 'spring', stiffness: 70, damping: 18, delay: i * 0.05 }}
                   className="flex items-start justify-between gap-4 py-3 border-b border-hype-border/60 last:border-0"
                 >
                   <div className="flex-1 min-w-0">
@@ -312,12 +330,18 @@ export default function SpotlightPage() {
                 </motion.div>
               ))}
             </div>
-          </div>
+          </motion.div>
         )}
 
-        {/* Early Spotters */}
+        {/* Early Spotters — staggered fade-up */}
         {spotters.length > 0 && (
-          <div className="py-8 border-b border-hype-border">
+          <motion.div
+            initial={{ opacity: 0, y: 28 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, amount: 0.1 }}
+            transition={{ type: 'spring', stiffness: 70, damping: 18 }}
+            className="py-8 border-b border-hype-border"
+          >
             <div className="flex items-center gap-2 mb-5">
               <Users size={12} className="text-white/40" />
               <p className="text-white/40 text-[10px] font-semibold uppercase tracking-widest">
@@ -328,10 +352,10 @@ export default function SpotlightPage() {
               {spotters.map((spotter, i) => (
                 <motion.div
                   key={i}
-                  initial={{ opacity: 0, x: -12 }}
-                  whileInView={{ opacity: 1, x: 0 }}
-                  viewport={{ once: true, margin: '-20px' }}
-                  transition={{ duration: 0.4, delay: i * 0.08 }}
+                  initial={{ opacity: 0, y: 16, x: i % 2 === 0 ? -14 : 14 }}
+                  whileInView={{ opacity: 1, y: 0, x: 0 }}
+                  viewport={{ once: true, amount: 0.1 }}
+                  transition={{ type: 'spring', stiffness: 70, damping: 18, delay: i * 0.07 }}
                   className="flex items-center gap-3"
                 >
                   <div className="w-9 h-9 rounded-full bg-white/10 border border-white/10 flex items-center justify-center text-white text-xs font-bold flex-shrink-0">
@@ -349,27 +373,38 @@ export default function SpotlightPage() {
                 </motion.div>
               ))}
             </div>
-          </div>
+          </motion.div>
         )}
 
-        {/* Stats row */}
-        <div className="py-8 border-b border-hype-border">
+        {/* Stats — staggered fade-up */}
+        <motion.div
+          initial={{ opacity: 0, y: 28 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, amount: 0.1 }}
+          transition={{ type: 'spring', stiffness: 70, damping: 18 }}
+          className="py-8 border-b border-hype-border"
+        >
           <p className="text-white/40 text-[10px] font-semibold uppercase tracking-[0.25em] mb-4">Creator stats</p>
           <div className="grid grid-cols-3 gap-4">
-            <div className="glass rounded-2xl p-4 text-center">
-              <p className="text-white font-black text-xl">{creator.followers}</p>
-              <p className="text-white/35 text-[10px] uppercase tracking-wider mt-1">Followers</p>
-            </div>
-            <div className="glass rounded-2xl p-4 text-center">
-              <p className="text-white font-black text-xl">{creator.creatorScore}</p>
-              <p className="text-white/35 text-[10px] uppercase tracking-wider mt-1">Creator Score</p>
-            </div>
-            <div className="glass-gold rounded-2xl p-4 text-center">
-              <p className="text-hype-gold font-black text-sm text-glow-gold">{tier}</p>
-              <p className="text-white/35 text-[10px] uppercase tracking-wider mt-1">Tier</p>
-            </div>
+            {[
+              { label: 'Followers', value: creator.followers },
+              { label: 'Creator Score', value: creator.creatorScore },
+              { label: 'Tier', value: tier, gold: true },
+            ].map((stat, i) => (
+              <motion.div
+                key={stat.label}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true, amount: 0.1 }}
+                transition={{ type: 'spring', stiffness: 70, damping: 18, delay: i * 0.08 }}
+                className={`${stat.gold ? 'glass-gold' : 'glass'} rounded-2xl p-4 text-center`}
+              >
+                <p className={`font-black text-xl ${stat.gold ? 'text-hype-gold text-sm text-glow-gold' : 'text-white'}`}>{stat.value}</p>
+                <p className="text-white/35 text-[10px] uppercase tracking-wider mt-1">{stat.label}</p>
+              </motion.div>
+            ))}
           </div>
-        </div>
+        </motion.div>
 
         {/* CTA */}
         <div className="pt-8">

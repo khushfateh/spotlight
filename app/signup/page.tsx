@@ -427,7 +427,7 @@ export default function SignupPage() {
             transition={{ duration: 0.7, ease, delay: 0.08 }}
             className="mb-8 mt-6"
           >
-            <h1 className="text-white font-black text-3xl tracking-tight leading-tight mb-2 font-display">
+            <h1 className="text-white font-black text-3xl tracking-tight leading-tight mb-2">
               Join SPOTLIGHT.
             </h1>
             <p className="text-white/40 text-sm">

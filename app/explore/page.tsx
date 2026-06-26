@@ -56,17 +56,21 @@ function CreatorListRow({ creator, rank, onBuy, onSelect }: { creator: Creator; 
   return (
     <Link href={`/creator/${creator.ticker.toLowerCase()}`} onClick={onSelect}>
       <motion.div
-        whileHover={{ x: 4, backgroundColor: 'rgba(255,255,255,0.03)' }}
+        initial={{ opacity: 0, x: rank % 2 === 0 ? -64 : 64 }}
+        whileInView={{ opacity: 1, x: 0 }}
+        viewport={{ once: true, amount: 0.1 }}
+        transition={{ type: 'spring', stiffness: 70, damping: 18, delay: Math.min(rank * 0.04, 0.28) }}
+        whileHover={{ x: rank % 2 === 0 ? 5 : -5, backgroundColor: 'rgba(255,255,255,0.03)' }}
         className="flex items-center gap-3 px-4 py-3.5 transition-colors group"
       >
         <span className="text-hype-dim text-[11px] font-mono w-5 flex-shrink-0 text-center">{rank}</span>
 
         {creator.imageUrl ? (
-          <div className="w-10 h-10 rounded-xl overflow-hidden flex-shrink-0">
-            <img src={creator.imageUrl} alt="" className="w-full h-full object-cover object-top" />
+          <div className="w-11 h-11 rounded-full overflow-hidden flex-shrink-0 ring-1 ring-white/15">
+            <img src={creator.imageUrl} alt="" className="w-full h-full object-cover object-center" />
           </div>
         ) : (
-          <div className={cn('w-10 h-10 rounded-xl bg-gradient-to-br flex-shrink-0', creator.coverColor)} />
+          <div className={cn('w-11 h-11 rounded-full bg-gradient-to-br flex-shrink-0 ring-1 ring-white/10', creator.coverColor)} />
         )}
 
         <div className="flex-1 min-w-0">
@@ -97,11 +101,15 @@ function CreatorListRow({ creator, rank, onBuy, onSelect }: { creator: Creator; 
 
 // ── Genre pill card ────────────────────────────────────────────────────────────
 
-function GenreCard({ genre, onSelect }: { genre: typeof genres[0]; onSelect: (id: string) => void }) {
+function GenreCard({ genre, onSelect, index = 0 }: { genre: typeof genres[0]; onSelect: (id: string) => void; index?: number }) {
   return (
     <motion.button
       onClick={() => onSelect(genre.id)}
-      whileHover={{ scale: 1.03, y: -2 }}
+      initial={{ opacity: 0, y: 24, x: 16 }}
+      whileInView={{ opacity: 1, y: 0, x: 0 }}
+      viewport={{ once: true, amount: 0.1 }}
+      transition={{ type: 'spring', stiffness: 70, damping: 18, delay: index * 0.06 }}
+      whileHover={{ scale: 1.05, y: -3 }}
       whileTap={{ scale: 0.97 }}
       className="flex-shrink-0 relative rounded-2xl overflow-hidden text-left"
       style={{ width: 140, height: 100 }}
@@ -275,11 +283,15 @@ export default function ExplorePage() {
               </p>
             </div>
             <div className="flex gap-2 pl-5 overflow-x-auto hide-scrollbar pb-1" style={{ paddingRight: 20 }}>
-              {LENSES.map(lens => (
+              {LENSES.map((lens, idx) => (
                 <motion.button
                   key={lens.id}
+                  initial={{ opacity: 0, x: 24 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ type: 'spring', stiffness: 70, damping: 18, delay: idx * 0.1 }}
                   onClick={() => handleLensSelect(lens.id)}
-                  whileTap={{ scale: 0.95 }}
+                  whileTap={{ scale: 0.93 }}
+                  whileHover={{ scale: 1.05, y: -1 }}
                   className={cn(
                     'flex-shrink-0 flex items-center gap-1.5 px-3.5 py-2 rounded-full border text-xs font-semibold transition-all',
                     activeLens === lens.id ? (lens.id === 'breakout' ? 'glass-gold' : lens.color) : 'border-white/10 text-white/40 bg-white/[0.03] hover:border-white/20 hover:text-white/60',
@@ -326,9 +338,9 @@ export default function ExplorePage() {
               )}
             </div>
             <div className="flex gap-2.5 pl-5 overflow-x-auto hide-scrollbar pb-2" style={{ paddingRight: 20 }}>
-              {genres.map(genre => (
+              {genres.map((genre, i) => (
                 <div key={genre.id} className={cn('transition-all', activeGenre === genre.id ? 'ring-2 ring-hype-gold rounded-2xl' : '')}>
-                  <GenreCard genre={genre} onSelect={handleGenreSelect} />
+                  <GenreCard genre={genre} onSelect={handleGenreSelect} index={i} />
                 </div>
               ))}
             </div>
@@ -341,9 +353,10 @@ export default function ExplorePage() {
         {/* ── Near Breakout picks (when no filter active) ───────────────── */}
         {!query && !activeLens && !activeGenre && (
           <motion.section
-            initial={{ opacity: 0, y: 16 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.2 }}
+            initial={{ opacity: 0, y: 32 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, amount: 0.1 }}
+            transition={{ type: 'spring', stiffness: 70, damping: 18 }}
             className="mb-8"
           >
             <div className="px-5 mb-4">
@@ -360,10 +373,11 @@ export default function ExplorePage() {
                 return (
                   <motion.div
                     key={c.id}
-                    initial={{ opacity: 0, y: 12 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    whileHover={{ scale: 1.03, y: -2 }}
-                    transition={{ duration: 0.4, ease, delay: i * 0.08 }}
+                    initial={{ opacity: 0, y: 20, x: 20 }}
+                    whileInView={{ opacity: 1, y: 0, x: 0 }}
+                    viewport={{ once: true, amount: 0.1 }}
+                    whileHover={{ scale: 1.04, y: -3 }}
+                    transition={{ type: 'spring', stiffness: 70, damping: 18, delay: i * 0.07 }}
                     className="flex-shrink-0 card-hover"
                     style={{ width: 130 }}
                   >

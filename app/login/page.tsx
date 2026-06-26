@@ -9,6 +9,7 @@ import { useAuth } from '@/context/AuthContext'
 import { SpotlightWordmark } from '@/components/ui/SpotlightLogo'
 import { mockUsers } from '@/lib/mock-data/users'
 import InstrumentBackdrop from '@/components/ui/InstrumentBackdrop'
+import { SpotlightCursor } from '@/components/effects/SpotlightCursor'
 
 const ease = [0.16, 1, 0.3, 1] as const
 
@@ -49,6 +50,7 @@ export default function LoginPage() {
 
   return (
     <div className="relative min-h-screen flex flex-col overflow-hidden bg-[#0A0A0A]">
+      <SpotlightCursor />
 
       {/* Instrument backdrop — grand piano, saxophone, violin, flute */}
       <InstrumentBackdrop />
@@ -92,7 +94,7 @@ export default function LoginPage() {
           transition={{ duration: 0.8, ease, delay: 0.1 }}
           className="text-center mb-10 max-w-xs"
         >
-          <h1 className="text-white font-black text-3xl tracking-tight leading-tight mb-3 font-display">
+          <h1 className="text-white font-black text-3xl tracking-tight leading-tight mb-3">
             Discover icons<br />before the world does.
           </h1>
           <p className="text-white/40 text-sm leading-relaxed">

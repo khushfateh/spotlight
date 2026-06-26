@@ -225,11 +225,21 @@ export default function ProfilePage() {
 
   const vaultUserName = (currentUser?.name ?? user.name).split(' ')[0] || 'You'
 
+  const cardFlip = {
+    hidden: { opacity: 0, rotateY: -72, scale: 0.88 },
+    show: { opacity: 1, rotateY: 0, scale: 1, transition: { type: 'spring' as const, stiffness: 70, damping: 18 } },
+  }
+
   return (
-    <div className="px-4 pt-4 pb-28 space-y-5">
+    <motion.div
+      className="px-4 pt-4 pb-28 space-y-5"
+      initial="hidden"
+      animate="show"
+      variants={{ hidden: {}, show: { transition: { staggerChildren: 0.1, delayChildren: 0.05 } } }}
+    >
 
       {/* Profile Card */}
-      <div className="elevated-card glass rounded-3xl p-5" style={{ borderColor: 'rgba(255,255,255,0.08)' }}>
+      <motion.div className="elevated-card glass rounded-3xl p-5" style={{ borderColor: 'rgba(255,255,255,0.08)', transformPerspective: 1200 }} variants={cardFlip}>
         <div className="flex items-start gap-4">
           {currentUser ? (
             <div className={`w-16 h-16 rounded-2xl bg-gradient-to-br ${currentUser.coverColor} flex items-center justify-center text-white text-xl font-black`} style={{ boxShadow: '0 0 20px rgba(107,33,168,0.3)' }}>
@@ -242,7 +252,7 @@ export default function ProfilePage() {
           )}
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 mb-0.5 flex-wrap">
-              <h2 className="text-hype-text font-bold text-lg font-display">{user.name}</h2>
+              <h2 className="text-hype-text font-bold text-lg">{user.name}</h2>
               <Badge variant="gold" size="sm">Pro</Badge>
             </div>
             <p className="text-hype-muted text-xs font-mono mb-1">{user.username}</p>
@@ -272,10 +282,58 @@ export default function ProfilePage() {
             <p className="text-hype-dim text-[10px]">Tier</p>
           </div>
         </div>
-      </div>
+      </motion.div>
+
+      {/* Discovery Vault */}
+      {(vaultLoading || vaultEntries.length > 0) && (
+        <motion.div className="premium-card rounded-2xl p-4" style={{ transformPerspective: 1200 }} variants={cardFlip}>
+          <div className="flex items-center justify-between mb-3">
+            <div>
+              <p className="text-hype-text font-semibold text-sm">Discovery Vault</p>
+              <p className="text-hype-dim text-[10px] mt-0.5">
+                {vaultLoading ? 'Loading…' : `${vaultEntries.length} card${vaultEntries.length !== 1 ? 's' : ''} · Swipe to explore`}
+              </p>
+            </div>
+            <div
+              className="px-2 py-1 rounded-lg"
+              style={{ background: 'rgba(201,168,76,0.08)', border: '1px solid rgba(201,168,76,0.18)' }}
+            >
+              <p style={{ fontSize: 9, letterSpacing: '0.18em', color: 'rgba(201,168,76,0.7)', fontWeight: 700, textTransform: 'uppercase' }}>
+                Auto-saved
+              </p>
+            </div>
+          </div>
+          <motion.div
+            className="flex gap-4 overflow-x-auto pb-3"
+            style={{ scrollSnapType: 'x mandatory', WebkitOverflowScrolling: 'touch', marginLeft: -16, marginRight: -16, paddingLeft: 16, paddingRight: 16 }}
+            variants={{ show: { transition: { staggerChildren: 0.12, delayChildren: 0.15 } } }}
+          >
+            {vaultEntries.map(entry => {
+              const vaultEntry = vaultItems.find(v => v.ticker === entry.creator.ticker)
+              return (
+                <motion.div
+                  key={entry.creator.ticker}
+                  style={{ flexShrink: 0, scrollSnapAlign: 'start', transformPerspective: 900 }}
+                  variants={{ hidden: { opacity: 0, rotateY: -65, scale: 0.9 }, show: { opacity: 1, rotateY: 0, scale: 1, transition: { type: 'spring', stiffness: 70, damping: 18 } } }}
+                >
+                  <GoldDiscoveryCard
+                    creator={entry.creator}
+                    rank={entry.spotterRank}
+                    score={entry.score}
+                    tier={entry.tier}
+                    userName={vaultUserName}
+                    spotTime={entry.spotDate}
+                    onClick={vaultEntry ? () => setVaultOpen({ entry: vaultEntry, creator: entry.creator }) : undefined}
+                  />
+                </motion.div>
+              )
+            })}
+          </motion.div>
+        </motion.div>
+      )}
 
       {/* My Spots */}
-      <div className="premium-card rounded-2xl p-4">
+      <motion.div className="premium-card rounded-2xl p-4" style={{ transformPerspective: 1200 }} variants={cardFlip}>
         <div className="flex items-center justify-between mb-3">
           <p className="text-hype-text font-semibold text-sm">My Spots</p>
           {creatorsSpottedCount > 0 && (
@@ -328,54 +386,11 @@ export default function ProfilePage() {
             </Link>
           </div>
         )}
-      </div>
-
-      {/* Discovery Vault */}
-      {(vaultLoading || vaultEntries.length > 0) && (
-        <div className="premium-card rounded-2xl p-4">
-          <div className="flex items-center justify-between mb-3">
-            <div>
-              <p className="text-hype-text font-semibold text-sm">Discovery Vault</p>
-              <p className="text-hype-dim text-[10px] mt-0.5">
-                {vaultLoading ? 'Loading…' : `${vaultEntries.length} card${vaultEntries.length !== 1 ? 's' : ''} · Swipe to explore`}
-              </p>
-            </div>
-            <div
-              className="px-2 py-1 rounded-lg"
-              style={{ background: 'rgba(201,168,76,0.08)', border: '1px solid rgba(201,168,76,0.18)' }}
-            >
-              <p style={{ fontSize: 9, letterSpacing: '0.18em', color: 'rgba(201,168,76,0.7)', fontWeight: 700, textTransform: 'uppercase' }}>
-                Auto-saved
-              </p>
-            </div>
-          </div>
-          <div
-            className="flex gap-4 overflow-x-auto pb-3"
-            style={{ scrollSnapType: 'x mandatory', WebkitOverflowScrolling: 'touch', marginLeft: -16, marginRight: -16, paddingLeft: 16, paddingRight: 16 }}
-          >
-            {vaultEntries.map(entry => {
-              const vaultEntry = vaultItems.find(v => v.ticker === entry.creator.ticker)
-              return (
-                <div key={entry.creator.ticker} style={{ flexShrink: 0, scrollSnapAlign: 'start' }}>
-                  <GoldDiscoveryCard
-                    creator={entry.creator}
-                    rank={entry.spotterRank}
-                    score={entry.score}
-                    tier={entry.tier}
-                    userName={vaultUserName}
-                    spotTime={entry.spotDate}
-                    onClick={vaultEntry ? () => setVaultOpen({ entry: vaultEntry, creator: entry.creator }) : undefined}
-                  />
-                </div>
-              )
-            })}
-          </div>
-        </div>
-      )}
+      </motion.div>
 
       {/* Spotter Collections */}
       {isSupabaseMode && (collectionLoading || collection.active.length > 0 || collection.movedOn.length > 0 || collection.rediscovered.length > 0) && (
-        <div className="space-y-3">
+        <motion.div className="space-y-3" variants={cardFlip} style={{ transformPerspective: 1200 }}>
 
           {/* Active Spots collection */}
           {(collectionLoading || collection.active.length > 0) && (
@@ -484,7 +499,7 @@ export default function ProfilePage() {
               )}
             </div>
           )}
-        </div>
+        </motion.div>
       )}
 
       {/* Discovery Legacy */}
@@ -499,7 +514,7 @@ export default function ProfilePage() {
         const breakoutWins = vaultItems.filter(e => e.currentScore - e.momentumAtSpot >= 28).length
 
         return (
-          <div className="premium-card rounded-2xl p-4">
+          <motion.div className="premium-card rounded-2xl p-4" style={{ transformPerspective: 1200 }} variants={cardFlip}>
             <div className="flex items-center gap-2 mb-4">
               <Trophy size={14} className="text-hype-gold" />
               <p className="text-hype-text font-semibold text-sm">Discovery Legacy</p>
@@ -529,13 +544,13 @@ export default function ProfilePage() {
                 </div>
               ))}
             </div>
-          </div>
+          </motion.div>
         )
       })()}
 
       {/* Discovery Score */}
       {discoveryScore > 0 && (
-        <div className="premium-card rounded-2xl p-4">
+        <motion.div className="premium-card rounded-2xl p-4" style={{ transformPerspective: 1200 }} variants={cardFlip}>
           <div className="flex items-center gap-2 mb-4">
             <Target size={14} className="text-hype-gold" />
             <p className="text-hype-text font-semibold text-sm">Discovery Score</p>
@@ -588,12 +603,12 @@ export default function ProfilePage() {
               </div>
             </div>
           </div>
-        </div>
+        </motion.div>
       )}
 
       {/* Badges */}
       {badges.length > 0 && (
-        <div className="premium-card rounded-2xl p-4">
+        <motion.div className="premium-card rounded-2xl p-4" style={{ transformPerspective: 1200 }} variants={cardFlip}>
           <div className="flex items-center gap-2 mb-3">
             <Star size={14} className="text-hype-gold" />
             <p className="text-hype-text font-semibold text-sm">Discovery Badges</p>
@@ -606,11 +621,11 @@ export default function ProfilePage() {
               </div>
             ))}
           </div>
-        </div>
+        </motion.div>
       )}
 
       {/* Taste Profile */}
-      <div className="premium-card rounded-2xl p-4">
+      <motion.div className="premium-card rounded-2xl p-4" style={{ transformPerspective: 1200 }} variants={cardFlip}>
         <div className="flex items-center justify-between mb-3">
           <p className="text-hype-text font-semibold text-sm">Taste Profile</p>
           <button onClick={() => setGenreSheetOpen(true)} className="text-hype-gold text-xs font-medium hover:text-hype-gold-dim transition-colors">
@@ -639,10 +654,10 @@ export default function ProfilePage() {
             Tell us what you love → get a better feed
           </button>
         )}
-      </div>
+      </motion.div>
 
       {/* Mode Toggle */}
-      <div className="premium-card rounded-2xl p-4">
+      <motion.div className="premium-card rounded-2xl p-4" style={{ transformPerspective: 1200 }} variants={cardFlip}>
         <p className="text-hype-text font-semibold text-sm mb-3">Account Mode</p>
         <div className="flex gap-2">
           <button onClick={() => setUserMode('investor')}
@@ -657,10 +672,10 @@ export default function ProfilePage() {
         <p className="text-hype-dim text-[10px] mt-2 text-center">
           Switch to access {userMode === 'investor' ? 'Creator Dashboard' : 'Discovery Portfolio'}
         </p>
-      </div>
+      </motion.div>
 
       {/* Discovery Summary */}
-      <div className="premium-card rounded-2xl p-4">
+      <motion.div className="premium-card rounded-2xl p-4" style={{ transformPerspective: 1200 }} variants={cardFlip}>
         <div className="flex items-center justify-between mb-3">
           <p className="text-hype-text font-semibold text-sm">Discovery Summary</p>
           <Link href="/portfolio" className="text-hype-gold text-xs font-medium hover:underline">View all</Link>
@@ -672,10 +687,10 @@ export default function ProfilePage() {
             <p className="text-hype-gold text-xs font-semibold">Avg momentum: {avgMomentum} · {getMomentumTier(avgMomentum)}</p>
           </div>
         </div>
-      </div>
+      </motion.div>
 
       {/* Settings */}
-      <div className="premium-card rounded-2xl overflow-hidden divide-y divide-hype-border">
+      <motion.div className="premium-card rounded-2xl overflow-hidden divide-y divide-hype-border" style={{ transformPerspective: 1200 }} variants={cardFlip}>
         {[
           { icon: Bell, label: 'Notifications', value: 'On' },
           { icon: Shield, label: 'Security & KYC', value: 'Mock' },
@@ -689,13 +704,13 @@ export default function ProfilePage() {
             <ChevronRight size={14} className="text-hype-dim" />
           </button>
         ))}
-      </div>
+      </motion.div>
 
-      <div className="premium-card rounded-2xl p-4">
+      <motion.div className="premium-card rounded-2xl p-4" style={{ transformPerspective: 1200 }} variants={cardFlip}>
         <p className="text-hype-dim text-[10px] leading-relaxed">
           SPOTLIGHT is a demonstration platform. Cultural Shares represent participation in a creator&apos;s discovery pool and do not constitute equity ownership, investment contracts, or financial instruments. This is not financial advice.
         </p>
-      </div>
+      </motion.div>
 
       <button onClick={logout}
         className="w-full flex items-center justify-center gap-2 py-3 rounded-xl text-hype-red text-sm font-semibold bg-transparent border border-hype-red/20 hover:bg-hype-red/8 transition-colors">
@@ -714,6 +729,6 @@ export default function ProfilePage() {
           userName={(currentUser?.name ?? user.name).split(' ')[0] || 'You'}
         />
       )}
-    </div>
+    </motion.div>
   )
 }
