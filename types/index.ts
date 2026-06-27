@@ -9,13 +9,6 @@ export type Catalyst = {
 
 export type CreatorCategory = 'Music' | 'Gaming' | 'Sports' | 'Content' | 'Lifestyle' | 'Podcast'
 
-export type CreatorStatus = 'active' | 'ipo' | 'upcoming'
-
-export type PricePoint = {
-  date: string
-  price: number
-}
-
 export type Creator = {
   id: string
   ticker: string
@@ -24,16 +17,6 @@ export type Creator = {
   bio: string
   avatar: string
   coverColor: string
-  status: CreatorStatus
-  price: number
-  priceChange24h: number
-  priceChangePercent24h: number
-  marketCap: number
-  volume24h: number
-  totalShares: number
-  floatShares: number
-  sharesHeld: number
-  followers: string
   creatorScore: number
   socialHandles: {
     instagram?: string
@@ -43,52 +26,10 @@ export type Creator = {
     twitch?: string
     twitter?: string
   }
-  revenueMetrics: {
-    streams?: string
-    subscribers?: string
-    monthlyListeners?: string
-    viewsPerMonth?: string
-    concertRevenue?: string
-    festivalRevenue?: string
-    merch?: string
-  }
-  priceHistory: PricePoint[]
-  fundraisingGoal?: number
-  fundraisingRaised?: number
-  isVerified: boolean
   isWatched?: boolean
   imageUrl?: string
   story?: string
   catalysts?: Catalyst[]
-}
-
-export type IPOCreator = {
-  id: string
-  ticker: string
-  name: string
-  category: CreatorCategory
-  bio: string
-  avatar: string
-  coverColor: string
-  fundraisingGoal: number
-  fundingProgress: number
-  totalShares: number
-  initialPrice: number
-  launchDate: string
-  pitch: string
-  useOfFunds: string[]
-  revenueStreams: string[]
-  followers: string
-  socialHandles: {
-    instagram?: string
-    tiktok?: string
-    youtube?: string
-    spotify?: string
-    twitch?: string
-  }
-  status: 'waitlist' | 'open' | 'coming_soon'
-  daysUntilLaunch?: number
-  imageUrl?: string
 }
 
 export type Holding = {
