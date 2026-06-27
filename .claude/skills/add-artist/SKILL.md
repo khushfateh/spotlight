@@ -87,3 +87,43 @@ The script reads `.env.local` automatically:
 - The spotter counter starts at 1 immediately, so the first user to spot the new artist gets #1
 - Spotify image/follower data also syncs every 3 h via the existing cron job
 - After adding, the artist appears in Explore immediately; it will surface in momentum ranking once it accumulates spots/views
+
+---
+
+## Maintenance contract — IMPORTANT
+
+**Any time a change is made to artist or spotting logic, this skill and `scripts/add-artists.mjs` must be kept in sync.**
+
+Specifically, update this skill and/or the script whenever:
+
+### New DB tables or columns that require seeding per artist
+- A new table with a FK to `creators` is added and needs a row at creation time → add an insert step to `main()` in `add-artists.mjs`
+- A new NOT NULL column is added to `creators` → add it to the `dbRow` object in the script
+- A new column is added that needs a default value → add it to `buildCreatorBlock()` for mock data and `dbRow` for the DB
+
+### Changes to the `Creator` TypeScript type (`types/index.ts`)
+- A new required field is added to the `Creator` type → add it to `buildCreatorBlock()` in the script so generated mock data stays valid
+- A field is renamed → update the field name in `buildCreatorBlock()`
+- A field is removed → remove it from `buildCreatorBlock()`
+
+### Changes to the spotter/spot system
+- New RPC is required on artist creation (beyond `artist_spot_counters`) → add the RPC call to `main()`
+- `spot_or_rediscover` signature changes → update `spot-artists.mjs` too
+- A new counter or state table is introduced that must be seeded → add it to `main()`
+
+### Changes to the Spotify sync pipeline
+- New Spotify fields are stored on `creators` → add them to the `dbRow` build and Spotify fetch section
+- `artist-map.ts` format changes → update `updateArtistMap()`
+- New sync tables are introduced → add seeding logic
+
+### Changes to `lib/mock-data/creators.ts` structure
+- `generatePriceHistory()` signature changes → update `buildCreatorBlock()`
+- New fields appear on existing creator objects → add them with sensible defaults in `buildCreatorBlock()`
+- The array structure changes → update `insertIntoMockData()`
+
+### How to update
+1. Make the logic change in the product code first
+2. Open `scripts/add-artists.mjs` and mirror the change (new table insert, new field, new RPC call, etc.)
+3. Update the **Fields reference** table above if the input spec changes
+4. Update the **What it does** list above if a new step is added
+5. Commit both the product change and the script change together
