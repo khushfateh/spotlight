@@ -42,13 +42,13 @@ const spring = { type: 'spring' as const, stiffness: 70, damping: 18 }
 const slideLeft = {
   initial: { opacity: 0, x: -60 },
   whileInView: { opacity: 1 as number, x: 0 as number },
-  viewport: { once: true, amount: 0.12 },
+  viewport: { once: false, amount: 0.12 },
   transition: spring,
 }
 const slideRight = {
   initial: { opacity: 0, x: 60 },
   whileInView: { opacity: 1 as number, x: 0 as number },
-  viewport: { once: true, amount: 0.12 },
+  viewport: { once: false, amount: 0.12 },
   transition: spring,
 }
 
@@ -269,7 +269,7 @@ function CreatorPortraitCard({
     <motion.div
       initial={{ opacity: 0, x: 64 }}
       whileInView={{ opacity: 1, x: 0 }}
-      viewport={{ once: true }}
+      viewport={{ once: false }}
       transition={{ type: 'spring', stiffness: 70, damping: 18, delay }}
       whileHover={{ scale: 1.02 }}
       whileTap={{ scale: 0.98 }}
@@ -458,7 +458,7 @@ function PersonalizedSection({
     <motion.section
       initial={{ opacity: 0, x: fromLeft ? -60 : 60 }}
       whileInView={{ opacity: 1, x: 0 }}
-      viewport={{ once: true, amount: 0.12 }}
+      viewport={{ once: false, amount: 0.12 }}
       transition={spring}
       className="py-6 border-b border-hype-border/50"
     >
@@ -755,7 +755,7 @@ export default function HomeFeed() {
               key={post.id}
               initial={{ opacity: 0, y: 20, x: i % 2 === 0 ? -24 : 24 }}
               whileInView={{ opacity: 1, y: 0, x: 0 }}
-              viewport={{ once: true, amount: 0.1 }}
+              viewport={{ once: false, amount: 0.1 }}
               transition={{ ...spring, delay: i * 0.07 }}
             >
               <PostCard post={post} />
