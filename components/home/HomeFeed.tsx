@@ -705,15 +705,22 @@ export default function HomeFeed() {
           </div>
         </div>
 
-        <motion.button
-          onClick={() => handleBuy(featured)}
-          whileHover={{ scale: 1.02 }}
-          whileTap={{ scale: 0.97 }}
-          className="btn-magnetic w-full flex items-center justify-center gap-2 h-12 rounded-2xl bg-hype-gold text-[#0A0A0A] font-bold text-[13px] hover:bg-hype-gold-dim transition-all shadow-[0_4px_20px_rgba(201,168,76,0.25)]"
-        >
-          Spot {featured.name.split(' ')[0]}
-          <ArrowRight size={14} />
-        </motion.button>
+        {activeTickers.includes(featured.ticker.toUpperCase()) ? (
+          <div className="w-full h-12 rounded-2xl flex items-center justify-center gap-2 text-[13px] font-bold"
+            style={{ background: 'rgba(201,168,76,0.1)', border: '1.5px solid rgba(201,168,76,0.45)', color: 'rgba(201,168,76,0.9)' }}>
+            ✦ Spotted
+          </div>
+        ) : (
+          <motion.button
+            onClick={() => handleBuy(featured)}
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.97 }}
+            className="btn-magnetic w-full flex items-center justify-center gap-2 h-12 rounded-2xl bg-hype-gold text-[#0A0A0A] font-bold text-[13px] hover:bg-hype-gold-dim transition-all shadow-[0_4px_20px_rgba(201,168,76,0.25)]"
+          >
+            Spot {featured.name.split(' ')[0]}
+            <ArrowRight size={14} />
+          </motion.button>
+        )}
       </motion.section>
 
       {/* Culture Picks — header from right, cards stagger from right */}
