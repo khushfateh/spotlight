@@ -731,7 +731,7 @@ export default function HomeFeed() {
         </div>
         <div className="flex gap-4 pl-5 overflow-x-auto hide-scrollbar pb-2" style={{ paddingRight: 20 }}>
           {trending.map((c, i) => (
-            <CreatorPortraitCard key={c.id} creator={c} onBuy={handleBuy} delay={i * 0.08} />
+            <CreatorPortraitCard key={c.id} creator={c} onBuy={handleBuy} delay={i * 0.08} isSpotted={activeTickers.includes(c.ticker.toUpperCase())} />
           ))}
         </div>
       </motion.section>

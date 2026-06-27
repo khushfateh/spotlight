@@ -95,7 +95,7 @@ function SwipeCard({
         style={{ opacity: backOpacity, rotate: -14, transformOrigin: 'center' }}
         className="absolute top-8 left-5 px-3 py-1.5 border-[2.5px] border-hype-gold text-hype-gold font-black text-lg tracking-[0.18em] rounded-xl pointer-events-none"
       >
-        {isSpotted ? 'SPOT AGAIN' : 'SPOT'}
+        SPOT
       </motion.div>
 
       {/* SKIP stamp — brightens as you drag left */}

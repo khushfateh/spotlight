@@ -13,6 +13,7 @@ import TradeSheet from '@/components/trading/TradeSheet'
 import { useTradeSheet } from '@/hooks/useTradeSheet'
 import { useSpotlightCreator } from '@/hooks/useSpotlightCreator'
 import { useAuth } from '@/context/AuthContext'
+import { useSpots } from '@/hooks/useSpots'
 import SpotterAuthModal from '@/components/auth/SpotterAuthModal'
 import { trackAnonymousSpotAttempt } from '@/lib/services/anonymousTrackingService'
 import type { Creator } from '@/types'
@@ -82,6 +83,7 @@ const FALLBACK_IMAGE = 'https://images.unsplash.com/photo-1493225457124-a3eb4598
 export default function SpotlightPage() {
   const trade = useTradeSheet()
   const { isAuthenticated } = useAuth()
+  const { spottedTickers } = useSpots()
   const [showSpotterAuth, setShowSpotterAuth] = useState(false)
   const { scrollY } = useScroll()
   const { creator, loading: spotlightLoading, error: spotlightError, retry: retrySpotlight } = useSpotlightCreator()
@@ -199,14 +201,21 @@ export default function SpotlightPage() {
 
           {/* CTA buttons */}
           <div className="flex gap-3">
-            <motion.button
-              onClick={openSpot}
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.97 }}
-              className="btn-magnetic glow-gold flex-1 h-12 rounded-2xl bg-hype-gold text-[#0A0A0A] font-bold text-sm hover:bg-hype-gold-dim transition-all"
-            >
-              Spot {firstName}
-            </motion.button>
+            {spottedTickers.includes(creator.ticker.toUpperCase()) ? (
+              <div className="flex-1 h-12 rounded-2xl flex items-center justify-center gap-2 text-sm font-bold"
+                style={{ background: 'rgba(201,168,76,0.1)', border: '1.5px solid rgba(201,168,76,0.45)', color: 'rgba(201,168,76,0.9)' }}>
+                ✦ Spotted
+              </div>
+            ) : (
+              <motion.button
+                onClick={openSpot}
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.97 }}
+                className="btn-magnetic glow-gold flex-1 h-12 rounded-2xl bg-hype-gold text-[#0A0A0A] font-bold text-sm hover:bg-hype-gold-dim transition-all"
+              >
+                Spot {firstName}
+              </motion.button>
+            )}
             <button
               onClick={() => {}}
               className="px-5 h-12 rounded-2xl border border-white/20 text-white text-sm font-medium hover:border-white/40 transition-all"
@@ -409,17 +418,24 @@ export default function SpotlightPage() {
         {/* CTA */}
         <div className="pt-8">
           <p className="text-white/40 text-[10px] font-semibold uppercase tracking-[0.25em] mb-4 text-center">
-            You spotted it first.
+            {spottedTickers.includes(creator.ticker.toUpperCase()) ? 'You already spotted this one.' : 'You spotted it first.'}
           </p>
           <div className="flex gap-3">
-            <motion.button
-              onClick={openSpot}
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.97 }}
-              className="btn-magnetic glow-gold-sm flex-1 h-13 py-3.5 rounded-2xl bg-hype-gold text-[#0A0A0A] font-bold text-sm hover:bg-hype-gold-dim transition-all"
-            >
-              Spot {firstName}
-            </motion.button>
+            {spottedTickers.includes(creator.ticker.toUpperCase()) ? (
+              <div className="flex-1 h-13 py-3.5 rounded-2xl flex items-center justify-center gap-2 text-sm font-bold"
+                style={{ background: 'rgba(201,168,76,0.1)', border: '1.5px solid rgba(201,168,76,0.45)', color: 'rgba(201,168,76,0.9)' }}>
+                ✦ Spotted
+              </div>
+            ) : (
+              <motion.button
+                onClick={openSpot}
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.97 }}
+                className="btn-magnetic glow-gold-sm flex-1 h-13 py-3.5 rounded-2xl bg-hype-gold text-[#0A0A0A] font-bold text-sm hover:bg-hype-gold-dim transition-all"
+              >
+                Spot {firstName}
+              </motion.button>
+            )}
             <Link
               href={`/creator/${creator.ticker.toLowerCase()}`}
               className="px-5 h-13 py-3.5 rounded-2xl border border-white/20 text-white text-sm font-medium hover:border-white/40 transition-all flex items-center justify-center"

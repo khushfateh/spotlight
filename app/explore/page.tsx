@@ -48,7 +48,7 @@ const LENSES: Lens[] = [
 
 // ── Creator list row ───────────────────────────────────────────────────────────
 
-function CreatorListRow({ creator, rank, onBuy, onSelect }: { creator: Creator; rank: number; onBuy: (c: Creator) => void; onSelect?: () => void }) {
+function CreatorListRow({ creator, rank, onBuy, onSelect, isSpotted = false }: { creator: Creator; rank: number; onBuy: (c: Creator) => void; onSelect?: () => void; isSpotted?: boolean }) {
   const { score, delta } = getMomentum(creator.ticker)
   const tier = getMomentumTier(score)
   const isDeltaUp = delta >= 0
@@ -88,12 +88,18 @@ function CreatorListRow({ creator, rank, onBuy, onSelect }: { creator: Creator; 
           </p>
         </div>
 
-        <button
-          onClick={e => { e.preventDefault(); onBuy(creator) }}
-          className="flex-shrink-0 px-2.5 py-1.5 border border-hype-border text-hype-muted text-[10px] font-semibold rounded-lg hover:bg-hype-gold hover:text-[#0A0A0A] hover:border-hype-gold active:scale-95 transition-all"
-        >
-          Spot
-        </button>
+        {isSpotted ? (
+          <span className="flex-shrink-0 px-2.5 py-1.5 border border-hype-gold/40 text-hype-gold text-[10px] font-semibold rounded-lg bg-hype-gold/10">
+            ✦ Spotted
+          </span>
+        ) : (
+          <button
+            onClick={e => { e.preventDefault(); onBuy(creator) }}
+            className="flex-shrink-0 px-2.5 py-1.5 border border-hype-border text-hype-muted text-[10px] font-semibold rounded-lg hover:bg-hype-gold hover:text-[#0A0A0A] hover:border-hype-gold active:scale-95 transition-all"
+          >
+            Spot
+          </button>
+        )}
       </motion.div>
     </Link>
   )
@@ -464,6 +470,7 @@ export default function ExplorePage() {
                   rank={i + 1}
                   onBuy={handleBuy}
                   onSelect={query.trim() ? () => logCreatorSearch(currentUser?.id ?? null, query.trim(), c.ticker) : undefined}
+                  isSpotted={spottedTickers.includes(c.ticker.toUpperCase())}
                 />
               ))}
             </div>
