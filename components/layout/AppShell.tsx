@@ -12,7 +12,7 @@ import { SpotlightCursor } from '@/components/effects/SpotlightCursor'
 const AUTH_FLOW_ROUTES = ['/login', '/signup', '/onboarding', '/share']
 
 // These routes require a logged-in user — everything else is publicly browsable
-const PROTECTED_ROUTES = ['/profile', '/portfolio', '/launch', '/dashboard']
+const PROTECTED_ROUTES = ['/profile']
 
 // Inner shell — rendered inside the providers so it can read auth state
 function InnerShell({ children }: { children: ReactNode }) {

@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Home, Compass, Star, PieChart, User, LayoutDashboard, Plus } from 'lucide-react'
+import { Home, Compass, Star, User, LayoutDashboard, Plus } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { useUser } from '@/context/UserContext'
 import { useAuth } from '@/context/AuthContext'
@@ -24,7 +24,6 @@ export default function BottomNav() {
     { href: '/', label: 'Home', icon: <Home size={20} /> },
     { href: '/explore', label: 'Discover', icon: <Compass size={20} /> },
     { href: '/spotlight', label: 'Spotlight', icon: <Star size={20} />, isCenter: true },
-    { href: '/portfolio', label: 'Discoveries', icon: <PieChart size={20} /> },
     { href: '/profile', label: 'Profile', icon: <User size={20} /> },
   ]
 

@@ -4,7 +4,6 @@ import { useState, useEffect, useCallback } from 'react'
 import { useAuth } from '@/context/AuthContext'
 import { getUserVaultCards } from '@/lib/services/vaultService'
 import { getMomentum, getMomentumTier } from '@/lib/mock-data/momentum'
-import { holdings } from '@/lib/mock-data/portfolio'
 import { supabase } from '@/lib/supabase/client'
 
 export type VaultEntry = {
@@ -58,25 +57,7 @@ export function useVault() {
     if (isSupabaseMode) {
       fetchVault()
     } else {
-      const mockEntries: VaultEntry[] = holdings.map(h => {
-        const { score, delta } = getMomentum(h.ticker)
-        return {
-          ticker: h.ticker,
-          spotterRank: h.spotterRank,
-          momentumAtSpot: h.momentumAtSpot,
-          spotDate: new Date(h.spotDate),
-          currentScore: score,
-          currentDelta: delta,
-          currentTier: getMomentumTier(score),
-          isArchived: false,
-          archivedAt: null,
-          spotDurationDays: null,
-          rediscoveryCount: 0,
-          latestRespottedAt: null,
-          firstMovedOnAt: null,
-        }
-      })
-      setEntries(mockEntries)
+      setEntries([])
     }
   }, [isSupabaseMode, currentUser, fetchVault])
 
