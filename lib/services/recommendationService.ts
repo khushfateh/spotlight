@@ -17,12 +17,6 @@ import type { Creator } from '@/types'
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
-function parseFollowers(followers: string): number {
-  const n = parseFloat(followers)
-  if (followers.includes('M')) return n * 1_000_000
-  if (followers.includes('K')) return n * 1_000
-  return n
-}
 
 function excludeSpotted(tickers: string[], profile: TasteProfile): string[] {
   const spotted = new Set(profile.spottedTickers.map(t => t.toUpperCase()))
@@ -196,17 +190,12 @@ export async function getPersonalizedHome(userId: string): Promise<HomeSection[]
     }
   }
 
-  // 6. Hidden Gem (low notoriety, high momentum, low spot count)
+  // 6. Hidden Gem (low spot count, high momentum)
   const gemCandidates = signalList.filter(s => {
-    const c = creators.find(cr => cr.ticker.toUpperCase() === s.ticker)
-    const followers = c ? parseFollowers(c.followers) : 0
-    return s.spotCount <= 3 && s.momentumScore >= 58 && followers < 8_000_000
+    return s.spotCount <= 3 && s.momentumScore >= 58
   })
   const gemTickers = excludeSpotted(
-    topN(gemCandidates, s => {
-      const c = creators.find(cr => cr.ticker.toUpperCase() === s.ticker)
-      return scoreForHiddenGem(s, c ? parseFollowers(c.followers) : 0)
-    }, 1),
+    topN(gemCandidates, s => scoreForHiddenGem(s), 1),
     profile
   )
   if (gemTickers.length > 0) {
@@ -310,14 +299,9 @@ export async function getHiddenGems(userId: string): Promise<HomeSection | null>
   const tickers = excludeSpotted(
     topN(
       [...allSignals.values()].filter(s => {
-        const c = creators.find(cr => cr.ticker.toUpperCase() === s.ticker)
-        const f = c ? parseFollowers(c.followers) : 0
-        return s.spotCount <= 3 && s.momentumScore >= 55 && f < 10_000_000
+        return s.spotCount <= 3 && s.momentumScore >= 55
       }),
-      s => {
-        const c = creators.find(cr => cr.ticker.toUpperCase() === s.ticker)
-        return scoreForHiddenGem(s, c ? parseFollowers(c.followers) : 0)
-      },
+      s => scoreForHiddenGem(s),
       4
     ),
     profile
@@ -426,15 +410,8 @@ export async function getDiscoverResults(filters: DiscoverFilters): Promise<Crea
       break
     case 'gems': {
       pool = pool.filter(s => {
-        const c = creators.find(cr => cr.ticker.toUpperCase() === s.ticker)
-        const f = c ? parseFollowers(c.followers) : 0
-        return s.spotCount <= 3 && s.momentumScore >= 55 && f < 10_000_000
-      }).sort((a, b) => {
-        const ca = creators.find(cr => cr.ticker.toUpperCase() === a.ticker)
-        const cb = creators.find(cr => cr.ticker.toUpperCase() === b.ticker)
-        return scoreForHiddenGem(b, cb ? parseFollowers(cb.followers) : 0)
-          - scoreForHiddenGem(a, ca ? parseFollowers(ca.followers) : 0)
-      })
+        return s.spotCount <= 3 && s.momentumScore >= 55
+      }).sort((a, b) => scoreForHiddenGem(b) - scoreForHiddenGem(a))
       break
     }
     case 'editors':

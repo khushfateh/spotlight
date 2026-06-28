@@ -11,7 +11,6 @@ import {
 } from 'framer-motion'
 import { ArrowRight, ChevronDown, ChevronRight, Info, Zap } from 'lucide-react'
 import Link from 'next/link'
-import IPOCard from '@/components/ipo/IPOCard'
 import PostCard from '@/components/community/PostCard'
 import TradeSheet from '@/components/trading/TradeSheet'
 import { useTradeSheet } from '@/hooks/useTradeSheet'
@@ -22,9 +21,7 @@ import { useSpots } from '@/hooks/useSpots'
 import {
   creators,
   getTrendingCreators,
-  ipoCreators,
   communityPosts,
-  holdings,
   getMomentum,
   getMomentumTier,
   getCreatorsByTickers,
@@ -154,6 +151,14 @@ function CinematicHero({
         style={{ background: 'radial-gradient(ellipse 55% 35% at 58% 8%, rgba(201,168,76,0.13) 0%, transparent 70%)' }}
       />
 
+      {/* ── Culture signal lines ─────────────────────────────────── */}
+      <div className="signal-lines" aria-hidden>
+        <div className="signal-line" />
+        <div className="signal-line" />
+        <div className="signal-line" />
+        <div className="signal-line" />
+      </div>
+
       <motion.div
         className="absolute inset-0 flex flex-col"
         style={{ y: contentY, opacity: contentOpacity }}
@@ -175,21 +180,45 @@ function CinematicHero({
         <div className="flex-1" />
 
         <div className="px-5 pb-28">
-          <div className="flex items-center gap-2 mb-5">
-            <div className="w-1 h-1 rounded-full bg-hype-gold" />
-            <p className="section-label text-hype-gold">
-              Featured this week · {featured.category}
-            </p>
-          </div>
+          {/* Culture terminal tag */}
+          <motion.div
+            className="flex items-center gap-2 mb-4"
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.6, ease, delay: 0.1 }}
+          >
+            <div className="data-readout flex items-center gap-2">
+              <span className="inline-block w-1.5 h-1.5 rounded-full bg-hype-gold live-price" />
+              <span>CULTURE SIGNAL · {featured.category} · {featured.ticker}</span>
+            </div>
+          </motion.div>
 
           <h1
-            className="text-white font-black tracking-tight leading-none mb-5 font-display text-glow-gold"
+            className="text-white font-black tracking-tight leading-none mb-3 font-display text-glow-gold"
             style={{ fontSize: 'clamp(2.6rem, 12vw, 5.5rem)' }}
           >
             {featured.name.split(' ').map((word, i) => (
-              <span key={i} className="block">{word}</span>
+              <span key={i} className="block overflow-hidden">
+                <motion.span
+                  className="block"
+                  initial={{ y: '110%' }}
+                  animate={{ y: '0%' }}
+                  transition={{ duration: 0.72, ease: [0.16, 1, 0.3, 1], delay: 0.18 + i * 0.13 }}
+                >
+                  {word}
+                </motion.span>
+              </span>
             ))}
           </h1>
+
+          <motion.p
+            className="text-white/40 text-xs font-semibold tracking-[0.14em] uppercase mb-4"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.6, delay: 0.55 }}
+          >
+            Discover future icons before everyone else.
+          </motion.p>
 
           {featured.story && (
             <p className="text-white/55 text-sm leading-relaxed mb-6 max-w-[300px]">
@@ -271,13 +300,12 @@ function CreatorPortraitCard({
       whileInView={{ opacity: 1, x: 0 }}
       viewport={{ once: false }}
       transition={{ type: 'spring', stiffness: 70, damping: 18, delay }}
-      whileHover={{ scale: 1.02 }}
-      whileTap={{ scale: 0.98 }}
-      className="flex-shrink-0 card-hover"
+      whileTap={{ scale: 0.97 }}
+      className="flex-shrink-0"
       style={{ width: 176 }}
     >
       <TiltCard>
-        <div className="relative group cursor-pointer">
+        <div className="creator-card relative group cursor-pointer rounded-3xl">
           <Link href={`/creator/${creator.ticker.toLowerCase()}`}>
             <div
               className="relative rounded-3xl overflow-hidden border border-white/[0.08]"
@@ -287,15 +315,14 @@ function CreatorPortraitCard({
                 <img
                   src={creator.imageUrl}
                   alt={creator.name}
-                  className="absolute inset-0 w-full h-full object-cover object-top transition-transform duration-700 group-hover:scale-[1.04]"
+                  className="card-img-parallax absolute inset-0 w-full h-full object-cover object-top"
                 />
               ) : (
-                <div className={cn('absolute inset-0 bg-gradient-to-br', creator.coverColor)} />
+                <div className={cn('card-img-parallax absolute inset-0 bg-gradient-to-br', creator.coverColor)} />
               )}
               <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/25 to-black/5" />
 
               <div className="absolute top-4 left-4 opacity-0 group-hover:opacity-100 transition-opacity duration-200 delay-75">
-                <p className="text-white/70 text-[9px] leading-loose">{creator.followers} fans</p>
                 <p className="text-white/50 text-[9px]">Score {creator.creatorScore}/100</p>
               </div>
 
@@ -306,7 +333,7 @@ function CreatorPortraitCard({
               ) : (
                 <button
                   onClick={e => { e.preventDefault(); onBuy(creator) }}
-                  className="btn-magnetic absolute top-3 right-3 px-2.5 py-1 bg-hype-gold text-[#0A0A0A] text-[9px] font-bold rounded-full transition-all duration-200 active:scale-95 hover:bg-hype-gold-dim"
+                  className="btn-magnetic spot-btn-glow absolute top-3 right-3 px-2.5 py-1 bg-hype-gold text-[#0A0A0A] text-[9px] font-bold rounded-full transition-all duration-200 active:scale-95 hover:bg-hype-gold-dim"
                 >
                   Spot
                 </button>
@@ -569,10 +596,9 @@ export default function HomeFeed() {
     return trending[0]
   })()
 
-  const openIPOs = ipoCreators.filter(i => i.status === 'open').slice(0, 2)
   const posts = communityPosts.slice(0, 3)
 
-  const activeTickers = isSupabaseMode ? spottedTickers : holdings.map(h => h.ticker)
+  const activeTickers = spottedTickers
   const discoveryCount = activeTickers.length
   const avgMomentum = activeTickers.length
     ? Math.round(activeTickers.reduce((sum, t) => sum + getMomentum(t).score, 0) / activeTickers.length)
@@ -640,7 +666,12 @@ export default function HomeFeed() {
       </motion.div>
 
       {/* Daily briefing header — slides from right */}
-      <motion.div {...slideRight} className="px-5 pt-8 pb-3">
+      <motion.div {...slideRight} className="px-5 pt-8 pb-3 relative overflow-hidden">
+        <span
+          aria-hidden
+          className="absolute right-4 top-1 font-black font-display leading-none select-none pointer-events-none"
+          style={{ fontSize: 'clamp(4rem, 20vw, 6.5rem)', color: 'rgba(255,255,255,0.035)', letterSpacing: '-0.04em' }}
+        >01</span>
         <div className="flex items-baseline justify-between">
           <div>
             <p className="text-white/30 text-[10px] font-semibold uppercase tracking-[0.25em] mb-1">
@@ -670,7 +701,8 @@ export default function HomeFeed() {
       )}
 
       {/* This Week in Culture — slides from left */}
-      <motion.section {...slideLeft} className="px-5 py-8 border-b border-hype-border/50">
+      <motion.section {...slideLeft} className="px-5 py-8 border-b border-hype-border/50 relative overflow-hidden">
+        <span aria-hidden className="absolute right-4 top-2 font-black font-display leading-none select-none pointer-events-none" style={{ fontSize: 'clamp(4rem, 20vw, 6.5rem)', color: 'rgba(255,255,255,0.03)', letterSpacing: '-0.04em' }}>02</span>
         <p className="section-label text-hype-gold mb-4">This Week in Culture</p>
         <div className="flex items-start justify-between gap-4 mb-6">
           <div className="flex-1">
@@ -699,10 +731,6 @@ export default function HomeFeed() {
               {featured.creatorScore}<span className="text-hype-dim text-xs font-normal">/100</span>
             </p>
           </div>
-          <div className="inset-surface rounded-2xl p-3">
-            <p className="text-hype-dim text-[9px] uppercase tracking-wider mb-1.5">Fans</p>
-            <p className="text-hype-text font-black text-lg metric-display">{featured.followers}</p>
-          </div>
         </div>
 
         {activeTickers.includes(featured.ticker.toUpperCase()) ? (
@@ -724,7 +752,8 @@ export default function HomeFeed() {
       </motion.section>
 
       {/* Culture Picks — header from right, cards stagger from right */}
-      <motion.section {...slideRight} className="py-8">
+      <motion.section {...slideRight} className="py-8 relative overflow-hidden">
+        <span aria-hidden className="absolute right-4 top-2 font-black font-display leading-none select-none pointer-events-none" style={{ fontSize: 'clamp(4rem, 20vw, 6.5rem)', color: 'rgba(255,255,255,0.03)', letterSpacing: '-0.04em' }}>03</span>
         <div className="px-5 mb-6 flex items-center justify-between">
           <div>
             <p className="text-hype-text font-black text-xl leading-none tracking-tight">Culture Picks</p>
@@ -744,7 +773,8 @@ export default function HomeFeed() {
       </motion.section>
 
       {/* The Conversation — header from right, posts alternate sides */}
-      <motion.section {...slideRight} className="px-5 py-8 border-t border-hype-border/50 pb-32">
+      <motion.section {...slideRight} className="px-5 py-8 border-t border-hype-border/50 pb-32 relative overflow-hidden">
+        <span aria-hidden className="absolute right-0 top-2 font-black font-display leading-none select-none pointer-events-none" style={{ fontSize: 'clamp(4rem, 20vw, 6.5rem)', color: 'rgba(255,255,255,0.03)', letterSpacing: '-0.04em' }}>04</span>
         <div className="mb-6">
           <p className="text-hype-text font-black text-xl leading-none tracking-tight">The Conversation</p>
           <p className="text-hype-muted text-xs mt-1">What the community is saying</p>

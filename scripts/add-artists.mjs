@@ -148,13 +148,6 @@ function toAvatar(name) {
   return name.slice(0, 2).toUpperCase()
 }
 
-function formatFollowers(n) {
-  if (!n) return '0'
-  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`
-  if (n >= 1_000)     return `${(n / 1_000).toFixed(0)}K`
-  return String(n)
-}
-
 // Deterministic cover color from ticker hash
 const COVER_COLORS = [
   'from-purple-600 to-pink-600',
@@ -176,12 +169,6 @@ function pickColor(ticker) {
   return COVER_COLORS[hash % COVER_COLORS.length]
 }
 
-// Starting price: loosely tied to Spotify popularity (0–100 → $0.50–$6.00)
-function derivePrice(popularity) {
-  if (!popularity) return 1.00
-  return Math.round(((popularity / 100) * 5.5 + 0.5) * 100) / 100
-}
-
 // Creator score from Spotify popularity (normalized to ~40–95)
 function deriveScore(popularity) {
   if (!popularity) return 50
@@ -191,23 +178,11 @@ function deriveScore(popularity) {
 // ─── Write to lib/mock-data/creators.ts ───────────────────────────────────
 
 function buildCreatorBlock(c) {
-  const startPrice = Math.max(0.50, c.price - c.price * 0.3).toFixed(2)
-  const trend      = c.price >= 2.00 ? 'up' : 'volatile'
-
   const socialLines = []
-  if (c.name)        socialLines.push(`      spotify: '${c.name}',`)
+  if (c.name) socialLines.push(`      spotify: '${c.name}',`)
   const socialBlock = socialLines.length
     ? `{\n${socialLines.join('\n')}\n    }`
     : '{}'
-
-  const monthlyListeners = c.spotify_followers
-    ? formatFollowers(Math.round(c.spotify_followers * 0.6))
-    : null
-
-  const revLines = [
-    monthlyListeners ? `      monthlyListeners: '${monthlyListeners}',` : null,
-  ].filter(Boolean)
-  const revBlock = revLines.length ? `{\n${revLines.join('\n')}\n    }` : '{}'
 
   const lines = [
     `  {`,
@@ -218,21 +193,8 @@ function buildCreatorBlock(c) {
     `    bio: '${(c.bio ?? '').replace(/'/g, "\\'")}',`,
     `    avatar: '${c.avatar}',`,
     `    coverColor: '${c.coverColor}',`,
-    `    status: 'active',`,
-    `    price: ${c.price},`,
-    `    priceChange24h: 0,`,
-    `    priceChangePercent24h: 0,`,
-    `    marketCap: ${Math.round(c.price * 1_000_000)},`,
-    `    volume24h: ${Math.round(c.price * 70_000)},`,
-    `    totalShares: 1000000,`,
-    `    floatShares: 200000,`,
-    `    sharesHeld: 100000,`,
-    `    followers: '${formatFollowers(c.spotify_followers)}',`,
     `    creatorScore: ${c.creatorScore},`,
     `    socialHandles: ${socialBlock},`,
-    `    revenueMetrics: ${revBlock},`,
-    `    priceHistory: generatePriceHistory(${startPrice}, 90, '${trend}', ${c.price}),`,
-    `    isVerified: false,`,
     c.imageUrl ? `    imageUrl: '${c.imageUrl}',` : null,
     `  },`,
   ].filter(l => l !== null)
@@ -331,7 +293,6 @@ async function main() {
     const imageUrl      = spotify?.images?.[0]?.url ?? input.image_url ?? null
     const bio           = input.bio ?? null
     const popularity    = spotify?.popularity ?? null
-    const price         = derivePrice(popularity)
     const creatorScore  = deriveScore(popularity)
 
     const creator = {
@@ -342,7 +303,6 @@ async function main() {
       bio,
       avatar:            toAvatar(displayName),
       coverColor:        pickColor(ticker),
-      price,
       creatorScore,
       imageUrl,
       spotify_followers: spotify?.followers?.total ?? null,
@@ -410,9 +370,7 @@ async function main() {
       name: displayName,
       ticker,
       ok: true,
-      price,
       creatorScore,
-      followers: formatFollowers(creator.spotify_followers),
       popularity,
     })
   }
@@ -440,7 +398,6 @@ async function main() {
     console.log(`\n  ✓ ${ok.length} artist(s) added and live in the app:`)
     for (const r of ok) {
       const extras = [
-        r.followers !== '0' && `${r.followers} followers`,
         r.popularity && `popularity ${r.popularity}/100`,
       ].filter(Boolean)
       console.log(`     • ${r.name}  $${r.ticker}  —  score ${r.creatorScore}${extras.length ? ', ' + extras.join(', ') : ''}`)
@@ -452,7 +409,7 @@ async function main() {
   }
 
   console.log('\n  Artists appear in Explore, home feed, and search immediately.')
-  console.log('  Spotify cron syncs image + followers every 3 h.\n')
+  console.log('  Spotify cron syncs image every 3 h.\n')
 
   if (fail.length && !ok.length) process.exit(1)
 }

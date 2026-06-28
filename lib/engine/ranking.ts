@@ -87,9 +87,9 @@ export function scoreForSpotlight(
   )
 }
 
-// Hidden gem: high momentum, low notoriety
-export function scoreForHiddenGem(signal: CreatorSignal, followerCount: number): number {
-  const notoriety = Math.min(1, followerCount / 20_000_000)
+// Hidden gem: high momentum, low spot count (low platform notoriety)
+export function scoreForHiddenGem(signal: CreatorSignal): number {
+  const notoriety = Math.min(1, signal.spotCount / 50)
   return (signal.momentumScore / 100) * 0.60 +
     (1 - notoriety)                   * 0.25 +
     signal.freshness                  * 0.15

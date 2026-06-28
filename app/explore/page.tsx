@@ -12,7 +12,6 @@ import { trackAnonymousSpotAttempt } from '@/lib/services/anonymousTrackingServi
 import {
   getCreatorsByCategory,
   getTrendingCreators,
-  getTopGainers,
   getMomentum,
   getMomentumTier,
 } from '@/lib/mock-data'
@@ -179,7 +178,7 @@ export default function ExplorePage() {
   }
   const { spottedTickers } = useSpots()
   const allCreators = getCreatorsByCategory('All' as CreatorCategory)
-  const gainers = getTopGainers(5)
+  const gainers = getTrendingCreators(5)
   const { engineCreators, loading: engineLoading } = useDiscoverFeed(activeLens)
 
   // Log search interactions

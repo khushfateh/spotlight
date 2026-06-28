@@ -16,6 +16,7 @@ import { useAuth } from '@/context/AuthContext'
 import { useSpots } from '@/hooks/useSpots'
 import SpotterAuthModal from '@/components/auth/SpotterAuthModal'
 import { trackAnonymousSpotAttempt } from '@/lib/services/anonymousTrackingService'
+import { SparkleTrail } from '@/components/effects/SparkleTrail'
 import type { Creator } from '@/types'
 
 type WhyCard = { heading: string; body: string }
@@ -128,6 +129,7 @@ export default function SpotlightPage() {
 
   return (
     <div className="min-h-screen bg-hype-bg relative">
+      <SparkleTrail />
 
       {/* ── HERO ─────────────────────────────────────────────────────────── */}
       <div className="relative h-[92vh] max-h-[700px] overflow-hidden">
@@ -290,7 +292,21 @@ export default function SpotlightPage() {
                 viewport={{ once: true, amount: 0.1 }}
                 transition={{ type: 'spring', stiffness: 70, damping: 18, delay: i * 0.06 }}
               >
-                <h3 className="text-hype-gold font-black text-lg mb-2">{card.heading}</h3>
+                <h3 className="text-hype-gold font-black text-lg mb-2 flex flex-wrap" style={{ gap: '0 0.26em' }}>
+                  {card.heading.split(' ').map((word, wi) => (
+                    <span key={wi} className="overflow-hidden inline-block">
+                      <motion.span
+                        className="inline-block"
+                        initial={{ y: '105%' }}
+                        whileInView={{ y: '0%' }}
+                        viewport={{ once: true, amount: 0.1 }}
+                        transition={{ duration: 0.52, ease: [0.16, 1, 0.3, 1], delay: i * 0.06 + wi * 0.065 }}
+                      >
+                        {word}
+                      </motion.span>
+                    </span>
+                  ))}
+                </h3>
                 <p className="text-white/60 text-sm leading-relaxed">{card.body}</p>
               </motion.div>
             ))}
@@ -396,7 +412,6 @@ export default function SpotlightPage() {
           <p className="text-white/40 text-[10px] font-semibold uppercase tracking-[0.25em] mb-4">Creator stats</p>
           <div className="grid grid-cols-3 gap-4">
             {[
-              { label: 'Followers', value: creator.followers },
               { label: 'Creator Score', value: creator.creatorScore },
               { label: 'Tier', value: tier, gold: true },
             ].map((stat, i) => (

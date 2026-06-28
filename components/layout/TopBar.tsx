@@ -1,5 +1,6 @@
 'use client'
 
+import { useRef, useEffect } from 'react'
 import Link from 'next/link'
 import { Bell, ArrowRight } from 'lucide-react'
 import { useUser } from '@/context/UserContext'
@@ -8,10 +9,49 @@ import { SpotlightWordmark } from '@/components/ui/SpotlightLogo'
 import { notifications } from '@/lib/mock-data'
 import { cn } from '@/lib/utils'
 
+function useMagneticButton(strength = 0.38, radius = 90) {
+  const ref = useRef<HTMLAnchorElement>(null)
+
+  useEffect(() => {
+    const el = ref.current
+    if (!el) return
+    if (!window.matchMedia('(hover: hover)').matches) return
+
+    function onMove(e: MouseEvent) {
+      const rect = el!.getBoundingClientRect()
+      const cx = rect.left + rect.width / 2
+      const cy = rect.top + rect.height / 2
+      const dx = e.clientX - cx
+      const dy = e.clientY - cy
+      const dist = Math.hypot(dx, dy)
+      if (dist < radius) {
+        const pull = (1 - dist / radius) * strength
+        el!.style.transform = `translate(${dx * pull}px, ${dy * pull}px)`
+      } else {
+        el!.style.transform = 'translate(0,0)'
+      }
+    }
+
+    function onLeave() {
+      if (el) el.style.transform = 'translate(0,0)'
+    }
+
+    window.addEventListener('mousemove', onMove, { passive: true })
+    el.addEventListener('mouseleave', onLeave)
+    return () => {
+      window.removeEventListener('mousemove', onMove)
+      el?.removeEventListener('mouseleave', onLeave)
+    }
+  }, [radius, strength])
+
+  return ref
+}
+
 export default function TopBar() {
   const { user } = useUser()
   const { isAuthenticated, isLoading } = useAuth()
   const unreadCount = notifications.filter(n => !n.isRead).length
+  const joinRef = useMagneticButton()
 
   return (
     <header className="fixed top-0 left-0 right-0 z-40 h-14 flex items-center justify-between px-4 bg-black/40 backdrop-blur-2xl">
@@ -43,8 +83,10 @@ export default function TopBar() {
               Log in
             </Link>
             <Link
+              ref={joinRef}
               href="/signup"
               className="btn-magnetic flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-hype-gold text-[#0A0A0A] text-sm font-bold hover:bg-hype-gold-dim transition-all shadow-[0_2px_12px_rgba(201,168,76,0.35)]"
+              style={{ transition: 'transform 0.28s cubic-bezier(0.34,1.56,0.64,1), box-shadow 0.3s ease, background 0.2s' }}
             >
               Join <ArrowRight size={13} />
             </Link>

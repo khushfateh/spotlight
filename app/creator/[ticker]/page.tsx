@@ -2,7 +2,7 @@
 
 import { use, useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
-import { ArrowLeft, Star, Share2, TrendingUp, TrendingDown, Users, BarChart3, MessageCircle, Calendar, Zap } from 'lucide-react'
+import { ArrowLeft, Star, Share2, TrendingUp, TrendingDown, Users, MessageCircle, Calendar, Zap } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import TradeSheet from '@/components/trading/TradeSheet'
 import MoveOnCinematic from '@/components/trading/MoveOnCinematic'
@@ -153,7 +153,6 @@ export default function CreatorProfilePage({ params }: { params: Promise<{ ticke
               gradientClass={creator.coverColor}
               imageUrl={spotifyData?.imageUrl ?? creator.imageUrl}
               size="xl"
-              isVerified={creator.isVerified}
               className="border-2 border-hype-bg"
             />
             <div className="pb-1">
@@ -161,10 +160,6 @@ export default function CreatorProfilePage({ params }: { params: Promise<{ ticke
               <div className="flex items-center gap-2">
                 <span className="text-white/70 text-xs font-mono">${creator.ticker}</span>
                 <Badge variant="muted" size="sm">{creator.category}</Badge>
-                <div className="flex items-center gap-1 text-white/70 text-xs">
-                  <Users size={10} />
-                  {creator.followers}
-                </div>
               </div>
             </div>
           </div>
@@ -189,9 +184,8 @@ export default function CreatorProfilePage({ params }: { params: Promise<{ ticke
               </div>
             </div>
 
-            <div className="grid grid-cols-3 gap-2 pt-4 border-t border-hype-border">
+            <div className="grid grid-cols-2 gap-2 pt-4 border-t border-hype-border">
               {[
-                { label: 'Followers', value: creator.followers },
                 { label: 'Creator Score', value: `${creator.creatorScore}/100` },
                 { label: 'Category', value: creator.category },
               ].map(({ label, value }) => (
@@ -535,39 +529,6 @@ export default function CreatorProfilePage({ params }: { params: Promise<{ ticke
                 </div>
               )}
 
-              <div className="premium-card rounded-2xl p-4">
-                <p className="text-hype-text font-semibold text-sm mb-3 flex items-center gap-1.5">
-                  <BarChart3 size={14} className="text-hype-gold" />
-                  Revenue Metrics
-                </p>
-                <div className="grid grid-cols-2 gap-2">
-                  {Object.entries(creator.revenueMetrics).map(([key, value]) => (
-                    <div key={key} className="inset-surface rounded-xl p-3">
-                      <p className="text-hype-text font-bold text-sm">{value}</p>
-                      <p className="text-hype-dim text-[10px] capitalize mt-0.5">{key.replace(/([A-Z])/g, ' $1').trim()}</p>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              <div className="premium-card rounded-2xl p-4">
-                <p className="text-hype-text font-semibold text-sm mb-3">Share Distribution</p>
-                {[
-                  { label: 'Creator Treasury', pct: 70, color: 'bg-hype-purple' },
-                  { label: 'Public Float', pct: 20, color: 'bg-hype-gold' },
-                  { label: 'Platform Reserve', pct: 10, color: 'bg-hype-dim' },
-                ].map(({ label, pct, color }) => (
-                  <div key={label} className="mb-2.5">
-                    <div className="flex justify-between text-xs mb-1">
-                      <span className="text-hype-secondary">{label}</span>
-                      <span className="text-hype-text font-semibold tabular">{pct}%</span>
-                    </div>
-                    <div className="h-1 bg-hype-surface-3 rounded-full overflow-hidden">
-                      <div className={cn('h-full rounded-full', color)} style={{ width: `${pct}%` }} />
-                    </div>
-                  </div>
-                ))}
-              </div>
             </div>
           )}
 

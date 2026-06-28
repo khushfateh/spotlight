@@ -2,48 +2,36 @@
 
 import { useEffect, useRef } from 'react'
 
-// The brand signature: a soft gold spotlight that follows your cursor.
-// Uses RAF lerp (not Framer Motion) for zero-overhead performance.
-// Desktop only — activates when a pointer device is available.
+// Subtle ambient gold glow that follows the cursor — no visible icon.
+// Desktop only.
 export function SpotlightCursor() {
-  const ref = useRef<HTMLDivElement>(null)
+  const glowRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
-    const el = ref.current
-    if (!el) return
     if (!window.matchMedia('(hover: hover)').matches) return
 
     let tx = -500, ty = -500
-    let cx = -500, cy = -500
+    let gx = -500, gy = -500
     let rafId: number
-    const node = el
+    const glow = glowRef.current
 
-    function onMove(e: MouseEvent) {
-      tx = e.clientX
-      ty = e.clientY
-    }
+    const onMove = (e: MouseEvent) => { tx = e.clientX; ty = e.clientY }
 
     function frame() {
-      cx += (tx - cx) * 0.072
-      cy += (ty - cy) * 0.072
-      node.style.background = `radial-gradient(circle 440px at ${cx}px ${cy}px, rgba(201,168,76,0.068) 0%, rgba(201,168,76,0.02) 40%, transparent 70%)`
+      gx += (tx - gx) * 0.055
+      gy += (ty - gy) * 0.055
+      if (glow) {
+        glow.style.background = `radial-gradient(circle 400px at ${gx}px ${gy}px, rgba(201,168,76,0.058) 0%, rgba(201,168,76,0.014) 45%, transparent 70%)`
+      }
       rafId = requestAnimationFrame(frame)
     }
 
     window.addEventListener('mousemove', onMove, { passive: true })
     rafId = requestAnimationFrame(frame)
-
-    return () => {
-      window.removeEventListener('mousemove', onMove)
-      cancelAnimationFrame(rafId)
-    }
+    return () => { window.removeEventListener('mousemove', onMove); cancelAnimationFrame(rafId) }
   }, [])
 
   return (
-    <div
-      ref={ref}
-      aria-hidden
-      className="pointer-events-none fixed inset-0 z-[55] mix-blend-screen"
-    />
+    <div ref={glowRef} aria-hidden className="pointer-events-none fixed inset-0 z-[53] mix-blend-screen" />
   )
 }

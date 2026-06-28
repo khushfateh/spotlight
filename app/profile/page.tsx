@@ -14,7 +14,6 @@ import { Badge } from '@/components/ui/Badge'
 import { getMomentum, getMomentumTier } from '@/lib/mock-data'
 import { genres as mockGenres } from '@/lib/mock-data/genres'
 import { getCreatorByTicker } from '@/lib/mock-data/creators'
-import { holdings } from '@/lib/mock-data'
 import GoldDiscoveryCard from '@/components/trading/GoldDiscoveryCard'
 import { SpotterCard } from '@/components/trading/SpotterCard'
 import VaultOpeningCinematic from '@/components/trading/VaultOpeningCinematic'
@@ -183,9 +182,7 @@ export default function ProfilePage() {
   const [genreSheetOpen, setGenreSheetOpen] = useState(false)
   const [vaultOpen, setVaultOpen] = useState<{ entry: VaultEntry; creator: Creator } | null>(null)
 
-  // In Supabase mode, use real spotted tickers; in mock mode, use holdings
-  const mockSpottedTickers = holdings.map(h => h.ticker)
-  const activeSpottedTickers = isSupabaseMode ? spottedTickers : mockSpottedTickers
+  const activeSpottedTickers = spottedTickers
   const creatorsSpottedCount = activeSpottedTickers.length || (currentUser?.creatorsSpotted ?? 0)
 
   const avgMomentum = vaultItems.length

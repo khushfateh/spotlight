@@ -109,7 +109,7 @@ function SwipeCard({
       {/* Card content */}
       <div className="absolute bottom-0 left-0 right-0 p-7 pointer-events-none">
         <p className="text-white/40 text-[9px] tracking-[0.22em] uppercase mb-2">
-          {creator.category} · {creator.followers} fans
+          {creator.category}
         </p>
         <h2
           className="text-white font-black tracking-tight leading-none mb-2"

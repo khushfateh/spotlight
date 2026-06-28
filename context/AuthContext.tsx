@@ -20,11 +20,13 @@ type AuthContextType = {
   isLoading: boolean
   isSupabaseMode: boolean
   isNewUser: boolean
+  needsUsername: boolean
   login: (userId: string) => void
   logout: () => void
   switchUser: (userId: string) => void
   updateInterests: (interests: string[]) => void
   acknowledgeOnboarding: () => void
+  refreshUser: () => Promise<void>
   allUsers: MockUser[]
   signIn: (email: string, password: string) => Promise<{ error?: string }>
   signUp: (email: string, password: string, name: string) => Promise<{ error?: string; confirmEmail?: boolean }>
@@ -41,7 +43,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [currentUser, setCurrentUser] = useState<MockUser | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [isNewUser, setIsNewUser] = useState(false)
+  const [needsUsername, setNeedsUsername] = useState(false)
   const [userOverrides, setUserOverrides] = useState<Partial<MockUser>>({})
+  const [supabaseSession, setSupabaseSession] = useState<{ userId: string; email: string } | null>(null)
 
   // ── Supabase mode ────────────────────────────────────────────────────
   const loadSupabaseUser = useCallback(async (userId: string, email: string) => {
@@ -49,7 +53,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       let profile = await getProfile(userId)
 
       if (!profile) {
-        // Profile may not exist yet — try to create it, then re-fetch
         await ensureProfile(userId, email)
         profile = await getProfile(userId)
       }
@@ -59,9 +62,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const slugs = await getUserGenreSlugs(userId)
         setCurrentUser({ ...mockUser, interests: slugs })
         setIsNewUser(!profile.onboarding_complete)
+        // Needs username: completed onboarding but never set a username
+        setNeedsUsername(!!profile.onboarding_complete && !profile.username)
       } else {
-        // Profile can't be read/created (RLS, new account, etc.) —
-        // still mark the user as authenticated with a synthetic profile
         const displayName = email.split('@')[0]
         const synthetic: MockUser = {
           id: userId,
@@ -83,18 +86,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           coverColor: 'from-zinc-700 to-zinc-900',
         }
         setCurrentUser(synthetic)
-        setIsNewUser(true) // no profile yet → treat as new
+        setIsNewUser(true)
+        setNeedsUsername(false)
       }
     } catch (err) {
-      // Network error or RLS rejection on iOS — log and continue.
-      // isLoading will be set false by the caller; user stays unauthenticated.
       console.error('[auth] loadSupabaseUser failed:', err)
     }
   }, [])
 
+  const refreshUser = useCallback(async () => {
+    if (!supabaseSession) return
+    await loadSupabaseUser(supabaseSession.userId, supabaseSession.email)
+  }, [supabaseSession, loadSupabaseUser])
+
   useEffect(() => {
     if (!IS_SUPABASE_ENABLED || !supabase) {
-      // Mock mode: restore from localStorage
       const saved = localStorage.getItem(STORAGE_KEY)
       if (saved && getUserById(saved)) {
         const base = getUserById(saved)!
@@ -104,35 +110,33 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return
     }
 
-    // Supabase mode: check existing session.
-    // IMPORTANT: .catch() is required — if getSession() rejects OR loadSupabaseUser
-    // throws (network failure on iOS), setIsLoading(false) must still run.
-    // Without it, isLoading stays true forever → TopBar/BottomNav stuck as spacers.
     supabase.auth.getSession()
       .then(async ({ data }) => {
         if (data.session?.user) {
-          await loadSupabaseUser(data.session.user.id, data.session.user.email ?? '')
+          const { id, email } = data.session.user
+          setSupabaseSession({ userId: id, email: email ?? '' })
+          await loadSupabaseUser(id, email ?? '')
         }
         setIsLoading(false)
       })
       .catch(() => {
-        // getSession itself failed (offline, ITP block, etc.) — treat as unauthenticated
         setIsLoading(false)
       })
 
-    // Belt-and-suspenders: if auth still hasn't resolved after 8 s, unblock the UI.
-    // This prevents a permanently-stuck loading state if Supabase is unreachable.
     const authTimeout = setTimeout(() => {
       setIsLoading(false)
     }, 8000)
 
-    // Listen for auth state changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (session?.user) {
-        await loadSupabaseUser(session.user.id, session.user.email ?? '')
+        const { id, email } = session.user
+        setSupabaseSession({ userId: id, email: email ?? '' })
+        await loadSupabaseUser(id, email ?? '')
       } else {
         setCurrentUser(null)
         setIsNewUser(false)
+        setNeedsUsername(false)
+        setSupabaseSession(null)
       }
     })
 
@@ -152,7 +156,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   // ── Mock-only actions ─────────────────────────────────────────────────
   function login(userId: string) {
-    if (IS_SUPABASE_ENABLED) return // no-op in Supabase mode
+    if (IS_SUPABASE_ENABLED) return
     const user = getUserById(userId)
     if (!user) return
     localStorage.setItem(STORAGE_KEY, userId)
@@ -164,6 +168,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (IS_SUPABASE_ENABLED) {
       await sbSignOut()
       setCurrentUser(null)
+      setNeedsUsername(false)
     } else {
       localStorage.removeItem(STORAGE_KEY)
       setCurrentUser(null)
@@ -190,7 +195,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // ── Supabase auth actions ────────────────────────────────────────────
   async function signIn(email: string, password: string): Promise<{ error?: string }> {
     if (!IS_SUPABASE_ENABLED) {
-      // Mock: just log in as default demo user
       login(DEMO_USER_ID)
       return {}
     }
@@ -226,11 +230,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       isLoading,
       isSupabaseMode: IS_SUPABASE_ENABLED,
       isNewUser,
+      needsUsername,
       login,
       logout,
       switchUser,
       updateInterests,
       acknowledgeOnboarding,
+      refreshUser,
       allUsers: mockUsers,
       signIn,
       signUp,

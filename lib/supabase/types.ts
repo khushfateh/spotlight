@@ -26,6 +26,10 @@ export interface Database {
           momentum_accuracy: number
           discovery_rank: string
           onboarding_complete: boolean
+          profile_completed: boolean
+          username_changed_at: string | null
+          avatar_storage_path: string | null
+          avatar_updated_at: string | null
           created_at: string
           updated_at: string
         }
@@ -45,6 +49,10 @@ export interface Database {
           momentum_accuracy?: number
           discovery_rank?: string
           onboarding_complete?: boolean
+          profile_completed?: boolean
+          username_changed_at?: string | null
+          avatar_storage_path?: string | null
+          avatar_updated_at?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -63,6 +71,10 @@ export interface Database {
           momentum_accuracy?: number
           discovery_rank?: string
           onboarding_complete?: boolean
+          profile_completed?: boolean
+          username_changed_at?: string | null
+          avatar_storage_path?: string | null
+          avatar_updated_at?: string | null
           updated_at?: string
         }
         Relationships: []
