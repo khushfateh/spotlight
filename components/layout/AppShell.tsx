@@ -9,11 +9,10 @@ import { UserProvider } from '@/context/UserContext'
 import { AmbientWorld, ScanSweep } from '@/components/experience/AmbientWorld'
 import { CursorAura } from '@/components/experience/CursorAura'
 import { SpotlightParticles } from '@/components/experience/SpotlightParticles'
+import { FloatingField } from '@/components/experience/FloatingField'
+import { ExperienceProvider } from '@/components/experience/ExperienceProvider'
 
-// These routes render without app chrome (no TopBar / BottomNav)
 const AUTH_FLOW_ROUTES = ['/login', '/signup', '/onboarding', '/share', '/username-setup']
-
-// These routes require a logged-in user — everything else is publicly browsable
 const PROTECTED_ROUTES = ['/profile', '/discoveries']
 
 function InnerShell({ children }: { children: ReactNode }) {
@@ -52,8 +51,9 @@ function InnerShell({ children }: { children: ReactNode }) {
 
   return (
     <div className="min-h-screen bg-hype-bg">
-      {/* ── Experience layer — ambient world, particles, cursor ──────── */}
+      {/* ── Experience layer ───────────────────────────────────────────── */}
       <AmbientWorld />
+      <FloatingField />
       <SpotlightParticles />
       <ScanSweep />
       <CursorAura />
@@ -71,7 +71,9 @@ export default function AppShell({ children }: { children: ReactNode }) {
   return (
     <AuthProvider>
       <UserProvider>
-        <InnerShell>{children}</InnerShell>
+        <ExperienceProvider>
+          <InnerShell>{children}</InnerShell>
+        </ExperienceProvider>
       </UserProvider>
     </AuthProvider>
   )
