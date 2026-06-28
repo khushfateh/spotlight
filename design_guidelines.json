@@ -1,0 +1,119 @@
+{
+  "project_name": "Artist Vault",
+  "theme": "dark",
+  "archetype": "5 (Luxury) - Premium, Depth, Mystery",
+  "visual_vibe": "Premium minimal, glassy, elegant, 3D motion-driven scrollytelling",
+  "typography": {
+    "fonts": {
+      "heading": "Outfit",
+      "body": "Manrope",
+      "mono": "JetBrains Mono",
+      "forbidden": ["Inter", "Roboto", "Open Sans", "Syne"]
+    },
+    "hierarchy": {
+      "h1": "text-5xl sm:text-6xl+ tracking-tighter font-light",
+      "h2": "text-3xl sm:text-4xl tracking-tight font-light",
+      "h3": "text-xl sm:text-2xl font-medium",
+      "body": "text-base leading-relaxed",
+      "mono_labels": "font-mono text-xs tracking-[0.2em] uppercase text-zinc-400"
+    }
+  },
+  "color_palette": {
+    "background": {
+      "primary": "#050505",
+      "secondary": "#0A0A0A"
+    },
+    "surface": {
+      "glass": "bg-white/5 backdrop-blur-xl",
+      "solid": "bg-zinc-900"
+    },
+    "border": {
+      "default": "border-white/10",
+      "highlight": "border-white/20"
+    },
+    "text": {
+      "primary": "#FFFFFF",
+      "secondary": "#A1A1AA",
+      "muted": "#71717A"
+    },
+    "accent": {
+      "chrome": "#E2E8F0",
+      "ice_blue": "#8BA0B2",
+      "forbidden": ["#9D4CDD", "#1B93A4", "purple gradient on white"]
+    }
+  },
+  "spacing_and_layout": {
+    "system": "Generous Spacing System",
+    "patterns": {
+      "padding": "p-8 md:p-12",
+      "gap": "gap-8 md:gap-12",
+      "radius": "rounded-2xl md:rounded-3xl",
+      "card_inner": "p-6 md:p-8"
+    },
+    "grid": {
+      "mode": "The Tetris Grid",
+      "description": "Asymmetrical, visually tense grids. Leave empty cells to act as negative space. Avoid standard boring equal-column arrays."
+    }
+  },
+  "components": {
+    "vault_card": {
+      "style": "Glassmorphism (The Crystal Variant)",
+      "classes": "relative overflow-hidden bg-white/5 backdrop-blur-2xl border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.4)] rounded-2xl",
+      "interaction": "3D tilt effect via Framer Motion, with a subtle mouse-tracked reflective gradient overlay (hologram effect).",
+      "elements": [
+        "Artist Image (High contrast, greyscale or dark moody)",
+        "Artist Name (Outfit, font-light, text-2xl)",
+        "Timestamp (JetBrains Mono, tracking-widest, text-xs)",
+        "Spotter Rank (Badge, border-white/20, text-chrome)"
+      ]
+    },
+    "header": {
+      "style": "Crystal Glass Nav",
+      "classes": "fixed top-0 w-full z-50 bg-black/40 backdrop-blur-xl border-b border-white/5",
+      "layout": "Flex container, large padding, logo left, links center, CTA right."
+    },
+    "buttons": {
+      "primary": "bg-white text-black font-medium px-6 py-3 rounded-full hover:bg-zinc-200 transition-all shadow-[0_0_20px_rgba(255,255,255,0.15)]",
+      "secondary": "bg-white/5 border border-white/10 text-white px-6 py-3 rounded-full hover:bg-white/10 transition-all backdrop-blur-md"
+    }
+  },
+  "animations": {
+    "scroll": {
+      "library": "Lenis",
+      "usage": "Smooth momentum scrolling for the vertical progression experience."
+    },
+    "3d_effects": {
+      "library": "Framer Motion 3D / React Three Fiber",
+      "usage": "Use Framer Motion for the 3D card tilt and hover effects. For the hero section, use Parallax scrolling (elements moving at different Y speeds)."
+    },
+    "page_transitions": "Fade in and slight slide up (y: 20 -> y: 0) for elements as they enter the viewport."
+  },
+  "image_urls": [
+    {
+      "url": "https://images.unsplash.com/photo-1557088808-2d2c45c8e695?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NTYxODd8MHwxfHNlYXJjaHw0fHxtdXNpYyUyMGFydGlzdCUyMHBvcnRyYWl0JTIwY29uY2VydCUyMGRhcmslMjBtb29keXxlbnwwfHx8fDE3ODI2ODc0ODh8MA&ixlib=rb-4.1.0&q=85",
+      "category": "artist_portrait",
+      "description": "Dark moody concert portrait of a male artist in black, high contrast."
+    },
+    {
+      "url": "https://images.unsplash.com/photo-1763889784402-5e8744af31b2?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NTYxODd8MHwxfHNlYXJjaHwyfHxtdXNpYyUyMGFydGlzdCUyMHBvcnRyYWl0JTIwY29uY2VydCUyMGRhcmslMjBtb29keXxlbnwwfHx8fDE3ODI2ODc0ODh8MA&ixlib=rb-4.1.0&q=85",
+      "category": "artist_portrait",
+      "description": "Artist singing and playing guitar on stage, dramatic lighting."
+    },
+    {
+      "url": "https://images.unsplash.com/photo-1710438399422-2fca27686bcd?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NTYxODh8MHwxfHNlYXJjaHwxfHxhYnN0cmFjdCUyMGRhcmslMjBnbGFzcyUyMDNEJTIwcmVuZGVyJTIwcHJlbWl1bXxlbnwwfHx8fDE3ODI2ODc0ODh8MA&ixlib=rb-4.1.0&q=85",
+      "category": "hero_background",
+      "description": "Abstract dark glass 3D render with subtle wavy lines, perfect for the immersive vertical scroll background."
+    }
+  ],
+  "accessibility": {
+    "contrast": "Ensure text over glass has sufficient contrast. Use text-shadow if necessary. Maintain minimum 4.5:1 ratio for body text.",
+    "motion": "Respect prefers-reduced-motion CSS media query. Disable heavy 3D tilts for these users.",
+    "testing": "All interactive elements MUST include a data-testid attribute formatted in kebab-case (e.g., data-testid='spot-artist-button')."
+  },
+  "instructions_to_main_agent": {
+    "styling": "Use raw Tailwind classes for custom layouts. Do not use plain Shadcn cards for the Vault Cards; build custom HTML with the glass classes provided.",
+    "interactivity": "Implement Framer Motion for the Vault Card tilt effects. The card should act like a physical trading card reflecting light based on mouse position.",
+    "layout": "Follow the 'Tetris Grid' pattern for the vault collection. Hero section must be a full 100vh immersive scene with a clear vertical scroll indicator.",
+    "media": "Use the provided image URLs. NEVER use placeholder services like via.placeholder.com. Apply a subtle grayscale or high-contrast filter to artist images to match the luxury dark theme."
+  }
+}
