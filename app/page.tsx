@@ -1,9 +1,11 @@
 'use client'
 
 import dynamic from 'next/dynamic'
+import FixedBackground from '@/components/experience/emergent/FixedBackground'
 import SaxophoneHero from '@/components/experience/emergent/SaxophoneHero'
-import HomeFeed from '@/components/home/HomeFeed'
+import CinematicHome from '@/components/experience/emergent/CinematicHome'
 
+// Layer 1: cursor-responsive sparkle field (WebGL — browser only)
 const GlobalSparkles = dynamic(
   () => import('@/components/experience/emergent/GlobalSparkles'),
   { ssr: false },
@@ -12,34 +14,33 @@ const GlobalSparkles = dynamic(
 export default function RootPage() {
   return (
     <>
-      {/* Fixed starfield behind everything — cursor-responsive on any page area */}
+      {/*
+        ┌─────────────────────────────────────────────────────┐
+        │  L0  FixedBackground  z:0   persistent gold glows   │
+        │  L1  GlobalSparkles   z:-1  sparkle field, fixed    │
+        │  L2  SaxophoneHero    z:10  3-D hero, 100svh        │
+        │  L3  CinematicHome    flow  glass sections, no bg   │
+        │  L4  body::before     z:9995  film grain (CSS)      │
+        └─────────────────────────────────────────────────────┘
+        CinematicHome has no background-color anywhere.
+        Sparkles (L1) and gold glows (L0) show through the
+        glass cards. One dark world, top to bottom.
+      */}
+
+      {/* L0: persistent ambient canvas */}
+      <FixedBackground />
+
+      {/* L1: full-page starfield */}
       <GlobalSparkles />
 
-      {/* Hero sits on top of the page stack */}
-      <div style={{ position: 'relative', zIndex: 2 }}>
+      {/* L2: saxophone hero — has its own #050505 bg + 3D sparkles */}
+      <div style={{ position: 'relative', zIndex: 10 }}>
         <SaxophoneHero />
       </div>
 
-      {/*
-        HomeFeed slides 320px under the hero.
-        The bridge gradient covers the exposed top of HomeFeed,
-        pulling it flush with the hero's black before revealing content.
-      */}
-      <div style={{ position: 'relative', zIndex: 1, marginTop: '-320px' }}>
-        <div
-          aria-hidden
-          style={{
-            position: 'absolute',
-            inset: 0,
-            bottom: 'auto',
-            height: 380,
-            background:
-              'linear-gradient(to bottom, #050505 0%, #050505 45%, rgba(5,5,5,0.85) 65%, rgba(5,5,5,0.4) 85%, transparent 100%)',
-            pointerEvents: 'none',
-            zIndex: 10,
-          }}
-        />
-        <HomeFeed />
+      {/* L3: cinematic content — slight overlap with hero bottom gradient */}
+      <div style={{ marginTop: '-60px', position: 'relative' }}>
+        <CinematicHome />
       </div>
     </>
   )
