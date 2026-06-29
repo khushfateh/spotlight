@@ -85,3 +85,29 @@ h1, h2, h3, .font-head { font-family: 'Outfit', sans-serif; }
 @media (prefers-reduced-motion: reduce) {
   * { animation: none !important; transition: none !important; }
 }
+
+/* 3D orbiting artist cards (rendered via drei <Html transform>) */
+.orbit-card {
+  width: 124px;
+  border-radius: 18px;
+  overflow: hidden;
+  background: rgba(18, 15, 10, 0.55);
+  border: 1px solid rgba(230, 184, 92, 0.35);
+  box-shadow: 0 18px 50px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.12);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  user-select: none;
+}
+.orbit-card-img {
+  height: 124px;
+  background-size: cover;
+  background-position: center;
+  filter: contrast(1.1) brightness(0.85);
+}
+.orbit-card-body { padding: 10px 12px 12px; display: flex; flex-direction: column; gap: 2px; }
+.orbit-card-genre {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 8px; letter-spacing: 0.22em; text-transform: uppercase; color: #e6b85c;
+}
+.orbit-card-name { font-family: 'Outfit', sans-serif; font-weight: 300; font-size: 17px; color: #fff; line-height: 1.1; }
+.orbit-card-mo { font-family: 'JetBrains Mono', monospace; font-size: 10px; color: #7CFFA0; margin-top: 3px; }
