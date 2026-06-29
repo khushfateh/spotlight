@@ -4,7 +4,6 @@ import dynamic from 'next/dynamic'
 import SaxophoneHero from '@/components/experience/emergent/SaxophoneHero'
 import HomeFeed from '@/components/home/HomeFeed'
 
-// Both canvases are browser-only
 const GlobalSparkles = dynamic(
   () => import('@/components/experience/emergent/GlobalSparkles'),
   { ssr: false },
@@ -13,24 +12,29 @@ const GlobalSparkles = dynamic(
 export default function RootPage() {
   return (
     <>
-      {/* Fixed starfield — sits behind ALL page content, cursor-responsive everywhere */}
+      {/* Fixed starfield behind everything — cursor-responsive on any page area */}
       <GlobalSparkles />
 
-      {/* Cinematic hero */}
-      <SaxophoneHero />
+      {/* Hero sits on top of the page stack */}
+      <div style={{ position: 'relative', zIndex: 2 }}>
+        <SaxophoneHero />
+      </div>
 
-      {/* Transition bridge: overlaps the hero's bottom gradient, fades into HomeFeed */}
-      <div style={{ position: 'relative', marginTop: '-80px', zIndex: 5 }}>
-        {/* Dark curtain from above — pulls the hero fade through into HomeFeed */}
+      {/*
+        HomeFeed slides 320px under the hero.
+        The bridge gradient covers the exposed top of HomeFeed,
+        pulling it flush with the hero's black before revealing content.
+      */}
+      <div style={{ position: 'relative', zIndex: 1, marginTop: '-320px' }}>
         <div
           aria-hidden
           style={{
             position: 'absolute',
-            top: 0,
-            left: 0,
-            right: 0,
-            height: 120,
-            background: 'linear-gradient(to bottom, #050505, transparent)',
+            inset: 0,
+            bottom: 'auto',
+            height: 380,
+            background:
+              'linear-gradient(to bottom, #050505 0%, #050505 45%, rgba(5,5,5,0.85) 65%, rgba(5,5,5,0.4) 85%, transparent 100%)',
             pointerEvents: 'none',
             zIndex: 10,
           }}

@@ -269,7 +269,7 @@ export default function SaxophoneHero() {
           </motion.div>
         </div>
 
-        {/* ── Bottom gradient — fades hero into the next section ──────── */}
+        {/* ── Bottom gradient — hero fades to solid black ─────────────── */}
         <div
           aria-hidden
           style={{
@@ -277,8 +277,8 @@ export default function SaxophoneHero() {
             bottom: 0,
             left: 0,
             right: 0,
-            height: '38%',
-            background: 'linear-gradient(to bottom, transparent 0%, rgba(5,5,5,0.7) 55%, #050505 100%)',
+            height: '55%',
+            background: 'linear-gradient(to bottom, transparent 0%, rgba(5,5,5,0.55) 40%, rgba(5,5,5,0.9) 70%, #050505 100%)',
             pointerEvents: 'none',
             zIndex: 15,
           }}
