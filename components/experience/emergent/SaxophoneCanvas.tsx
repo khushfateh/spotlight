@@ -11,7 +11,7 @@ import {
   Html,
 } from '@react-three/drei'
 import * as THREE from 'three'
-import { scrollState, dragState } from './scrollState'
+import { scrollState, dragState, visualState } from './scrollState'
 
 // ── Loading overlay rendered inside the Canvas ────────────────────────────────
 function Loader() {
@@ -230,6 +230,11 @@ function SaxophoneModel() {
 
     // Breathing — gentle Y float
     group.current.position.y = Math.sin(t * 0.5) * 0.045
+
+    // Publish live visual angles so onPointerDown can capture them
+    // before idle-drift / cursor-lean terms are zeroed out.
+    visualState.rotY = group.current.rotation.y
+    visualState.rotX = group.current.rotation.x
   })
 
   return (
@@ -289,10 +294,16 @@ export default function SaxophoneCanvas() {
   const wrapperRef = useRef<HTMLDivElement>(null)
 
   function onPointerDown(e: React.PointerEvent<HTMLDivElement>) {
+    // Seed rotY/rotX from the live visual position BEFORE enabling dragging.
+    // This neutralises idle-drift (t * 0.08) and cursor-lean (pointer.x * 0.28)
+    // which both drop to 0 the instant isDragging flips true — without this
+    // seeding the targetY formula jumps backward and the model spins wildly.
+    dragState.rotY = visualState.rotY - scrollState.rotation
+    dragState.rotX = visualState.rotX
     dragState.isDragging = true
     dragState.lastX = e.clientX
     dragState.lastY = e.clientY
-    e.currentTarget.setPointerCapture(e.pointerId) // track outside canvas bounds
+    e.currentTarget.setPointerCapture(e.pointerId)
     if (wrapperRef.current) wrapperRef.current.style.cursor = 'grabbing'
   }
 

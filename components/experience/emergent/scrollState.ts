@@ -11,3 +11,7 @@ export const dragState = {
   lastX: 0,
   lastY: 0,
 }
+
+// Written by useFrame every tick so onPointerDown can capture the live visual
+// position before suppressing idle-drift and cursor-lean terms.
+export const visualState = { rotY: 0, rotX: 0 }
