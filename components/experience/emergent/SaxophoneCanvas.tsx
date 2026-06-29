@@ -11,7 +11,7 @@ import {
   Html,
 } from '@react-three/drei'
 import * as THREE from 'three'
-import { scrollState } from './scrollState'
+import { scrollState, dragState } from './scrollState'
 
 // ── Loading overlay rendered inside the Canvas ────────────────────────────────
 function Loader() {
@@ -201,25 +201,30 @@ function SaxophoneModel() {
     if (!group.current) return
     const t = state.clock.getElapsedTime()
 
-    // Scroll + idle drift + cursor leans the saxophone left/right
-    const targetY = scrollState.rotation + t * 0.08 + state.pointer.x * 0.28
+    const dragging = dragState.isDragging
+
+    // Y rotation: scroll base + drag offset + idle drift (suppressed while dragging) + cursor lean (suppressed while dragging)
+    const idleDrift  = dragging ? 0 : t * 0.08
+    const cursorLean = dragging ? 0 : state.pointer.x * 0.28
+    const targetY = scrollState.rotation + dragState.rotY + idleDrift + cursorLean
     group.current.rotation.y = THREE.MathUtils.lerp(
       group.current.rotation.y,
       targetY,
-      0.06,
+      dragging ? 0.18 : 0.06, // snappier response while dragging
     )
 
-    // Cursor tilts saxophone toward the vertical position of the pointer
+    // X rotation: drag offset wins; cursor tilt fallback when not dragging
+    const targetX = dragging ? dragState.rotX : -state.pointer.y * 0.22
     group.current.rotation.x = THREE.MathUtils.lerp(
       group.current.rotation.x,
-      -state.pointer.y * 0.22,
-      0.05,
+      targetX,
+      dragging ? 0.18 : 0.05,
     )
 
-    // Subtle roll follows horizontal cursor — adds depth and elegance
+    // Z roll: suppressed while dragging to avoid disorientation
     group.current.rotation.z = THREE.MathUtils.lerp(
       group.current.rotation.z,
-      state.pointer.x * 0.06,
+      dragging ? 0 : state.pointer.x * 0.06,
       0.05,
     )
 
@@ -281,27 +286,61 @@ function StudioLighting() {
 
 // ── Canvas export ─────────────────────────────────────────────────────────────
 export default function SaxophoneCanvas() {
+  const wrapperRef = useRef<HTMLDivElement>(null)
+
+  function onPointerDown(e: React.PointerEvent<HTMLDivElement>) {
+    dragState.isDragging = true
+    dragState.lastX = e.clientX
+    dragState.lastY = e.clientY
+    e.currentTarget.setPointerCapture(e.pointerId) // track outside canvas bounds
+    if (wrapperRef.current) wrapperRef.current.style.cursor = 'grabbing'
+  }
+
+  function onPointerMove(e: React.PointerEvent<HTMLDivElement>) {
+    if (!dragState.isDragging) return
+    const dx = e.clientX - dragState.lastX
+    const dy = e.clientY - dragState.lastY
+    dragState.rotY += dx * 0.007  // ~100px drag = ~40° turn
+    dragState.rotX += dy * 0.004  // vertical is slightly less sensitive
+    dragState.lastX = e.clientX
+    dragState.lastY = e.clientY
+  }
+
+  function onPointerUp(e: React.PointerEvent<HTMLDivElement>) {
+    dragState.isDragging = false
+    if (wrapperRef.current) wrapperRef.current.style.cursor = 'grab'
+  }
+
   return (
-    <Canvas
-      camera={{ position: [0, 0, 7], fov: 46 }}
-      dpr={[1, 1.8]}
-      gl={{
-        antialias: true,
-        alpha: true,
-        toneMappingExposure: 1.28,
-      }}
-      style={{ width: '100%', height: '100%' }}
+    <div
+      ref={wrapperRef}
+      style={{ width: '100%', height: '100%', cursor: 'grab' }}
+      onPointerDown={onPointerDown}
+      onPointerMove={onPointerMove}
+      onPointerUp={onPointerUp}
+      onPointerLeave={onPointerUp}
     >
-      <ambientLight intensity={0.45} />
+      <Canvas
+        camera={{ position: [0, 0, 7], fov: 46 }}
+        dpr={[1, 1.8]}
+        gl={{
+          antialias: true,
+          alpha: true,
+          toneMappingExposure: 1.28,
+        }}
+        style={{ width: '100%', height: '100%' }}
+      >
+        <ambientLight intensity={0.45} />
 
-      <Suspense fallback={<Loader />}>
-        <StudioLighting />
-        <SparkleField />
-        <SaxophoneModel />
-        <CursorLight />
-      </Suspense>
+        <Suspense fallback={<Loader />}>
+          <StudioLighting />
+          <SparkleField />
+          <SaxophoneModel />
+          <CursorLight />
+        </Suspense>
 
-      <CameraRig />
-    </Canvas>
+        <CameraRig />
+      </Canvas>
+    </div>
   )
 }
