@@ -1,0 +1,30 @@
+{
+  "summary": "Frontend-only retest after 3D-saxophone-disappeared bug fix. The golden saxophone is now VISIBLE on the landing hero: large gold/brass model occupying ~half the viewport on the right, with shimmer highlights and deep shadows (high contrast), sparkles around it, and the headline 'Discover future icons before everyone else' overlapping/layered above the canvas. Same-origin GLB (/models/saxophone.glb, 1.6MB) returns 200. Canvas WebGL pixel sample: nonZeroPct=7.45%, goldPct=4.43%, brightPct=6.26%, avgRGB ~ (14,11,5) on a 1920x800 canvas — consistent with a large bright gold object on a dark hero. Scrolling does NOT crash the scene (canvas remains present, sax visibly re-rotated). Regression smoke 7/7 PASS: hero CTA -> /auth, register new user -> /discover (redirect OK), spot first artist (toast '#44' appears, button updates), /vault shows newly-spotted card, /pulse leaderboard rows render, nav-discover/nav-vault/nav-pulse/Home all work, and returning to / re-mounts saxophone-scene. ZERO uncaught page errors and ZERO console errors across both runs.",
+  "backend_issues": { "critical": [], "minor": [] },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_artist_vault.py",
+    "/app/test_reports/pytest/pytest_results.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "SaxophoneScene.jsx: useGLTF.preload(MODEL_URL) is called at module top-level — good for warm-up. Material mutation is done on a scene.clone(true) so the drei cache stays clean — correct.",
+    "Landing.jsx scrollRef updates on window scroll without rAF throttling; cheap since it's a single number write — acceptable.",
+    "React.StrictMode removed in index.js (intentional, documented in code review). This is acceptable for R3F but means dev-only double-invoke checks are lost site-wide. Consider re-enabling StrictMode only around non-R3F subtrees if needed later. Not blocking.",
+    "Canvas frameloop='always' will run even when hero is off-screen (scrolled past). Could switch to 'demand' or use IntersectionObserver to pause when hidden — minor perf optimization, not a bug.",
+    "SparkleField uses 3 nested <Sparkles> with total count 1030. Performance is fine on desktop but may be heavy on low-end mobile; consider reducing counts on small viewports."
+  ],
+  "updated_files": [],
+  "success_rate": { "backend": "N/A (skipped per request)", "frontend": "100%" },
+  "test_credentials": "Admin: admin@artistvault.com / vault123 (not exercised this run). New user registered via UI: test_06bb23dd9c@example.com / vault123.",
+  "seed_data_creation": "No new seed data created beyond one ad-hoc registered test user via UI.",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "3D saxophone bug confirmed FIXED. /models/saxophone.glb (1.6MB) served same-origin returns 200. data-testid='saxophone-scene' wrapper + inner <canvas> stay mounted across navigation and scroll. If a future regression hides the sax again, first verify (a) GLB still 200 from PUBLIC_URL/models/saxophone.glb, (b) StrictMode hasn't been re-enabled in /app/frontend/src/index.js around <App/>, (c) WebGL pixel goldPct >2% via the readPixels snippet used in this iteration's screenshot script. Hero canvas covers full viewport so use viewport 1920x800 for screenshot framing. Regression smoke (hero CTA -> register -> spot -> vault -> pulse -> navbar) all green.",
+  "rca of the issue": "Original RCA (per main agent context): 11.7MB GLB served from external/CDN URL failed to load in time, plus React.StrictMode double-mount killed the react-three-fiber render loop. Fix: GLB compressed to 1.6MB (EXT_texture_webp + KHR_mesh_quantization) and moved to same-origin /models/saxophone.glb; StrictMode removed from index.js. Both confirmed in code review and verified visually: sax is large, golden, shimmering with high contrast, with sparkles and text overlap, and remains rendered across scroll/navigation."
+}

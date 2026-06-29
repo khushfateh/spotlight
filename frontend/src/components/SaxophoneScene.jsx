@@ -3,8 +3,7 @@ import { Canvas, useFrame } from "@react-three/fiber";
 import { useGLTF, Sparkles, Environment, Lightformer } from "@react-three/drei";
 import * as THREE from "three";
 
-const MODEL_URL =
-  "https://customer-assets.emergentagent.com/job_motion-artist-cards/artifacts/g07mt6p7_base_basic_pbr.glb";
+const MODEL_URL = `${process.env.PUBLIC_URL || ""}/models/saxophone.glb`;
 
 function Saxophone({ scrollRef, pointerRef }) {
   const { scene } = useGLTF(MODEL_URL);
@@ -26,10 +25,11 @@ function Saxophone({ scrollRef, pointerRef }) {
     clone.traverse((o) => {
       if (o.isMesh && o.material) {
         const m = o.material;
-        m.metalness = 0.72;
-        m.roughness = Math.min(m.roughness ?? 0.4, 0.3);
-        m.envMapIntensity = 2.6;
-        m.emissiveIntensity = 0.12;
+        m.metalness = 0.55;
+        m.roughness = Math.min(m.roughness ?? 0.4, 0.32);
+        m.envMapIntensity = 2.4;
+        m.emissive = new THREE.Color("#3a2606");
+        m.emissiveIntensity = 0.28;
         m.needsUpdate = true;
       }
     });
