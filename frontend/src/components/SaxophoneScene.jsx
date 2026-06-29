@@ -1,7 +1,20 @@
 import { Suspense, useRef, useEffect, useMemo } from "react";
 import { Canvas, useFrame } from "@react-three/fiber";
-import { useGLTF, Sparkles, Environment, Lightformer } from "@react-three/drei";
+import { useGLTF, Sparkles, Environment, Lightformer, useProgress } from "@react-three/drei";
 import * as THREE from "three";
+
+function Loader3D() {
+  const { progress } = useProgress();
+  if (progress >= 100) return null;
+  return (
+    <div className="absolute inset-0 grid place-items-center pointer-events-none z-[2]">
+      <div className="flex flex-col items-center gap-3">
+        <div className="w-9 h-9 rounded-full border border-white/10 border-t-[#e6b85c] animate-spin" />
+        <span className="font-mono-x text-[10px] tracking-[0.3em] uppercase text-[#e6b85c]">Summoning the icon</span>
+      </div>
+    </div>
+  );
+}
 
 const MODEL_URL = `${process.env.PUBLIC_URL || ""}/models/saxophone.glb`;
 
@@ -25,11 +38,11 @@ function Saxophone({ scrollRef, pointerRef }) {
     clone.traverse((o) => {
       if (o.isMesh && o.material) {
         const m = o.material;
-        m.metalness = 0.55;
-        m.roughness = Math.min(m.roughness ?? 0.4, 0.32);
-        m.envMapIntensity = 2.4;
-        m.emissive = new THREE.Color("#3a2606");
-        m.emissiveIntensity = 0.28;
+        m.metalness = 0.5;
+        m.roughness = Math.min(m.roughness ?? 0.4, 0.34);
+        m.envMapIntensity = 2.6;
+        m.emissive = new THREE.Color("#5a3c0a");
+        m.emissiveIntensity = 0.45;
         m.needsUpdate = true;
       }
     });
@@ -106,17 +119,18 @@ export default function SaxophoneScene({ scrollRef }) {
 
   return (
     <div className="absolute inset-0 pointer-events-none" data-testid="saxophone-scene">
+      <Loader3D />
       <Canvas
         frameloop="always"
         camera={{ position: [0, 0, 7], fov: 46 }}
         dpr={[1, 1.8]}
         gl={{ antialias: true, alpha: true, toneMappingExposure: 1.15 }}
       >
-        <ambientLight intensity={0.28} />
-        <directionalLight position={[6, 7, 5]} intensity={3.6} color="#fff2d0" />
-        <directionalLight position={[-6, -1, -3]} intensity={1.0} color="#e6a93f" />
-        <pointLight position={[3, 3, 6]} intensity={16} color="#ffd790" distance={36} />
-        <pointLight position={[-4, -2, 4]} intensity={7} color="#ffffff" distance={26} />
+        <ambientLight intensity={0.45} />
+        <directionalLight position={[6, 7, 5]} intensity={4.2} color="#fff2d0" />
+        <directionalLight position={[-6, -1, -3]} intensity={1.3} color="#e6a93f" />
+        <pointLight position={[3, 3, 6]} intensity={18} color="#ffd790" distance={36} />
+        <pointLight position={[-4, -2, 4]} intensity={8} color="#ffffff" distance={26} />
 
         {/* No-network high-contrast studio: bright thin strips = shimmering reflection streaks; dark fill = deep shadows */}
         <Environment resolution={512}>
