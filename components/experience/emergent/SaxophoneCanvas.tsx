@@ -126,6 +126,37 @@ function CameraRig() {
   return null
 }
 
+// ── Cursor light — tracks pointer in 3D, creates dynamic specular highlights ──
+function CursorLight() {
+  const light = useRef<THREE.PointLight>(null)
+
+  useFrame((state) => {
+    if (!light.current) return
+    // Map -1…1 NDC pointer to world space in front of the saxophone
+    light.current.position.x = THREE.MathUtils.lerp(
+      light.current.position.x,
+      state.pointer.x * 5,
+      0.08,
+    )
+    light.current.position.y = THREE.MathUtils.lerp(
+      light.current.position.y,
+      state.pointer.y * 4,
+      0.08,
+    )
+  })
+
+  return (
+    <pointLight
+      ref={light}
+      position={[0, 0, 4.5]}
+      color="#ffecc0"
+      intensity={28}
+      distance={9}
+      decay={2}
+    />
+  )
+}
+
 // ── Saxophone model ───────────────────────────────────────────────────────────
 function SaxophoneModel() {
   const { scene } = useGLTF('/models/saxophone.glb')
@@ -170,19 +201,26 @@ function SaxophoneModel() {
     if (!group.current) return
     const t = state.clock.getElapsedTime()
 
-    // Scroll drives rotation; idle drift adds a slow organic spin between scrolls
-    const targetY = scrollState.rotation + t * 0.08
+    // Scroll + idle drift + cursor leans the saxophone left/right
+    const targetY = scrollState.rotation + t * 0.08 + state.pointer.x * 0.28
     group.current.rotation.y = THREE.MathUtils.lerp(
       group.current.rotation.y,
       targetY,
       0.06,
     )
 
-    // Pointer tilt — subtle x-axis response to mouse
+    // Cursor tilts saxophone toward the vertical position of the pointer
     group.current.rotation.x = THREE.MathUtils.lerp(
       group.current.rotation.x,
-      -state.pointer.y * 0.12,
-      0.04,
+      -state.pointer.y * 0.22,
+      0.05,
+    )
+
+    // Subtle roll follows horizontal cursor — adds depth and elegance
+    group.current.rotation.z = THREE.MathUtils.lerp(
+      group.current.rotation.z,
+      state.pointer.x * 0.06,
+      0.05,
     )
 
     // Breathing — gentle Y float
@@ -250,7 +288,7 @@ export default function SaxophoneCanvas() {
       gl={{
         antialias: true,
         alpha: true,
-        toneMappingExposure: 1.15,
+        toneMappingExposure: 1.28,
       }}
       style={{ width: '100%', height: '100%' }}
     >
@@ -260,6 +298,7 @@ export default function SaxophoneCanvas() {
         <StudioLighting />
         <SparkleField />
         <SaxophoneModel />
+        <CursorLight />
       </Suspense>
 
       <CameraRig />
