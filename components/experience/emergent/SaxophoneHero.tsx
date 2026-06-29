@@ -2,8 +2,7 @@
 
 import { useEffect, useRef } from 'react'
 import dynamic from 'next/dynamic'
-import { motion, AnimatePresence } from 'framer-motion'
-import { ChevronDown } from 'lucide-react'
+import { motion } from 'framer-motion'
 import Link from 'next/link'
 import gsap from 'gsap'
 import { ScrollTrigger } from 'gsap/ScrollTrigger'
@@ -270,41 +269,20 @@ export default function SaxophoneHero() {
           </motion.div>
         </div>
 
-        {/* ── Scroll affordance ────────────────────────────────────────── */}
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 1.4, duration: 0.8 }}
+        {/* ── Bottom gradient — fades hero into the next section ──────── */}
+        <div
+          aria-hidden
           style={{
             position: 'absolute',
-            bottom: 28,
-            left: '50%',
-            transform: 'translateX(-50%)',
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            gap: 6,
-            color: '#404040',
-            zIndex: 10,
+            bottom: 0,
+            left: 0,
+            right: 0,
+            height: '38%',
+            background: 'linear-gradient(to bottom, transparent 0%, rgba(5,5,5,0.7) 55%, #050505 100%)',
+            pointerEvents: 'none',
+            zIndex: 15,
           }}
-        >
-          <span
-            style={{
-              fontFamily: 'JetBrains Mono, monospace',
-              fontSize: 9,
-              letterSpacing: '0.3em',
-              textTransform: 'uppercase' as const,
-            }}
-          >
-            SCROLL — SPIN THE ICON
-          </span>
-          <motion.div
-            animate={{ y: [0, 7, 0] }}
-            transition={{ repeat: Infinity, duration: 1.8, ease: 'easeInOut' }}
-          >
-            <ChevronDown size={17} />
-          </motion.div>
-        </motion.div>
+        />
       </section>
     </>
   )
