@@ -17,9 +17,12 @@ CREATE TABLE IF NOT EXISTS artist_requests (
   status           TEXT        NOT NULL DEFAULT 'pending',
   created_at       TIMESTAMPTZ NOT NULL DEFAULT now(),
 
-  CONSTRAINT artist_requests_status_check CHECK (status IN ('pending', 'approved', 'rejected')),
-  CONSTRAINT artist_requests_unique_per_user UNIQUE (requested_by, lower(artist_name))
+  CONSTRAINT artist_requests_status_check CHECK (status IN ('pending', 'approved', 'rejected'))
 );
+
+-- Functional unique index: one request per user per artist name (case-insensitive)
+CREATE UNIQUE INDEX IF NOT EXISTS artist_requests_unique_per_user
+  ON artist_requests (requested_by, lower(artist_name));
 
 CREATE INDEX IF NOT EXISTS artist_requests_name_idx    ON artist_requests (lower(artist_name));
 CREATE INDEX IF NOT EXISTS artist_requests_user_idx    ON artist_requests (requested_by);
