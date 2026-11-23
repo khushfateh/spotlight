@@ -12,6 +12,10 @@
  *   node scripts/fix-spotify-ids.mjs
  *   node scripts/fix-spotify-ids.mjs --dry-run
  *   node scripts/fix-spotify-ids.mjs --limit 50   # test a small batch first
+ *
+ * Re-runnable: already-fixed artists are skipped automatically (they have a
+ * spotify_artist_id now). If Spotify's daily quota kicks in mid-run the script
+ * exits cleanly and prints how many it processed — just re-run tomorrow.
  */
 
 import { createClient } from '@supabase/supabase-js'
@@ -68,17 +72,41 @@ async function getToken() {
   return access_token
 }
 
-async function searchSpotify(name) {
+// Thrown when Spotify returns a long Retry-After so main() can exit cleanly.
+class RateLimitError extends Error {
+  constructor(waitSecs) {
+    super(`Spotify daily quota hit — Retry-After: ${waitSecs}s (~${Math.round(waitSecs / 3600)}h)`)
+    this.waitSecs = waitSecs
+  }
+}
+
+async function searchSpotify(name, retries = 4) {
   const token = await getToken()
-  const res = await fetch(
-    `https://api.spotify.com/v1/search?q=${encodeURIComponent(name)}&type=artist&limit=1`,
-    { headers: { Authorization: `Bearer ${token}` } }
-  )
+  let res
+  try {
+    res = await fetch(
+      `https://api.spotify.com/v1/search?q=${encodeURIComponent(name)}&type=artist&limit=1`,
+      { headers: { Authorization: `Bearer ${token}` }, signal: AbortSignal.timeout(10_000) }
+    )
+  } catch (err) {
+    // Network-level failures (ECONNRESET, ETIMEDOUT, etc.) — retry with backoff
+    if (retries > 0) {
+      const delay = (5 - retries) * 3000 // 3s, 6s, 9s, 12s
+      process.stdout.write(` [net err, retry in ${delay / 1000}s]`)
+      await new Promise(r => setTimeout(r, delay))
+      return searchSpotify(name, retries - 1)
+    }
+    return null // give up after 4 retries, treat as not found
+  }
   if (res.status === 429) {
     const wait = parseInt(res.headers.get('Retry-After') || '10', 10)
+    if (wait > 300) {
+      // Daily quota — don't sleep for hours, just bail so the user can re-run tomorrow.
+      throw new RateLimitError(wait)
+    }
     process.stdout.write(` [rate limit, wait ${wait}s]`)
     await new Promise(r => setTimeout(r, wait * 1000))
-    return searchSpotify(name)
+    return searchSpotify(name, retries)
   }
   if (!res.ok) return null
   const data = await res.json()
@@ -104,7 +132,7 @@ function updateArtistMap(ticker, spotifyId) {
 
   // Append before closing }
   const closeIdx = content.lastIndexOf('}')
-  const newLine  = `  ${ticker.padEnd(14)} '${spotifyId}',\n`
+  const newLine  = `  ${(ticker + ':').padEnd(16)} '${spotifyId}',\n`
   content = content.slice(0, closeIdx) + newLine + content.slice(closeIdx)
   writeFileSync(mapPath, content, 'utf8')
 }
@@ -114,20 +142,31 @@ async function main() {
   console.log('\n🔍 SPOTLIGHT Spotify ID Fixer\n')
   if (DRY) console.log('  [DRY RUN]\n')
 
-  // Load all creators without Spotify ID
-  const { data: creators, error } = await admin
-    .from('creators')
-    .select('id, name, ticker')
-    .or('spotify_artist_id.is.null,spotify_artist_id.eq.')
-    .order('name')
+  // ── Fetch ALL missing creators with Supabase pagination (default page = 1000) ─
+  const PAGE = 1000
+  const creators = []
+  let from = 0
+  while (true) {
+    const { data, error } = await admin
+      .from('creators')
+      .select('id, name, ticker')
+      .or('spotify_artist_id.is.null,spotify_artist_id.eq.')
+      .order('name')
+      .range(from, from + PAGE - 1)
+    if (error) throw new Error(error.message)
+    if (!data || data.length === 0) break
+    creators.push(...data)
+    if (data.length < PAGE) break   // last page
+    from += PAGE
+  }
 
-  if (error) throw new Error(error.message)
   console.log(`  Found ${creators.length} creators without Spotify ID\n`)
 
-  const toProcess = creators.slice(0, LIMIT)
+  const toProcess = LIMIT < Infinity ? creators.slice(0, LIMIT) : creators
   if (LIMIT < Infinity) console.log(`  Processing first ${toProcess.length}\n`)
 
   let found = 0, notFound = 0, nameFixed = 0, errors = 0
+  const notFoundNames = []
 
   for (let i = 0; i < toProcess.length; i++) {
     const c = toProcess[i]
@@ -138,16 +177,27 @@ async function main() {
       `  [${i + 1}/${toProcess.length}] ${cleanedName}${nameChanged ? ` (was: "${c.name}")` : ''}… `
     )
 
-    const artist = await searchSpotify(cleanedName)
+    let artist
+    try {
+      artist = await searchSpotify(cleanedName)
+    } catch (e) {
+      if (e instanceof RateLimitError) {
+        console.log(`\n\n  ⚠  ${e.message}`)
+        console.log(`  Processed ${i} of ${toProcess.length} this run.`)
+        console.log('  Re-run the script tomorrow — already-fixed artists are skipped.\n')
+        printSummary(found, notFound, nameFixed, errors, notFoundNames)
+        return
+      }
+      throw e
+    }
 
     if (!artist) {
       console.log('✗ not found')
       notFound++
-      // Still fix the name in DB if it had a prefix
+      notFoundNames.push(cleanedName)
       if (nameChanged && !DRY) {
         await admin.from('creators').update({ name: cleanedName }).eq('id', c.id)
       }
-      // Small delay between searches
       await new Promise(r => setTimeout(r, 100))
       continue
     }
@@ -172,21 +222,24 @@ async function main() {
       else updateArtistMap(c.ticker, artist.id)
     }
 
-    // Pace requests — 120ms gap (~8 req/s, well under 100 req/s limit)
+    // Pace requests — 120ms gap (~8 req/s, well under Spotify's 100 req/s limit)
     await new Promise(r => setTimeout(r, 120))
   }
 
+  printSummary(found, notFound, nameFixed, errors, notFoundNames)
+}
+
+function printSummary(found, notFound, nameFixed, errors, notFoundNames) {
   console.log('\n─────────────────────────────────')
   console.log(`  Found on Spotify:  ${found}`)
   console.log(`  Not found:         ${notFound}`)
   console.log(`  Names cleaned:     ${nameFixed}`)
   if (errors) console.log(`  DB errors:         ${errors}`)
   console.log('')
-
-  if (notFound > 0 && notFound <= 30) {
-    const notFoundNames = toProcess
-      .filter((_, i) => /* recompute */ false) // placeholder
-    console.log('  Run again for remaining artists or check their names manually.\n')
+  if (notFoundNames.length > 0 && notFoundNames.length <= 40) {
+    console.log('  Not found:')
+    notFoundNames.forEach(n => console.log(`    • ${n}`))
+    console.log('')
   }
 }
 

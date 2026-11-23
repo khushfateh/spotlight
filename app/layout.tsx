@@ -1,6 +1,14 @@
 import type { Metadata, Viewport } from 'next'
+import { Cormorant_Garamond } from 'next/font/google'
 import './globals.css'
 import AppShell from '@/components/layout/AppShell'
+
+const cormorant = Cormorant_Garamond({
+  subsets:  ['latin'],
+  weight:   ['300', '400', '500'],
+  display:  'swap',
+  variable: '--font-cormorant',
+})
 
 export const metadata: Metadata = {
   title: 'SPOTLIGHT – The Private Market for Cultural Icons',
@@ -17,7 +25,7 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en">
+    <html lang="en" className={cormorant.variable}>
       <body>
         <AppShell>{children}</AppShell>
       </body>

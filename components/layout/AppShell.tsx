@@ -20,8 +20,10 @@ function InnerShell({ children }: { children: ReactNode }) {
   const pathname = usePathname()
   const router = useRouter()
   const { isAuthenticated, isLoading, isNewUser, needsUsername } = useAuth()
-  const isAuthFlow = AUTH_FLOW_ROUTES.some(r => pathname.startsWith(r))
-  const isProtected = PROTECTED_ROUTES.some(r => pathname.startsWith(r))
+  const isAuthFlow    = AUTH_FLOW_ROUTES.some(r => pathname.startsWith(r))
+  const isProtected   = PROTECTED_ROUTES.some(r => pathname.startsWith(r))
+  // Root page is the digital exhibition — full screen, own chrome (GlassNav)
+  const isExhibition  = pathname === '/'
 
   useEffect(() => {
     if (isLoading) return
@@ -37,6 +39,11 @@ function InnerShell({ children }: { children: ReactNode }) {
     const isLoginOrSignup = ['/login', '/signup'].some(r => pathname.startsWith(r))
     if (isAuthenticated && isLoginOrSignup) router.replace('/')
   }, [isAuthenticated, isLoading, isProtected, isNewUser, needsUsername, pathname, router])
+
+  if (isExhibition) {
+    // Exhibition homepage: full-bleed, zero padding, own nav (GlassNav)
+    return <div style={{ background: '#050508', overflowX: 'clip' }}>{children}</div>
+  }
 
   if (isAuthFlow) {
     return <div className="min-h-screen bg-hype-bg">{children}</div>
