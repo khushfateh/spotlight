@@ -145,7 +145,11 @@ export default function RequestArtistModal({ isOpen, initialName = '', onClose }
             style={{ position: 'fixed', inset: 0, zIndex: 200, background: 'rgba(0,0,0,0.78)', backdropFilter: 'blur(8px)' }}
           />
 
-          {/* Modal */}
+          {/* Modal — centering wrapper keeps transform(-50%,-50%) out of Framer Motion's hands */}
+          <div
+            key="modal-centering"
+            style={{ position: 'fixed', inset: 0, zIndex: 201, display: 'flex', alignItems: 'center', justifyContent: 'center', pointerEvents: 'none' }}
+          >
           <motion.div
             key="modal"
             initial={{ opacity: 0, y: 24, scale: 0.97 }}
@@ -153,9 +157,7 @@ export default function RequestArtistModal({ isOpen, initialName = '', onClose }
             exit={{ opacity: 0, y: 16, scale: 0.97 }}
             transition={{ type: 'spring', stiffness: 320, damping: 28 }}
             style={{
-              position: 'fixed', top: '50%', left: '50%',
-              transform: 'translate(-50%, -50%)',
-              zIndex: 201,
+              pointerEvents: 'auto',
               width: 'min(560px, calc(100vw - 32px))',
               maxHeight: 'calc(100svh - 48px)',
               overflowY: 'auto',
@@ -370,6 +372,7 @@ export default function RequestArtistModal({ isOpen, initialName = '', onClose }
               )}
             </div>
           </motion.div>
+          </div>
         </>
       )}
     </AnimatePresence>
