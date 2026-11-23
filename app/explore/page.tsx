@@ -1,13 +1,13 @@
 'use client'
 /* eslint-disable @next/next/no-img-element */
 
-import { useState, useMemo, useEffect } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
+import { useState, useMemo, useEffect, useRef } from 'react'
+import { AnimatePresence, motion }  from 'framer-motion'
 import { Search, X, Layers, TrendingUp, Gem, Zap, Star, Flame } from 'lucide-react'
 import Link from 'next/link'
-import TradeSheet from '@/components/trading/TradeSheet'
-import { useTradeSheet } from '@/hooks/useTradeSheet'
-import SpotterAuthModal from '@/components/auth/SpotterAuthModal'
+import TradeSheet          from '@/components/trading/TradeSheet'
+import { useTradeSheet }   from '@/hooks/useTradeSheet'
+import SpotterAuthModal    from '@/components/auth/SpotterAuthModal'
 import { trackAnonymousSpotAttempt } from '@/lib/services/anonymousTrackingService'
 import {
   getCreatorsByCategory,
@@ -18,85 +18,109 @@ import {
 import { genres } from '@/lib/mock-data/genres'
 import { getCreatorsInGenre } from '@/lib/mock-data/genres'
 import { cn } from '@/lib/utils'
-import { DiscoverStack } from '@/components/effects/DiscoverStack'
+import { DiscoverStack }   from '@/components/effects/DiscoverStack'
 import { useDiscoverFeed } from '@/hooks/useDiscoverFeed'
-import { useAuth } from '@/context/AuthContext'
-import { useSpots } from '@/hooks/useSpots'
+import { useAuth }         from '@/context/AuthContext'
+import { useSpots }        from '@/hooks/useSpots'
 import { logCreatorSearch } from '@/lib/services/interactionService'
 import type { Creator, CreatorCategory } from '@/types'
+import ObservatoryScene    from '@/components/experience/observatory/ObservatoryScene'
+import { obsState }        from '@/components/experience/observatory/observatoryState'
 
-const ease = [0.16, 1, 0.3, 1] as const
+// ─────────────────────────────────────────────────────────────────────────────
+// Design tokens (local — DO NOT export)
+// ─────────────────────────────────────────────────────────────────────────────
+const GOLD    = '#C9A84C'
+const VOID    = '#050508'
+const GLASS_BG     = 'rgba(7,5,13,0.72)'
+const GLASS_BORDER = `1px solid rgba(201,168,76,0.15)`
+const GLASS_FOCUS  = `1px solid rgba(201,168,76,0.52)`
+const BLUR         = 'blur(22px)'
 
-// ── Discovery Lens ─────────────────────────────────────────────────────────────
-
-type Lens = {
-  id: string
-  label: string
-  icon: React.ReactNode
-  description: string
-  color: string
-}
+// ─────────────────────────────────────────────────────────────────────────────
+// Lens definitions (unchanged from original)
+// ─────────────────────────────────────────────────────────────────────────────
+type Lens = { id:string; label:string; icon:React.ReactNode; description:string }
 
 const LENSES: Lens[] = [
-  { id: 'trending',    label: 'Trending',      icon: <Flame size={14} />,     description: 'Highest momentum right now',     color: 'text-orange-400 border-orange-400/30 bg-orange-400/10' },
-  { id: 'rising',     label: 'Rising Fast',   icon: <TrendingUp size={14} />, description: 'Biggest score gains this week',   color: 'text-emerald-400 border-emerald-400/30 bg-emerald-400/10' },
-  { id: 'breakout',   label: 'Near Breakout', icon: <Zap size={14} />,        description: 'About to cross to next tier',     color: 'text-hype-gold border-hype-gold/30 bg-hype-gold/10' },
-  { id: 'gems',       label: 'Hidden Gems',   icon: <Gem size={14} />,        description: 'Under the radar, accelerating',   color: 'text-blue-400 border-blue-400/30 bg-blue-400/10' },
-  { id: 'editors',    label: "Editor's Picks", icon: <Star size={14} />,      description: 'Curated by the SPOTLIGHT team',   color: 'text-purple-400 border-purple-400/30 bg-purple-400/10' },
+  { id:'trending',  label:'Trending',       icon:<Flame size={12}/>,      description:'Highest momentum right now'    },
+  { id:'rising',    label:'Rising Fast',    icon:<TrendingUp size={12}/>, description:'Biggest score gains this week' },
+  { id:'breakout',  label:'Near Breakout',  icon:<Zap size={12}/>,        description:'About to cross to next tier'   },
+  { id:'gems',      label:'Hidden Gems',    icon:<Gem size={12}/>,        description:'Under the radar, accelerating' },
+  { id:'editors',   label:"Editor's Picks", icon:<Star size={12}/>,       description:'Curated by the SPOTLIGHT team' },
 ]
 
-// ── Creator list row ───────────────────────────────────────────────────────────
-
-function CreatorListRow({ creator, rank, onBuy, onSelect, isSpotted = false }: { creator: Creator; rank: number; onBuy: (c: Creator) => void; onSelect?: () => void; isSpotted?: boolean }) {
+// ─────────────────────────────────────────────────────────────────────────────
+// Crystal Creator Row
+// ─────────────────────────────────────────────────────────────────────────────
+function CreatorListRow({ creator, rank, onBuy, onSelect, isSpotted = false }: {
+  creator: Creator; rank: number; onBuy: (c: Creator) => void
+  onSelect?: () => void; isSpotted?: boolean
+}) {
   const { score, delta } = getMomentum(creator.ticker)
   const tier = getMomentumTier(score)
-  const isDeltaUp = delta >= 0
+  const up   = delta >= 0
 
   return (
     <Link href={`/creator/${creator.ticker.toLowerCase()}`} onClick={onSelect}>
       <motion.div
-        initial={{ opacity: 0, x: rank % 2 === 0 ? -64 : 64 }}
-        whileInView={{ opacity: 1, x: 0 }}
-        viewport={{ once: true, amount: 0.1 }}
-        transition={{ type: 'spring', stiffness: 70, damping: 18, delay: Math.min(rank * 0.04, 0.28) }}
-        whileHover={{ x: rank % 2 === 0 ? 5 : -5, backgroundColor: 'rgba(255,255,255,0.03)' }}
+        initial={{ opacity:0, x: rank % 2 === 0 ? -40 : 40 }}
+        whileInView={{ opacity:1, x:0 }}
+        viewport={{ once:true, amount:0.1 }}
+        transition={{ type:'spring', stiffness:60, damping:18, delay: Math.min(rank*0.04, 0.28) }}
+        whileHover={{ x: rank % 2 === 0 ? 4 : -4 }}
         className="flex items-center gap-3 px-4 py-3.5 transition-colors group"
+        style={{ borderBottom: '1px solid rgba(201,168,76,0.06)' }}
       >
-        <span className="text-hype-dim text-[11px] font-mono w-5 flex-shrink-0 text-center">{rank}</span>
+        {/* Rank */}
+        <span style={{ fontFamily:'JetBrains Mono, monospace', fontSize:10, color:'rgba(201,168,76,0.28)', width:18, flexShrink:0, textAlign:'center' }}>
+          {String(rank).padStart(2,'0')}
+        </span>
 
+        {/* Avatar */}
         {creator.imageUrl ? (
-          <div className="w-11 h-11 rounded-full overflow-hidden flex-shrink-0 ring-1 ring-white/15">
+          <div className="w-11 h-11 rounded-full overflow-hidden flex-shrink-0" style={{ boxShadow:`0 0 0 1px rgba(201,168,76,0.18)` }}>
             <img src={creator.imageUrl} alt="" className="w-full h-full object-cover object-center" />
           </div>
         ) : (
-          <div className={cn('w-11 h-11 rounded-full bg-gradient-to-br flex-shrink-0 ring-1 ring-white/10', creator.coverColor)} />
+          <div className={cn('w-11 h-11 rounded-full flex-shrink-0', creator.coverColor)}
+               style={{ boxShadow:`0 0 0 1px rgba(201,168,76,0.18)` }} />
         )}
 
+        {/* Name + ticker */}
         <div className="flex-1 min-w-0">
-          <p className="text-hype-text text-sm font-semibold truncate">{creator.name}</p>
-          <p className="text-hype-muted text-[10px] font-mono">${creator.ticker} · {creator.category}</p>
-        </div>
-
-        <div className="text-right flex-shrink-0">
-          <div className="flex items-baseline justify-end gap-1.5">
-            <p className="text-hype-text text-sm font-black tabular">{score}</p>
-            <p className="text-hype-gold text-[8px] font-semibold uppercase tracking-wider">{tier}</p>
-          </div>
-          <p className={cn('text-[10px] font-semibold tabular', isDeltaUp ? 'text-hype-green' : 'text-hype-red')}>
-            {isDeltaUp ? '+' : ''}{delta} pts
+          <p className="text-sm font-semibold truncate" style={{ color:'rgba(255,255,255,0.88)' }}>{creator.name}</p>
+          <p style={{ fontFamily:'JetBrains Mono, monospace', fontSize:10, color:'rgba(201,168,76,0.40)' }}>
+            ${creator.ticker} · {creator.category}
           </p>
         </div>
 
+        {/* Score */}
+        <div className="text-right flex-shrink-0">
+          <div className="flex items-baseline justify-end gap-1.5">
+            <p className="text-sm font-black tabular-nums" style={{ color:'rgba(255,255,255,0.85)' }}>{score}</p>
+            <p style={{ fontFamily:'JetBrains Mono, monospace', fontSize:7, color:GOLD, fontWeight:700, textTransform:'uppercase', letterSpacing:'0.08em' }}>{tier}</p>
+          </div>
+          <p className="text-[10px] font-semibold tabular-nums" style={{ color: up ? '#52d78a' : '#e05555' }}>
+            {up ? '+' : ''}{delta} pts
+          </p>
+        </div>
+
+        {/* Action */}
         {isSpotted ? (
-          <span className="flex-shrink-0 px-2.5 py-1.5 border border-hype-gold/40 text-hype-gold text-[10px] font-semibold rounded-lg bg-hype-gold/10">
-            ✦ Spotted
+          <span className="flex-shrink-0 px-2.5 py-1.5 text-[10px] font-semibold"
+                style={{ border:`1px solid rgba(201,168,76,0.35)`, color:GOLD, borderRadius:2, background:'rgba(201,168,76,0.08)', fontFamily:'JetBrains Mono, monospace' }}>
+            ✦ SPOTTED
           </span>
         ) : (
           <button
             onClick={e => { e.preventDefault(); onBuy(creator) }}
-            className="flex-shrink-0 px-2.5 py-1.5 border border-hype-border text-hype-muted text-[10px] font-semibold rounded-lg hover:bg-hype-gold hover:text-[#0A0A0A] hover:border-hype-gold active:scale-95 transition-all"
+            className="flex-shrink-0 px-2.5 py-1.5 text-[10px] font-semibold transition-all active:scale-95"
+            style={{ border:'1px solid rgba(255,255,255,0.12)', color:'rgba(255,255,255,0.40)', borderRadius:2, fontFamily:'JetBrains Mono, monospace' }}
+            onMouseEnter={e => { const t=e.currentTarget; t.style.background=GOLD; t.style.color='#0A0A0A'; t.style.border=`1px solid ${GOLD}` }}
+            onMouseLeave={e => { const t=e.currentTarget; t.style.background='transparent'; t.style.color='rgba(255,255,255,0.40)'; t.style.border='1px solid rgba(255,255,255,0.12)' }}
           >
-            Spot
+            SPOT
           </button>
         )}
       </motion.div>
@@ -104,71 +128,317 @@ function CreatorListRow({ creator, rank, onBuy, onSelect, isSpotted = false }: {
   )
 }
 
-// ── Genre pill card ────────────────────────────────────────────────────────────
-
-function GenreCard({ genre, onSelect, index = 0 }: { genre: typeof genres[0]; onSelect: (id: string) => void; index?: number }) {
+// ─────────────────────────────────────────────────────────────────────────────
+// Crystal Genre Card
+// ─────────────────────────────────────────────────────────────────────────────
+function GenreCard({ genre, onSelect, index=0 }: { genre: typeof genres[0]; onSelect:(id:string)=>void; index?:number }) {
   return (
     <motion.button
       onClick={() => onSelect(genre.id)}
-      initial={{ opacity: 0, y: 24, x: 16 }}
-      whileInView={{ opacity: 1, y: 0, x: 0 }}
-      viewport={{ once: true, amount: 0.1 }}
-      transition={{ type: 'spring', stiffness: 70, damping: 18, delay: index * 0.06 }}
-      whileHover={{ scale: 1.05, y: -3 }}
-      whileTap={{ scale: 0.97 }}
-      className="flex-shrink-0 relative rounded-2xl overflow-hidden text-left"
-      style={{ width: 140, height: 100 }}
+      initial={{ opacity:0, y:16, x:12 }}
+      whileInView={{ opacity:1, y:0, x:0 }}
+      viewport={{ once:true, amount:0.1 }}
+      transition={{ type:'spring', stiffness:70, damping:18, delay: index * 0.05 }}
+      whileHover={{ scale:1.05, y:-3 }}
+      whileTap={{ scale:0.97 }}
+      className="relative rounded-sm overflow-hidden text-left w-full"
+      style={{ height:90, borderRadius:2 }}
     >
       {genre.imageUrl ? (
-        <img
-          src={genre.imageUrl}
-          alt=""
-          className="absolute inset-0 w-full h-full object-cover object-center scale-105"
-          style={{ transition: 'transform 0.4s ease' }}
-        />
+        <img src={genre.imageUrl} alt="" className="absolute inset-0 w-full h-full object-cover object-center scale-105" />
       ) : (
         <div className={cn('absolute inset-0 bg-gradient-to-br', genre.coverColor)} />
       )}
-      {/* Gradient overlay: transparent top → dark bottom for text legibility */}
-      <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/35 to-black/15" />
-      <div className="absolute inset-0 p-3 flex flex-col justify-end">
-        <span className="text-base leading-none">{genre.emoji}</span>
-        <p className="text-white text-[11px] font-bold leading-tight mt-1">{genre.label}</p>
+      <div className="absolute inset-0 bg-gradient-to-t from-black/92 via-black/30 to-black/10" />
+      {/* Crystal frame */}
+      <div className="absolute inset-0" style={{ border:'1px solid rgba(201,168,76,0.14)', borderRadius:2 }} />
+      <div className="absolute inset-0 p-2.5 flex flex-col justify-end">
+        <span className="text-sm leading-none">{genre.emoji}</span>
+        <p className="text-white text-[10px] font-bold leading-tight mt-1 uppercase tracking-wider" style={{ fontFamily:'JetBrains Mono, monospace' }}>{genre.label}</p>
       </div>
     </motion.button>
   )
 }
 
-// ── Page ──────────────────────────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────────────────────
+// Crystal Lens Chip
+// ─────────────────────────────────────────────────────────────────────────────
+const LENS_GLOW: Record<string, string> = {
+  trending: 'rgba(251,146,60,0.18)',
+  rising:   'rgba(52,211,153,0.18)',
+  breakout: 'rgba(201,168,76,0.22)',
+  gems:     'rgba(96,165,250,0.18)',
+  editors:  'rgba(167,139,250,0.18)',
+}
+const LENS_COLOR: Record<string, string> = {
+  trending: '#fb923c',
+  rising:   '#34d399',
+  breakout: GOLD,
+  gems:     '#60a5fa',
+  editors:  '#a78bfa',
+}
+
+function LensChip({ lens, active, onSelect }: { lens:Lens; active:boolean; onSelect:()=>void }) {
+  const c = LENS_COLOR[lens.id] ?? GOLD
+  const g = LENS_GLOW[lens.id] ?? 'rgba(201,168,76,0.18)'
+  return (
+    <motion.button
+      onClick={onSelect}
+      whileTap={{ scale:0.93 }}
+      whileHover={{ y:-1 }}
+      className="flex-shrink-0 flex items-center gap-1.5 transition-all"
+      style={{
+        padding:'5px 12px',
+        borderRadius:2,
+        fontSize:11,
+        fontFamily:'JetBrains Mono, monospace',
+        fontWeight:600,
+        border: active ? `1px solid ${c}` : '1px solid rgba(255,255,255,0.10)',
+        color:  active ? c : 'rgba(255,255,255,0.38)',
+        background: active ? g : 'rgba(7,5,13,0.50)',
+        backdropFilter: BLUR,
+        WebkitBackdropFilter: BLUR,
+        letterSpacing: '0.04em',
+        textTransform: 'uppercase',
+        boxShadow: active ? `0 0 14px ${g}` : 'none',
+        transition: 'all 0.2s ease',
+      }}
+    >
+      {lens.icon}
+      {lens.label}
+    </motion.button>
+  )
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Section heading
+// ─────────────────────────────────────────────────────────────────────────────
+function SectionEyebrow({ label }: { label:string }) {
+  return (
+    <p style={{
+      fontFamily: 'JetBrains Mono, monospace',
+      fontSize: 9,
+      color: 'rgba(201,168,76,0.40)',
+      fontWeight: 600,
+      letterSpacing: '0.28em',
+      textTransform: 'uppercase',
+      marginBottom: 10,
+    }}>
+      {label}
+    </p>
+  )
+}
+
+function SectionTitle({ children, icon }: { children:React.ReactNode; icon?:React.ReactNode }) {
+  return (
+    <p className="flex items-center gap-2 mb-1" style={{
+      fontFamily: '"Cormorant Garamond", Georgia, serif',
+      fontWeight: 300,
+      fontSize: 22,
+      color: 'rgba(255,255,255,0.90)',
+      letterSpacing: '0.01em',
+    }}>
+      {icon && <span style={{ color:GOLD }}>{icon}</span>}
+      {children}
+    </p>
+  )
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Glass container
+// ─────────────────────────────────────────────────────────────────────────────
+function GlassContainer({ children, style }: { children:React.ReactNode; style?:React.CSSProperties }) {
+  return (
+    <div style={{
+      background: GLASS_BG,
+      backdropFilter: BLUR,
+      WebkitBackdropFilter: BLUR,
+      border: GLASS_BORDER,
+      borderRadius: 3,
+      overflow: 'hidden',
+      ...style,
+    }}>
+      {children}
+    </div>
+  )
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Near Breakout card
+// ─────────────────────────────────────────────────────────────────────────────
+function BreakoutCard({ creator, index }: { creator:Creator; index:number }) {
+  const { score, delta } = getMomentum(creator.ticker)
+  const tier = getMomentumTier(score)
+  return (
+    <motion.div
+      initial={{ opacity:0, y:20, x:16 }}
+      whileInView={{ opacity:1, y:0, x:0 }}
+      viewport={{ once:true, amount:0.1 }}
+      whileHover={{ scale:1.03, y:-3 }}
+      transition={{ type:'spring', stiffness:70, damping:18, delay: index*0.07 }}
+      className="flex-shrink-0"
+      style={{ width:118 }}
+    >
+      <Link href={`/creator/${creator.ticker.toLowerCase()}`}>
+        <div className="relative overflow-hidden" style={{ height:172, borderRadius:2, border:'1px solid rgba(201,168,76,0.12)' }}>
+          {creator.imageUrl ? (
+            <img src={creator.imageUrl} alt="" className="absolute inset-0 w-full h-full object-cover object-top" />
+          ) : (
+            <div className={cn('absolute inset-0 bg-gradient-to-br', creator.coverColor)} />
+          )}
+          <div className="absolute inset-0 bg-gradient-to-t from-black/96 via-black/25 to-transparent" />
+          {/* Delta badge */}
+          <div className="absolute top-2 left-2">
+            <span style={{
+              display:'inline-flex', alignItems:'center', gap:2,
+              padding:'2px 6px', borderRadius:1,
+              background:'rgba(201,168,76,0.18)',
+              color:GOLD,
+              fontSize:8, fontWeight:700,
+              fontFamily:'JetBrains Mono, monospace',
+              border:'1px solid rgba(201,168,76,0.25)',
+            }}>
+              <TrendingUp size={6} /> +{delta}
+            </span>
+          </div>
+          <div className="absolute bottom-0 p-2.5">
+            <p className="text-white font-semibold leading-tight" style={{ fontSize:11 }}>{creator.name}</p>
+            <p className="font-black tabular-nums mt-0.5" style={{ fontSize:13, color:'rgba(255,255,255,0.90)' }}>{score}</p>
+            <p style={{ fontFamily:'JetBrains Mono, monospace', fontSize:7, color:GOLD, fontWeight:700, textTransform:'uppercase', letterSpacing:'0.08em' }}>{tier}</p>
+          </div>
+        </div>
+      </Link>
+    </motion.div>
+  )
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Editorial Discovery Card — shared across all 4 sections
+// ─────────────────────────────────────────────────────────────────────────────
+function EditorialCard({ creator, index, badge, accentColor }: {
+  creator: Creator
+  index: number
+  badge: string
+  accentColor: { border: string; bg: string; text: string }
+}) {
+  const { score, delta } = getMomentum(creator.ticker)
+  const tier = getMomentumTier(score)
+  return (
+    <motion.div
+      initial={{ opacity:0, y:22 }}
+      whileInView={{ opacity:1, y:0 }}
+      viewport={{ once:true, amount:0.1 }}
+      whileHover={{ scale:1.04, y:-5 }}
+      transition={{ type:'spring', stiffness:70, damping:18, delay: index*0.07 }}
+      className="flex-shrink-0"
+      style={{ width:120 }}
+    >
+      <Link href={`/creator/${creator.ticker.toLowerCase()}`}>
+        <div className="relative overflow-hidden" style={{ height:178, borderRadius:2, border:`1px solid ${accentColor.border}` }}>
+          {creator.imageUrl ? (
+            <img src={creator.imageUrl} alt="" className="absolute inset-0 w-full h-full object-cover object-top" />
+          ) : (
+            <div className={cn('absolute inset-0 bg-gradient-to-br', creator.coverColor)} />
+          )}
+          <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/22 to-transparent" />
+          {/* Badge */}
+          <div className="absolute top-2 left-2">
+            <span style={{
+              display:'inline-flex', alignItems:'center', gap:3,
+              padding:'2px 7px', borderRadius:1,
+              background: accentColor.bg,
+              color: accentColor.text,
+              fontSize:7, fontWeight:700,
+              fontFamily:'JetBrains Mono, monospace',
+              border:`1px solid ${accentColor.border}`,
+              letterSpacing:'0.08em',
+              whiteSpace:'nowrap',
+            }}>
+              {badge}
+            </span>
+          </div>
+          {/* Info */}
+          <div className="absolute bottom-0 left-0 right-0 p-2.5">
+            <p className="text-white font-semibold leading-tight truncate" style={{ fontSize:11 }}>{creator.name}</p>
+            <div className="flex items-baseline gap-1.5 mt-0.5">
+              <p className="font-black tabular-nums" style={{ fontSize:14, color:'rgba(255,255,255,0.92)' }}>{score}</p>
+              <p style={{ fontFamily:'JetBrains Mono, monospace', fontSize:7, color:GOLD, fontWeight:700, textTransform:'uppercase', letterSpacing:'0.08em' }}>{tier}</p>
+            </div>
+            <p className="tabular-nums" style={{ fontFamily:'JetBrains Mono, monospace', fontSize:9, fontWeight:600,
+                        color: delta >= 0 ? '#52d78a' : '#e05555', marginTop:1 }}>
+              {delta >= 0 ? '+' : ''}{delta} pts
+            </p>
+          </div>
+        </div>
+      </Link>
+    </motion.div>
+  )
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Main Page
+// ─────────────────────────────────────────────────────────────────────────────
 
 export default function ExplorePage() {
-  const [query, setQuery] = useState('')
-  const [activeLens, setActiveLens] = useState<string | null>(null)
-  const [activeGenre, setActiveGenre] = useState<string | null>(null)
-  const [discoverMode, setDiscoverMode] = useState(false)
+  const [query,          setQuery]          = useState('')
+  const [activeLens,     setActiveLens]     = useState<string|null>(null)
+  const [activeGenre,    setActiveGenre]    = useState<string|null>(null)
+  const [discoverMode,   setDiscoverMode]   = useState(false)
   const [discoverCreators, setDiscoverCreators] = useState<Creator[]>([])
-  const trade = useTradeSheet()
+  const [searchFocused,  setSearchFocused]  = useState(false)
+  const [spotterAuthCreator, setSpotterAuthCreator] = useState<Creator|null>(null)
+  const [page, setPage] = useState(1)
+  const scrollRef      = useRef<HTMLDivElement>(null)  // unused
+  const allCreatorsRef = useRef<HTMLElement>(null)
+  const trade       = useTradeSheet()
+  const { currentUser, isAuthenticated } = useAuth()
+  const { spottedTickers } = useSpots()
 
+  // ── Data ──────────────────────────────────────────────────────────────────
+  const allCreators = useMemo(() => getCreatorsByCategory('All' as CreatorCategory), [])
+  const gainers     = useMemo(() => getTrendingCreators(5), [])
+  const { engineCreators, loading: engineLoading } = useDiscoverFeed(activeLens)
+
+  // ── Sync cursor to obsState ────────────────────────────────────────────────
+  useEffect(() => {
+    function onMove(e: MouseEvent) {
+      obsState.pointerX = (e.clientX / window.innerWidth  - 0.5) * 2
+      obsState.pointerY = (e.clientY / window.innerHeight - 0.5) * -2
+    }
+    window.addEventListener('mousemove', onMove, { passive:true })
+    return () => window.removeEventListener('mousemove', onMove)
+  }, [])
+
+  // ── Sync window scroll to obsState ────────────────────────────────────────
+  useEffect(() => {
+    function onScroll() {
+      const max = document.documentElement.scrollHeight - window.innerHeight
+      obsState.scrollProgress = max > 0 ? window.scrollY / max : 0
+    }
+    window.addEventListener('scroll', onScroll, { passive:true })
+    return () => window.removeEventListener('scroll', onScroll)
+  }, [])
+
+  // ── Search interaction logging ─────────────────────────────────────────────
+  useEffect(() => {
+    if (!query.trim()) return
+    const t = setTimeout(() => logCreatorSearch(currentUser?.id ?? null, query.trim()), 800)
+    return () => clearTimeout(t)
+  }, [query, currentUser?.id])
+
+  // ── Discover mode ─────────────────────────────────────────────────────────
   function openDiscover() {
     const all = getCreatorsByCategory('All' as CreatorCategory)
-    setDiscoverCreators([...all].sort((a, b) => getMomentum(b.ticker).delta - getMomentum(a.ticker).delta))
+    setDiscoverCreators([...all].sort((a,b) => getMomentum(b.ticker).delta - getMomentum(a.ticker).delta))
     setDiscoverMode(true)
   }
 
-  function handleGenreSelect(genreId: string) {
-    setActiveGenre(activeGenre === genreId ? null : genreId)
-    setActiveLens(null)
-  }
+  // ── Filter handlers (reset to page 1 on any filter change) ───────────────
+  function handleGenreSelect(id:string) { setActiveGenre(activeGenre===id ? null:id); setActiveLens(null); setPage(1) }
+  function handleLensSelect(id:string)  { setActiveLens(activeLens===id ? null:id);   setActiveGenre(null); setPage(1) }
 
-  function handleLensSelect(lensId: string) {
-    setActiveLens(activeLens === lensId ? null : lensId)
-    setActiveGenre(null)
-  }
-
-  const [spotterAuthCreator, setSpotterAuthCreator] = useState<Creator | null>(null)
-  const { currentUser, isAuthenticated } = useAuth()
-
-  function handleBuy(creator: Creator) {
+  // ── Auth-gated spot ───────────────────────────────────────────────────────
+  function handleBuy(creator:Creator) {
     if (!isAuthenticated) {
       trackAnonymousSpotAttempt(creator.ticker, 'explore_page').catch(() => {})
       setSpotterAuthCreator(creator)
@@ -176,22 +446,9 @@ export default function ExplorePage() {
       trade.openBuy(creator)
     }
   }
-  const { spottedTickers } = useSpots()
-  const allCreators = getCreatorsByCategory('All' as CreatorCategory)
-  const gainers = getTrendingCreators(5)
-  const { engineCreators, loading: engineLoading } = useDiscoverFeed(activeLens)
 
-  // Log search interactions
-  useEffect(() => {
-    if (!query.trim()) return
-    const t = setTimeout(() => {
-      logCreatorSearch(currentUser?.id ?? null, query.trim())
-    }, 800)
-    return () => clearTimeout(t)
-  }, [query, currentUser?.id])
-
+  // ── Filtered creator list ──────────────────────────────────────────────────
   const filteredCreators = useMemo(() => {
-    // Search and genre: always client-side
     if (query.trim()) {
       const q = query.toLowerCase()
       return allCreators.filter(c => c.name.toLowerCase().includes(q) || c.ticker.toLowerCase().includes(q))
@@ -200,295 +457,558 @@ export default function ExplorePage() {
       const tickers = getCreatorsInGenre(activeGenre)
       return allCreators.filter(c => tickers.includes(c.ticker))
     }
-    // Lens: use engine results when available, fall back to static sort
     if (activeLens) {
       if (engineCreators.length > 0) return engineCreators
-      // Fallback while loading
       switch (activeLens) {
-        case 'trending':
-          return [...allCreators].sort((a, b) => getMomentum(b.ticker).score - getMomentum(a.ticker).score)
-        case 'rising':
-          return [...allCreators].sort((a, b) => getMomentum(b.ticker).delta - getMomentum(a.ticker).delta).filter(c => getMomentum(c.ticker).delta > 0)
-        case 'breakout':
-          return [...allCreators].filter(c => { const s = getMomentum(c.ticker).score; return s >= 65 && s < 80 }).sort((a, b) => getMomentum(b.ticker).delta - getMomentum(a.ticker).delta)
-        case 'gems':
-          return [...allCreators].filter(c => getMomentum(c.ticker).score < 70 && getMomentum(c.ticker).delta > 5).sort((a, b) => getMomentum(b.ticker).delta - getMomentum(a.ticker).delta)
-        case 'editors':
-          return getTrendingCreators(8)
-        default:
-          return allCreators
+        case 'trending':  return [...allCreators].sort((a,b) => getMomentum(b.ticker).score - getMomentum(a.ticker).score)
+        case 'rising':    return [...allCreators].sort((a,b) => getMomentum(b.ticker).delta - getMomentum(a.ticker).delta).filter(c => getMomentum(c.ticker).delta > 0)
+        case 'breakout':  return [...allCreators].filter(c => { const s=getMomentum(c.ticker).score; return s>=65 && s<80 }).sort((a,b) => getMomentum(b.ticker).delta - getMomentum(a.ticker).delta)
+        case 'gems':      return [...allCreators].filter(c => getMomentum(c.ticker).score<70 && getMomentum(c.ticker).delta>5).sort((a,b) => getMomentum(b.ticker).delta - getMomentum(a.ticker).delta)
+        case 'editors':   return getTrendingCreators(8)
+        default:          return allCreators
       }
     }
-    return [...allCreators].sort((a, b) => getMomentum(b.ticker).score - getMomentum(a.ticker).score)
+    return [...allCreators].sort((a,b) => getMomentum(b.ticker).score - getMomentum(a.ticker).score)
   }, [query, activeLens, activeGenre, allCreators, engineCreators])
 
-  const activeLensData = LENSES.find(l => l.id === activeLens)
+  const activeLensData  = LENSES.find(l => l.id === activeLens)
   const activeGenreData = genres.find(g => g.id === activeGenre)
+
+  // ── Editorial section data ─────────────────────────────────────────────────
+  const nearBreakoutCreators = useMemo(() =>
+    [...allCreators]
+      .filter(c => { const s = getMomentum(c.ticker).score; return s >= 60 && s < 82 })
+      .sort((a,b) => getMomentum(b.ticker).delta - getMomentum(a.ticker).delta)
+      .slice(0, 7),
+  [allCreators])
+
+  const trendingCreators = useMemo(() =>
+    [...allCreators]
+      .sort((a,b) => getMomentum(b.ticker).score - getMomentum(a.ticker).score)
+      .slice(0, 7),
+  [allCreators])
+
+  const hiddenGems = useMemo(() =>
+    [...allCreators]
+      .filter(c => getMomentum(c.ticker).delta > 0 && getMomentum(c.ticker).score < 72)
+      .sort((a,b) => getMomentum(b.ticker).delta - getMomentum(a.ticker).delta)
+      .slice(0, 7),
+  [allCreators])
+
+  const editorsPicks = useMemo(() => getTrendingCreators(6), [])
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // Render
+  // ─────────────────────────────────────────────────────────────────────────
+  const inDefaultMode = !query && !activeLens && !activeGenre
 
   return (
     <>
-      <div className="pb-32">
+      {/* 3D Observatory canvas — full-screen at z-3, handles its own background */}
+      <ObservatoryScene query={query} />
 
-        {/* ── Search hero ───────────────────────────────────────────────── */}
-        <div className="px-5 pt-8 pb-6">
-          <motion.div
-            initial={{ opacity: 0, y: -8 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, ease }}
+      {/* Page content */}
+      <div ref={scrollRef} style={{ position:'relative', zIndex:5, minHeight:'100svh', paddingBottom:160 }}>
+
+        {/* ═══════════════════════════════════════════════════════════════════
+            HERO — full-width discovery panel
+        ═══════════════════════════════════════════════════════════════════ */}
+        <div style={{ minHeight:'calc(100svh - 56px)', display:'flex', flexDirection:'column', justifyContent:'center' }}>
+
+          {/* ── Discovery Control Panel — full width ─────────────────────── */}
+          <div
+            className="w-full flex flex-col justify-center"
+            style={{
+              padding:'clamp(32px,5vh,64px) clamp(24px,5vw,72px)',
+            }}
           >
-            <p className="text-white/30 text-[10px] font-semibold uppercase tracking-[0.25em] mb-3">
-              Discovery Engine
-            </p>
-            <h1 className="text-white font-black text-5xl tracking-tight leading-none mb-6 font-display">
-              Who&apos;s next?
-            </h1>
-
-            {/* Large search bar */}
-            <div className="relative mb-4">
-              <Search size={17} className="absolute left-4 top-1/2 -translate-y-1/2 text-white/30" />
-              <input
-                type="text"
-                value={query}
-                onChange={e => { setQuery(e.target.value); setActiveLens(null); setActiveGenre(null) }}
-                placeholder="Search creators, genres, tickers…"
-                className="w-full bg-white/[0.07] border border-white/10 rounded-2xl pl-11 pr-11 py-4 text-white text-sm placeholder:text-white/25 outline-none focus:border-hype-gold/60 focus:bg-white/[0.09] focus:shadow-[0_0_20px_rgba(201,168,76,0.2)] transition-all"
-              />
-              {query && (
-                <button
-                  onClick={() => setQuery('')}
-                  className="absolute right-4 top-1/2 -translate-y-1/2 text-white/30 hover:text-white/60 transition-colors"
-                >
-                  <X size={15} />
-                </button>
-              )}
-            </div>
-
-            {/* Discover Mode button */}
-            <button
-              onClick={openDiscover}
-              className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/[0.05] border border-white/10 text-white/50 text-xs font-medium hover:border-white/20 hover:text-white/70 transition-all"
+            {/* ── Eyebrow + headline ─────────────────────────────────── */}
+            <motion.div
+              initial={{ opacity:0, y:-14 }}
+              animate={{ opacity:1, y:0 }}
+              transition={{ duration:0.7, ease:[0.16,1,0.3,1] }}
+              style={{ marginBottom:24 }}
             >
-              <Layers size={12} />
-              Swipe Mode — discover by feel
-            </button>
-          </motion.div>
-        </div>
-
-        {/* ── Discovery Lenses ──────────────────────────────────────────── */}
-        {!query && (
-          <motion.section
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 0.5, delay: 0.1 }}
-            className="mb-6"
-          >
-            <div className="px-5 mb-3">
-              <p className="text-white/30 text-[10px] font-semibold uppercase tracking-widest">
-                Discovery Lens
+              <p style={{
+                fontFamily:'JetBrains Mono, monospace',
+                fontSize:9, fontWeight:600,
+                letterSpacing:'0.30em', textTransform:'uppercase',
+                color:'rgba(201,168,76,0.40)', marginBottom:14,
+              }}>
+                ◆ The Observatory · Cultural Discovery
               </p>
-            </div>
-            <div className="flex gap-2 pl-5 overflow-x-auto hide-scrollbar pb-1" style={{ paddingRight: 20 }}>
-              {LENSES.map((lens, idx) => (
-                <motion.button
-                  key={lens.id}
-                  initial={{ opacity: 0, x: 24 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ type: 'spring', stiffness: 70, damping: 18, delay: idx * 0.1 }}
-                  onClick={() => handleLensSelect(lens.id)}
-                  whileTap={{ scale: 0.93 }}
-                  whileHover={{ scale: 1.05, y: -1 }}
-                  className={cn(
-                    'flex-shrink-0 flex items-center gap-1.5 px-3.5 py-2 rounded-full border text-xs font-semibold transition-all',
-                    activeLens === lens.id ? (lens.id === 'breakout' ? 'glass-gold' : lens.color) : 'border-white/10 text-white/40 bg-white/[0.03] hover:border-white/20 hover:text-white/60',
-                  )}
-                >
-                  {lens.icon}
-                  {lens.label}
-                </motion.button>
-              ))}
-            </div>
-
-            {/* Active lens description */}
-            <AnimatePresence>
-              {activeLensData && (
-                <motion.p
-                  initial={{ opacity: 0, height: 0 }}
-                  animate={{ opacity: 1, height: 'auto' }}
-                  exit={{ opacity: 0, height: 0 }}
-                  className="px-5 mt-2 text-white/35 text-xs"
-                >
-                  {activeLensData.description}
-                </motion.p>
-              )}
-            </AnimatePresence>
-          </motion.section>
-        )}
-
-        {/* ── Genre browsing grid ───────────────────────────────────────── */}
-        {!query && !activeLens && (
-          <motion.section
-            initial={{ opacity: 0, y: 16 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.15 }}
-            className="mb-8"
-          >
-            <div className="px-5 mb-3 flex items-center justify-between">
-              <p className="text-white/30 text-[10px] font-semibold uppercase tracking-widest">
-                Browse by genre
+              <h1 style={{
+                fontFamily:'"Cormorant Garamond", Georgia, serif',
+                fontWeight:300,
+                fontSize:'clamp(40px, 5.5vw, 60px)',
+                lineHeight:0.97,
+                letterSpacing:'-0.01em',
+                color:'rgba(255,255,255,0.93)',
+                marginBottom:10,
+              }}>
+                Who&rsquo;s <em style={{ fontStyle:'italic', color:'rgba(201,168,76,0.85)' }}>next?</em>
+              </h1>
+              <p style={{
+                fontFamily:'"Cormorant Garamond", Georgia, serif',
+                fontWeight:300,
+                fontSize:'clamp(15px, 1.8vw, 17px)',
+                color:'rgba(255,255,255,0.36)',
+                letterSpacing:'0.02em',
+              }}>
+                Discover tomorrow&rsquo;s cultural icons before the world does.
               </p>
-              {activeGenre && (
-                <button onClick={() => setActiveGenre(null)} className="text-hype-gold text-[10px] font-medium hover:underline">
-                  Clear
-                </button>
-              )}
-            </div>
-            <div className="flex gap-2.5 pl-5 overflow-x-auto hide-scrollbar pb-2" style={{ paddingRight: 20 }}>
-              {genres.map((genre, i) => (
-                <div key={genre.id} className={cn('transition-all', activeGenre === genre.id ? 'ring-2 ring-hype-gold rounded-2xl' : '')}>
-                  <GenreCard genre={genre} onSelect={handleGenreSelect} index={i} />
-                </div>
-              ))}
-            </div>
-            {activeGenreData && (
-              <p className="px-5 mt-2 text-white/35 text-xs">{activeGenreData.description}</p>
-            )}
-          </motion.section>
-        )}
+            </motion.div>
 
-        {/* ── Near Breakout picks (when no filter active) ───────────────── */}
-        {!query && !activeLens && !activeGenre && (
-          <motion.section
-            initial={{ opacity: 0, y: 32 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, amount: 0.1 }}
-            transition={{ type: 'spring', stiffness: 70, damping: 18 }}
-            className="mb-8"
-          >
-            <div className="px-5 mb-4">
-              <p className="text-hype-text font-black text-lg leading-none tracking-tight flex items-center gap-2">
-                <Zap size={16} className="text-hype-gold" />
-                Near Breakout
-              </p>
-              <p className="text-hype-muted text-xs mt-1">Approaching their next momentum tier</p>
-            </div>
-            <div className="flex gap-3 pl-5 overflow-x-auto hide-scrollbar pb-1" style={{ paddingRight: 20 }}>
-              {gainers.slice(0, 5).map((c, i) => {
-                const { score, delta } = getMomentum(c.ticker)
-                const tier = getMomentumTier(score)
-                return (
-                  <motion.div
-                    key={c.id}
-                    initial={{ opacity: 0, y: 20, x: 20 }}
-                    whileInView={{ opacity: 1, y: 0, x: 0 }}
-                    viewport={{ once: true, amount: 0.1 }}
-                    whileHover={{ scale: 1.04, y: -3 }}
-                    transition={{ type: 'spring', stiffness: 70, damping: 18, delay: i * 0.07 }}
-                    className="flex-shrink-0 card-hover"
-                    style={{ width: 130 }}
+            {/* ── Crystal search bar ─────────────────────────────────────── */}
+            <motion.div
+              initial={{ opacity:0, y:8 }}
+              animate={{ opacity:1, y:0 }}
+              transition={{ duration:0.55, delay:0.10, ease:[0.16,1,0.3,1] }}
+              style={{ marginBottom:8 }}
+            >
+              <div className="relative" style={{ maxWidth:640 }}>
+                <Search
+                  size={14}
+                  className="absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none"
+                  style={{ color: searchFocused ? GOLD : 'rgba(201,168,76,0.30)' }}
+                />
+                <input
+                  type="text"
+                  value={query}
+                  onFocus={() => setSearchFocused(true)}
+                  onBlur={() => setSearchFocused(false)}
+                  onChange={e => { setQuery(e.target.value); setActiveLens(null); setActiveGenre(null); setPage(1) }}
+                  placeholder="Search creators, genres, tickers…"
+                  style={{
+                    width:'100%',
+                    background: GLASS_BG,
+                    backdropFilter: BLUR, WebkitBackdropFilter: BLUR,
+                    border: searchFocused ? GLASS_FOCUS : GLASS_BORDER,
+                    borderRadius:2,
+                    padding:'12px 42px',
+                    color:'rgba(255,255,255,0.88)',
+                    fontSize:12,
+                    fontFamily:'JetBrains Mono, monospace',
+                    outline:'none',
+                    boxShadow: searchFocused
+                      ? '0 0 0 1px rgba(201,168,76,0.08), 0 8px 32px rgba(0,0,0,0.55), 0 0 18px rgba(201,168,76,0.07)'
+                      : '0 4px 24px rgba(0,0,0,0.42), inset 0 1px 0 rgba(255,255,255,0.03)',
+                    transition:'border 0.2s ease, box-shadow 0.3s ease',
+                  }}
+                />
+                {query && (
+                  <button
+                    onClick={() => { setQuery(''); setPage(1) }}
+                    className="absolute right-4 top-1/2 -translate-y-1/2"
+                    style={{ color:'rgba(201,168,76,0.30)' }}
+                    onMouseEnter={e => (e.currentTarget.style.color='rgba(201,168,76,0.80)')}
+                    onMouseLeave={e => (e.currentTarget.style.color='rgba(201,168,76,0.30)')}
                   >
-                    <Link href={`/creator/${c.ticker.toLowerCase()}`}>
-                      <div className="relative rounded-2xl overflow-hidden border border-white/[0.06]" style={{ height: 190 }}>
-                        {c.imageUrl ? (
-                          <img src={c.imageUrl} alt="" className="absolute inset-0 w-full h-full object-cover object-top" />
-                        ) : (
-                          <div className={cn('absolute inset-0 bg-gradient-to-br', c.coverColor)} />
-                        )}
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/20 to-transparent" />
-                        <div className="absolute top-2 left-2">
-                          <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full bg-hype-gold/20 text-hype-gold text-[8px] font-bold">
-                            <TrendingUp size={7} /> +{delta}
-                          </span>
-                        </div>
-                        <div className="absolute bottom-0 p-3">
-                          <p className="text-white font-bold text-[12px] leading-tight">{c.name}</p>
-                          <p className="text-white font-black text-sm tabular mt-0.5">{score}</p>
-                          <p className="text-hype-gold text-[7px] font-bold uppercase tracking-wider">{tier}</p>
-                        </div>
-                      </div>
-                    </Link>
-                  </motion.div>
-                )
-              })}
-            </div>
-          </motion.section>
-        )}
-
-        {/* ── Creator list: filtered or full ────────────────────────────── */}
-        <section className="px-5">
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <p className="text-hype-text font-black text-lg leading-none tracking-tight">
-                {query ? `Results for "${query}"` :
-                  activeGenreData ? activeGenreData.label :
-                  activeLensData ? activeLensData.label :
-                  'All Creators'}
-              </p>
-              <p className="text-hype-muted text-xs mt-0.5 flex items-center gap-1.5">
-                {activeLens && engineLoading
-                  ? <span className="inline-block w-3 h-3 rounded-full border border-hype-gold/40 border-t-hype-gold animate-spin" />
-                  : null}
-                {filteredCreators.length} creators
-                {activeLens && engineCreators.length > 0 && (
-                  <span className="text-hype-gold/60 text-[9px] font-medium">· engine ranked</span>
+                    <X size={13} />
+                  </button>
                 )}
-              </p>
-            </div>
-            {(activeLens || activeGenre) && (
+              </div>
+            </motion.div>
+
+            {/* ── Discover mode button ───────────────────────────────────── */}
+            <motion.div
+              initial={{ opacity:0 }}
+              animate={{ opacity:1 }}
+              transition={{ duration:0.5, delay:0.16 }}
+              style={{ marginBottom:28 }}
+            >
               <button
-                onClick={() => { setActiveLens(null); setActiveGenre(null) }}
-                className="text-white/30 text-[10px] font-medium hover:text-white/50 flex items-center gap-1"
+                onClick={openDiscover}
+                className="flex items-center gap-2"
+                style={{
+                  padding:'6px 13px',
+                  border:'1px solid rgba(255,255,255,0.07)',
+                  borderRadius:2,
+                  background:'rgba(7,5,13,0.50)',
+                  backdropFilter:BLUR, WebkitBackdropFilter:BLUR,
+                  color:'rgba(255,255,255,0.30)',
+                  fontSize:9,
+                  fontFamily:'JetBrains Mono, monospace',
+                  fontWeight:600,
+                  letterSpacing:'0.07em',
+                  textTransform:'uppercase',
+                  transition:'all 0.2s ease',
+                }}
+                onMouseEnter={e => { const t=e.currentTarget; t.style.color='rgba(255,255,255,0.55)'; t.style.borderColor='rgba(255,255,255,0.14)' }}
+                onMouseLeave={e => { const t=e.currentTarget; t.style.color='rgba(255,255,255,0.30)'; t.style.borderColor='rgba(255,255,255,0.07)' }}
               >
-                <X size={10} /> Clear
+                <Layers size={10} />
+                Swipe to discover by feel
               </button>
+            </motion.div>
+
+            {/* ── Discovery Lenses ───────────────────────────────────────── */}
+            {!query && (
+              <motion.div
+                initial={{ opacity:0, y:8 }}
+                animate={{ opacity:1, y:0 }}
+                transition={{ duration:0.5, delay:0.14 }}
+                style={{ marginBottom:22 }}
+              >
+                <p style={{
+                  fontFamily:'JetBrains Mono, monospace',
+                  fontSize:8, fontWeight:600,
+                  letterSpacing:'0.26em', textTransform:'uppercase',
+                  color:'rgba(201,168,76,0.35)', marginBottom:10,
+                }}>
+                  Discovery Lens
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  {LENSES.map((lens, i) => (
+                    <motion.div
+                      key={lens.id}
+                      initial={{ opacity:0, x:12 }}
+                      animate={{ opacity:1, x:0 }}
+                      transition={{ type:'spring', stiffness:70, damping:18, delay: i*0.06 }}
+                    >
+                      <LensChip lens={lens} active={activeLens===lens.id} onSelect={() => handleLensSelect(lens.id)} />
+                    </motion.div>
+                  ))}
+                </div>
+                <AnimatePresence>
+                  {activeLensData && (
+                    <motion.p
+                      initial={{ opacity:0, height:0 }}
+                      animate={{ opacity:1, height:'auto' }}
+                      exit={{ opacity:0, height:0 }}
+                      style={{ fontSize:10, color:'rgba(201,168,76,0.38)', fontFamily:'JetBrains Mono, monospace', marginTop:8 }}
+                    >
+                      — {activeLensData.description}
+                    </motion.p>
+                  )}
+                </AnimatePresence>
+              </motion.div>
+            )}
+
+            {/* ── Genre Crystals ─────────────────────────────────────────── */}
+            {!query && !activeLens && (
+              <motion.div
+                initial={{ opacity:0, y:10 }}
+                animate={{ opacity:1, y:0 }}
+                transition={{ duration:0.5, delay:0.20 }}
+              >
+                <div className="flex items-center justify-between mb-2.5">
+                  <p style={{
+                    fontFamily:'JetBrains Mono, monospace',
+                    fontSize:8, fontWeight:600,
+                    letterSpacing:'0.26em', textTransform:'uppercase',
+                    color:'rgba(201,168,76,0.35)',
+                  }}>
+                    Browse by Genre
+                  </p>
+                  {activeGenre && (
+                    <button
+                      onClick={() => { setActiveGenre(null); setPage(1) }}
+                      style={{ fontSize:9, color:GOLD, fontFamily:'JetBrains Mono, monospace', letterSpacing:'0.06em' }}
+                    >
+                      CLEAR
+                    </button>
+                  )}
+                </div>
+                <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(130px, 1fr))', gap:10 }}>
+                  {genres.map((genre, i) => (
+                    <div key={genre.id}
+                         style={{ outline: activeGenre===genre.id ? `1px solid ${GOLD}` : 'none', borderRadius:2 }}>
+                      <GenreCard genre={genre} onSelect={handleGenreSelect} index={i} />
+                    </div>
+                  ))}
+                </div>
+                {activeGenreData && (
+                  <p style={{ fontSize:10, color:'rgba(201,168,76,0.38)', fontFamily:'JetBrains Mono, monospace', marginTop:8 }}>
+                    — {activeGenreData.description}
+                  </p>
+                )}
+              </motion.div>
             )}
           </div>
 
-          {activeLens && engineLoading ? (
-            <div className="premium-card rounded-2xl overflow-hidden divide-y divide-hype-border/60 animate-pulse">
-              {[0,1,2,3,4].map(i => (
-                <div key={i} className="flex items-center gap-3 px-4 py-3.5">
-                  <div className="w-5 h-3 bg-white/5 rounded" />
-                  <div className="w-10 h-10 rounded-xl bg-white/8 flex-shrink-0" />
-                  <div className="flex-1 space-y-1.5">
-                    <div className="h-3.5 w-32 bg-white/8 rounded" />
-                    <div className="h-2.5 w-20 bg-white/5 rounded" />
+        </div>{/* end hero */}
+
+        {/* ═══════════════════════════════════════════════════════════════════
+            EDITORIAL DISCOVERY — 4 sections below the fold
+        ═══════════════════════════════════════════════════════════════════ */}
+        {inDefaultMode && (
+          <div style={{ paddingTop:64 }}>
+
+            {/* Gold hairline divider with label */}
+            <div style={{ display:'flex', alignItems:'center', gap:16, padding:'0 24px', marginBottom:52 }}>
+              <div style={{ flex:1, height:1, background:'linear-gradient(to right, rgba(201,168,76,0.28), rgba(201,168,76,0))' }} />
+              <p style={{ fontFamily:'JetBrains Mono, monospace', fontSize:8, color:'rgba(201,168,76,0.40)', letterSpacing:'0.28em', textTransform:'uppercase', whiteSpace:'nowrap' }}>
+                Editorial Discovery
+              </p>
+              <div style={{ flex:1, height:1, background:'linear-gradient(to left, rgba(201,168,76,0.28), rgba(201,168,76,0))' }} />
+            </div>
+
+            {/* ── Near Breakout ────────────────────────────────────────── */}
+            <motion.section
+              initial={{ opacity:0, y:24 }}
+              whileInView={{ opacity:1, y:0 }}
+              viewport={{ once:true, amount:0.1 }}
+              transition={{ type:'spring', stiffness:70, damping:18 }}
+              style={{ marginBottom:52 }}
+            >
+              <div style={{ padding:'0 24px', marginBottom:18 }}>
+                <SectionEyebrow label="Near Breakout" />
+                <SectionTitle icon={<Zap size={16}/>}>Approaching the threshold</SectionTitle>
+                <p style={{ fontSize:11, color:'rgba(255,255,255,0.26)', fontFamily:'JetBrains Mono, monospace', marginTop:3 }}>
+                  Momentum rising — spot them before the tier flip.
+                </p>
+              </div>
+              <div className="flex gap-3 overflow-x-auto pb-2" style={{ paddingLeft:24, paddingRight:24, scrollbarWidth:'none' }}>
+                {nearBreakoutCreators.map((c,i) => (
+                  <EditorialCard key={c.id} creator={c} index={i} badge="↑ BREAKOUT"
+                    accentColor={{ border:'rgba(201,168,76,0.18)', bg:'rgba(201,168,76,0.12)', text:GOLD }}
+                  />
+                ))}
+              </div>
+            </motion.section>
+
+            {/* ── Trending Now ─────────────────────────────────────────── */}
+            <motion.section
+              initial={{ opacity:0, y:24 }}
+              whileInView={{ opacity:1, y:0 }}
+              viewport={{ once:true, amount:0.1 }}
+              transition={{ type:'spring', stiffness:70, damping:18, delay:0.06 }}
+              style={{ marginBottom:52 }}
+            >
+              <div style={{ padding:'0 24px', marginBottom:18 }}>
+                <SectionEyebrow label="Trending Now" />
+                <SectionTitle icon={<Flame size={16}/>}>Highest momentum</SectionTitle>
+                <p style={{ fontSize:11, color:'rgba(255,255,255,0.26)', fontFamily:'JetBrains Mono, monospace', marginTop:3 }}>
+                  The cultural moment, right now.
+                </p>
+              </div>
+              <div className="flex gap-3 overflow-x-auto pb-2" style={{ paddingLeft:24, paddingRight:24, scrollbarWidth:'none' }}>
+                {trendingCreators.map((c,i) => (
+                  <EditorialCard key={c.id} creator={c} index={i} badge="◆ TRENDING"
+                    accentColor={{ border:'rgba(251,146,60,0.18)', bg:'rgba(251,146,60,0.11)', text:'#fb923c' }}
+                  />
+                ))}
+              </div>
+            </motion.section>
+
+            {/* ── Hidden Gems ──────────────────────────────────────────── */}
+            <motion.section
+              initial={{ opacity:0, y:24 }}
+              whileInView={{ opacity:1, y:0 }}
+              viewport={{ once:true, amount:0.1 }}
+              transition={{ type:'spring', stiffness:70, damping:18, delay:0.10 }}
+              style={{ marginBottom:52 }}
+            >
+              <div style={{ padding:'0 24px', marginBottom:18 }}>
+                <SectionEyebrow label="Hidden Gems" />
+                <SectionTitle icon={<Gem size={16}/>}>Under the radar</SectionTitle>
+                <p style={{ fontSize:11, color:'rgba(255,255,255,0.26)', fontFamily:'JetBrains Mono, monospace', marginTop:3 }}>
+                  Rising fast before the world catches on.
+                </p>
+              </div>
+              <div className="flex gap-3 overflow-x-auto pb-2" style={{ paddingLeft:24, paddingRight:24, scrollbarWidth:'none' }}>
+                {hiddenGems.map((c,i) => (
+                  <EditorialCard key={c.id} creator={c} index={i} badge="◆ GEM"
+                    accentColor={{ border:'rgba(96,165,250,0.18)', bg:'rgba(96,165,250,0.11)', text:'#60a5fa' }}
+                  />
+                ))}
+              </div>
+            </motion.section>
+
+            {/* ── Editor's Picks ───────────────────────────────────────── */}
+            <motion.section
+              initial={{ opacity:0, y:24 }}
+              whileInView={{ opacity:1, y:0 }}
+              viewport={{ once:true, amount:0.1 }}
+              transition={{ type:'spring', stiffness:70, damping:18, delay:0.14 }}
+              style={{ marginBottom:64 }}
+            >
+              <div style={{ padding:'0 24px', marginBottom:18 }}>
+                <SectionEyebrow label="Editor's Picks" />
+                <SectionTitle icon={<Star size={16}/>}>Curated by SPOTLIGHT</SectionTitle>
+                <p style={{ fontSize:11, color:'rgba(255,255,255,0.26)', fontFamily:'JetBrains Mono, monospace', marginTop:3 }}>
+                  The ones we&apos;re watching this week.
+                </p>
+              </div>
+              <div className="flex gap-3 overflow-x-auto pb-2" style={{ paddingLeft:24, paddingRight:24, scrollbarWidth:'none' }}>
+                {editorsPicks.map((c,i) => (
+                  <EditorialCard key={c.id} creator={c} index={i} badge="★ PICK"
+                    accentColor={{ border:'rgba(167,139,250,0.18)', bg:'rgba(167,139,250,0.11)', text:'#a78bfa' }}
+                  />
+                ))}
+              </div>
+            </motion.section>
+
+          </div>
+        )}
+
+        {/* ═══════════════════════════════════════════════════════════════════
+            ALL CREATORS LIST — paginated 25 per page
+        ═══════════════════════════════════════════════════════════════════ */}
+        <section ref={allCreatorsRef} className="px-6" style={{ paddingTop: inDefaultMode ? 0 : 64 }}>
+          {(() => {
+            const PAGE_SIZE   = 25
+            const totalPages  = Math.max(1, Math.ceil(filteredCreators.length / PAGE_SIZE))
+            const safePage    = Math.min(page, totalPages)
+            const pageCreators = filteredCreators.slice((safePage-1)*PAGE_SIZE, safePage*PAGE_SIZE)
+            const rankOffset  = (safePage-1)*PAGE_SIZE
+
+            return (
+              <>
+                <div className="flex items-center justify-between mb-5">
+                  <div>
+                    <SectionEyebrow label={
+                      query ? 'Search Results'
+                      : activeLensData ? activeLensData.label
+                      : activeGenreData ? activeGenreData.label
+                      : 'All Creators'
+                    } />
+                    <div style={{ display:'flex', alignItems:'center', gap:8 }}>
+                      <SectionTitle>
+                        {query ? `"${query}"`
+                          : activeGenreData ? activeGenreData.label
+                          : activeLensData  ? activeLensData.label
+                          : 'Ranked by Momentum'}
+                      </SectionTitle>
+                      {activeLens && engineLoading && (
+                        <span className="inline-block w-3 h-3 rounded-full border border-hype-gold/40 border-t-hype-gold animate-spin" />
+                      )}
+                    </div>
+                    <p style={{ fontFamily:'JetBrains Mono, monospace', fontSize:10, color:'rgba(201,168,76,0.32)', marginTop:2 }}>
+                      {filteredCreators.length} creators
+                      {totalPages > 1 && ` · page ${safePage} of ${totalPages}`}
+                      {activeLens && engineCreators.length>0 && ' · engine ranked'}
+                    </p>
                   </div>
-                  <div className="space-y-1 text-right">
-                    <div className="h-4 w-10 bg-white/8 rounded" />
-                    <div className="h-2.5 w-8 bg-white/5 rounded" />
-                  </div>
+                  {(activeLens || activeGenre) && (
+                    <button
+                      onClick={() => { setActiveLens(null); setActiveGenre(null); setPage(1) }}
+                      className="flex items-center gap-1"
+                      style={{ fontSize:10, color:'rgba(255,255,255,0.28)', fontFamily:'JetBrains Mono, monospace' }}
+                      onMouseEnter={e => (e.currentTarget.style.color='rgba(255,255,255,0.55)')}
+                      onMouseLeave={e => (e.currentTarget.style.color='rgba(255,255,255,0.28)')}
+                    >
+                      <X size={10} /> CLEAR
+                    </button>
+                  )}
                 </div>
-              ))}
-            </div>
-          ) : filteredCreators.length > 0 ? (
-            <div className="premium-card rounded-2xl overflow-hidden divide-y divide-hype-border/60">
-              {filteredCreators.map((c, i) => (
-                <CreatorListRow
-                  key={c.id}
-                  creator={c}
-                  rank={i + 1}
-                  onBuy={handleBuy}
-                  onSelect={query.trim() ? () => logCreatorSearch(currentUser?.id ?? null, query.trim(), c.ticker) : undefined}
-                  isSpotted={spottedTickers.includes(c.ticker.toUpperCase())}
-                />
-              ))}
-            </div>
-          ) : (
-            <div className="py-12 text-center">
-              <p className="text-white/50 font-semibold mb-2">No creators found</p>
-              <button onClick={() => { setQuery(''); setActiveLens(null); setActiveGenre(null) }} className="text-hype-gold text-sm font-medium hover:underline">
-                Reset filters
-              </button>
-            </div>
-          )}
+
+                {activeLens && engineLoading ? (
+                  <GlassContainer>
+                    {[0,1,2,3,4].map(i => (
+                      <div key={i} className="flex items-center gap-3 px-4 py-3.5 animate-pulse"
+                           style={{ borderBottom:'1px solid rgba(201,168,76,0.06)' }}>
+                        <div className="w-5 h-3 rounded" style={{ background:'rgba(255,255,255,0.05)' }} />
+                        <div className="w-10 h-10 rounded-full" style={{ background:'rgba(255,255,255,0.07)' }} />
+                        <div className="flex-1 space-y-2">
+                          <div className="h-3 w-32 rounded" style={{ background:'rgba(255,255,255,0.07)' }} />
+                          <div className="h-2 w-20 rounded" style={{ background:'rgba(255,255,255,0.04)' }} />
+                        </div>
+                        <div className="w-12 h-8 rounded" style={{ background:'rgba(255,255,255,0.07)' }} />
+                      </div>
+                    ))}
+                  </GlassContainer>
+                ) : pageCreators.length > 0 ? (
+                  <GlassContainer>
+                    {pageCreators.map((c,i) => (
+                      <CreatorListRow
+                        key={c.id}
+                        creator={c}
+                        rank={rankOffset+i+1}
+                        onBuy={handleBuy}
+                        onSelect={query.trim() ? () => logCreatorSearch(currentUser?.id ?? null, query.trim(), c.ticker) : undefined}
+                        isSpotted={spottedTickers.includes(c.ticker.toUpperCase())}
+                      />
+                    ))}
+                  </GlassContainer>
+                ) : (
+                  <div className="py-14 text-center">
+                    <p style={{ color:'rgba(255,255,255,0.38)', fontFamily:'"Cormorant Garamond", Georgia, serif', fontSize:18, fontWeight:300, marginBottom:10 }}>
+                      No creators found.
+                    </p>
+                    <button
+                      onClick={() => { setQuery(''); setActiveLens(null); setActiveGenre(null); setPage(1) }}
+                      style={{ color:GOLD, fontSize:11, fontFamily:'JetBrains Mono, monospace', letterSpacing:'0.08em', textDecoration:'underline' }}
+                    >
+                      RESET FILTERS
+                    </button>
+                  </div>
+                )}
+
+                {/* ── Crystal Pagination ─────────────────────────────── */}
+                {totalPages > 1 && (
+                  <div className="flex items-center justify-center gap-1.5 mt-8">
+                    <button
+                      onClick={() => { setPage(p => Math.max(1,p-1)); allCreatorsRef.current?.scrollIntoView({ behavior:'smooth', block:'start' }) }}
+                      disabled={safePage===1}
+                      style={{
+                        width:32, height:32, display:'flex', alignItems:'center', justifyContent:'center',
+                        border:'1px solid rgba(201,168,76,0.15)', borderRadius:2,
+                        color: safePage===1 ? 'rgba(255,255,255,0.18)' : 'rgba(201,168,76,0.55)',
+                        background:'rgba(7,5,13,0.60)', backdropFilter:BLUR, WebkitBackdropFilter:BLUR,
+                        cursor: safePage===1 ? 'default' : 'pointer',
+                        fontSize:12, fontFamily:'JetBrains Mono, monospace', transition:'all 0.15s ease',
+                      }}
+                    >‹</button>
+
+                    {Array.from({ length: totalPages }, (_,i) => i+1).map(n => {
+                      const show = n===1 || n===totalPages || Math.abs(n-safePage)<=2
+                      const isEllipsis = !show && (n===2 || n===totalPages-1)
+                      if (!show && !isEllipsis) return null
+                      if (isEllipsis) return (
+                        <span key={`e${n}`} style={{ color:'rgba(255,255,255,0.22)', fontFamily:'JetBrains Mono, monospace', fontSize:10, width:20, textAlign:'center' }}>…</span>
+                      )
+                      const active = n===safePage
+                      return (
+                        <button
+                          key={n}
+                          onClick={() => { setPage(n); allCreatorsRef.current?.scrollIntoView({ behavior:'smooth', block:'start' }) }}
+                          style={{
+                            minWidth:32, height:32, padding:'0 6px',
+                            display:'flex', alignItems:'center', justifyContent:'center',
+                            border: active ? `1px solid ${GOLD}` : '1px solid rgba(201,168,76,0.12)',
+                            borderRadius:2,
+                            background: active ? 'rgba(201,168,76,0.14)' : 'rgba(7,5,13,0.60)',
+                            backdropFilter:BLUR, WebkitBackdropFilter:BLUR,
+                            color: active ? GOLD : 'rgba(255,255,255,0.38)',
+                            fontFamily:'JetBrains Mono, monospace', fontSize:11, fontWeight: active ? 700 : 400,
+                            boxShadow: active ? `0 0 10px rgba(201,168,76,0.18)` : 'none',
+                            cursor:'pointer', transition:'all 0.15s ease',
+                          }}
+                        >
+                          {n}
+                        </button>
+                      )
+                    })}
+
+                    <button
+                      onClick={() => { setPage(p => Math.min(totalPages,p+1)); allCreatorsRef.current?.scrollIntoView({ behavior:'smooth', block:'start' }) }}
+                      disabled={safePage===totalPages}
+                      style={{
+                        width:32, height:32, display:'flex', alignItems:'center', justifyContent:'center',
+                        border:'1px solid rgba(201,168,76,0.15)', borderRadius:2,
+                        color: safePage===totalPages ? 'rgba(255,255,255,0.18)' : 'rgba(201,168,76,0.55)',
+                        background:'rgba(7,5,13,0.60)', backdropFilter:BLUR, WebkitBackdropFilter:BLUR,
+                        cursor: safePage===totalPages ? 'default' : 'pointer',
+                        fontSize:12, fontFamily:'JetBrains Mono, monospace', transition:'all 0.15s ease',
+                      }}
+                    >›</button>
+                  </div>
+                )}
+              </>
+            )
+          })()}
         </section>
 
-        <div className="text-center mt-10 px-5">
-          <p className="text-hype-dim text-[10px]">Mock data only · Not financial advice</p>
+        <div className="text-center mt-12 px-5">
+          <p style={{ fontFamily:'JetBrains Mono, monospace', fontSize:9, color:'rgba(255,255,255,0.12)', letterSpacing:'0.14em' }}>
+            MOCK DATA ONLY · NOT FINANCIAL ADVICE
+          </p>
         </div>
-      </div>
+      </div>{/* end content wrapper */}
 
-      {/* Discover Stack */}
+      {/* ── Modals ──────────────────────────────────────────────────────────── */}
       <AnimatePresence>
         {discoverMode && (
           <DiscoverStack
@@ -504,7 +1024,7 @@ export default function ExplorePage() {
         isOpen={trade.isOpen}
         creator={trade.creator}
         tradeType={trade.tradeType}
-        step={trade.step as 'form' | 'confirm' | 'success' | 'error'}
+        step={trade.step as 'form'|'confirm'|'success'|'error'}
         pendingOrder={trade.pendingOrder}
         isSubmitting={trade.isSubmitting}
         onClose={trade.close}
