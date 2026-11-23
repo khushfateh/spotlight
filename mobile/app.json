@@ -1,0 +1,50 @@
+{
+  "expo": {
+    "name": "SPOTLIGHT",
+    "slug": "spotlight",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "dark",
+    "backgroundColor": "#050508",
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.spotlight.app",
+      "infoPlist": {
+        "UIUserInterfaceStyle": "Dark"
+      }
+    },
+    "android": {
+      "package": "com.spotlight.app",
+      "adaptiveIcon": {
+        "backgroundColor": "#050508",
+        "foregroundImage": "./assets/adaptive-icon.png"
+      },
+      "softwareKeyboardLayoutMode": "pan"
+    },
+    "web": {
+      "favicon": "./assets/favicon.png",
+      "bundler": "metro"
+    },
+    "scheme": "spotlight",
+    "plugins": [
+      "expo-router",
+      "expo-status-bar",
+      [
+        "expo-font",
+        {
+          "fonts": []
+        }
+      ],
+      [
+        "expo-sensors",
+        {
+          "motionPermission": "SPOTLIGHT uses motion to animate the 3D saxophone."
+        }
+      ]
+    ],
+    "experiments": {
+      "typedRoutes": true
+    }
+  }
+}
