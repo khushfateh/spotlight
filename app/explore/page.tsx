@@ -26,6 +26,7 @@ import { logCreatorSearch } from '@/lib/services/interactionService'
 import type { Creator, CreatorCategory } from '@/types'
 import ObservatoryScene    from '@/components/experience/observatory/ObservatoryScene'
 import { obsState }        from '@/components/experience/observatory/observatoryState'
+import RequestArtistModal  from '@/components/artist-requests/RequestArtistModal'
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Design tokens (local — DO NOT export)
@@ -386,6 +387,8 @@ export default function ExplorePage() {
   const [discoverMode,   setDiscoverMode]   = useState(false)
   const [discoverCreators, setDiscoverCreators] = useState<Creator[]>([])
   const [searchFocused,  setSearchFocused]  = useState(false)
+  const [requestModalOpen, setRequestModalOpen] = useState(false)
+  const [requestInitialName, setRequestInitialName] = useState('')
   const [spotterAuthCreator, setSpotterAuthCreator] = useState<Creator|null>(null)
   const [page, setPage] = useState(1)
   const scrollRef      = useRef<HTMLDivElement>(null)  // unused
@@ -608,6 +611,30 @@ export default function ExplorePage() {
                   </button>
                 )}
               </div>
+            </motion.div>
+
+            {/* ── Request Artist nudge ──────────────────────────────────── */}
+            <motion.div
+              initial={{ opacity:0 }}
+              animate={{ opacity: query.trim() ? 1 : 0.55 }}
+              style={{ marginBottom: 10 }}
+            >
+              <button
+                onClick={() => { setRequestInitialName(query.trim()); setRequestModalOpen(true) }}
+                style={{
+                  background: 'none', border: 'none', cursor: 'pointer', padding: 0,
+                  display: 'flex', alignItems: 'center', gap: 6,
+                  fontFamily: 'JetBrains Mono, monospace',
+                  fontSize: 9, letterSpacing: '0.20em', textTransform: 'uppercase',
+                  color: 'rgba(201,168,76,0.45)',
+                  transition: 'color 0.2s',
+                }}
+                onMouseEnter={e => (e.currentTarget.style.color = GOLD)}
+                onMouseLeave={e => (e.currentTarget.style.color = 'rgba(201,168,76,0.45)')}
+              >
+                <span style={{ color: GOLD }}>◈</span>
+                {query.trim() ? `Can't find "${query.trim()}"? Request them →` : 'Request an Artist →'}
+              </button>
             </motion.div>
 
             {/* ── Discover mode button ───────────────────────────────────── */}
@@ -1037,6 +1064,12 @@ export default function ExplorePage() {
       {spotterAuthCreator && (
         <SpotterAuthModal creator={spotterAuthCreator} onClose={() => setSpotterAuthCreator(null)} />
       )}
+
+      <RequestArtistModal
+        isOpen={requestModalOpen}
+        initialName={requestInitialName}
+        onClose={() => setRequestModalOpen(false)}
+      />
     </>
   )
 }

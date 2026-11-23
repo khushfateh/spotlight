@@ -114,7 +114,22 @@ function PortfolioHoldingCard({
             {' · '}Spotter{' '}
             <span className="text-hype-gold font-bold">#{entry.spotterRank}</span>
           </p>
-          {momentumGain >= 28 && (
+          {entry.isFoundingSpot && (
+            <span
+              className="text-[9px] font-semibold uppercase tracking-wide px-1.5 py-0.5"
+              style={{
+                color: '#C9A84C',
+                background: 'rgba(201,168,76,0.10)',
+                border: '1px solid rgba(201,168,76,0.35)',
+                borderRadius: 2,
+                letterSpacing: '0.14em',
+                boxShadow: '0 0 8px rgba(201,168,76,0.18)',
+              }}
+            >
+              ◈ Founding Requester
+            </span>
+          )}
+          {!entry.isFoundingSpot && momentumGain >= 28 && (
             <span
               className="text-[9px] font-semibold uppercase tracking-wide px-1.5 py-0.5 rounded"
               style={{
@@ -366,6 +381,7 @@ export default function DiscoveriesPage() {
           rediscoveryCount: 0,
           latestRespottedAt: null,
           firstMovedOnAt: null,
+          isFoundingSpot: false,
         }
       })
     : vaultEntries

@@ -20,6 +20,7 @@ export type VaultEntry = {
   rediscoveryCount: number
   latestRespottedAt: Date | null
   firstMovedOnAt: Date | null
+  isFoundingSpot: boolean
 }
 
 export function useVault() {
@@ -47,6 +48,7 @@ export function useVault() {
         rediscoveryCount: c.rediscoveryCount,
         latestRespottedAt: c.latestRespottedAt ? new Date(c.latestRespottedAt) : null,
         firstMovedOnAt: c.firstMovedOnAt ? new Date(c.firstMovedOnAt) : null,
+        isFoundingSpot: c.isFoundingSpot,
       }
     })
     setEntries(mapped)
