@@ -6,6 +6,7 @@ import Animated, {
   useAnimatedStyle,
   withSpring,
   interpolate,
+  Extrapolation,
 } from 'react-native-reanimated'
 import * as Haptics from 'expo-haptics'
 import type { BottomTabBarProps } from '@react-navigation/bottom-tabs'
@@ -36,19 +37,32 @@ function TabItem({
   onPress:     () => void
   onLongPress: () => void
 }) {
-  const scale = useSharedValue(1)
-  const icon  = ICONS[route.name] ?? { active: '●', inactive: '○' }
-  const label = LABELS[route.name] ?? route.name
+  const scale       = useSharedValue(1)
+  const dotOpacity  = useSharedValue(isFocused ? 1 : 0)
+  const icon        = ICONS[route.name] ?? { active: '●', inactive: '○' }
+  const label       = LABELS[route.name] ?? route.name
 
-  const animStyle = useAnimatedStyle(() => ({
+  // Sync dot opacity when focus changes
+  if (isFocused && dotOpacity.value !== 1) {
+    dotOpacity.value = withSpring(1, { damping: 18, stiffness: 400 })
+  } else if (!isFocused && dotOpacity.value !== 0) {
+    dotOpacity.value = withSpring(0, { damping: 18, stiffness: 400 })
+  }
+
+  const iconStyle = useAnimatedStyle(() => ({
     transform: [{ scale: scale.value }],
   }))
 
+  const dotStyle = useAnimatedStyle(() => ({
+    opacity: dotOpacity.value,
+    transform: [{ scaleX: interpolate(dotOpacity.value, [0, 1], [0, 1], Extrapolation.CLAMP) }],
+  }))
+
   const handlePress = () => {
-    scale.value = withSpring(0.88, { damping: 15, stiffness: 400 }, () => {
-      scale.value = withSpring(1, { damping: 12, stiffness: 300 })
+    scale.value = withSpring(0.82, { damping: 12, stiffness: 500 }, () => {
+      scale.value = withSpring(1, { damping: 10, stiffness: 300 })
     })
-    Haptics.selectionAsync()
+    if (Platform.OS !== 'web') Haptics.selectionAsync()
     onPress()
   }
 
@@ -56,28 +70,47 @@ function TabItem({
     <Pressable
       onPress={handlePress}
       onLongPress={onLongPress}
-      style={{ flex: 1, alignItems: 'center', paddingVertical: 10 }}
+      style={{ flex: 1, alignItems: 'center', paddingVertical: 10, paddingTop: 12 }}
       accessibilityRole="button"
       accessibilityState={{ selected: isFocused }}
       accessibilityLabel={label}
     >
-      <Animated.View style={[animStyle, { alignItems: 'center', gap: 4 }]}>
+      <Animated.View style={[iconStyle, { alignItems: 'center', gap: 4 }]}>
+        {/* Icon */}
         <Text style={{
-          fontSize: isFocused ? 20 : 18,
-          color:    isFocused ? Colors.brass : 'rgba(255,255,255,0.28)',
+          fontSize:   isFocused ? 20 : 17,
+          color:      isFocused ? Colors.brass : 'rgba(255,255,255,0.22)',
           lineHeight: 24,
+          textShadowColor: isFocused ? 'rgba(201,168,76,0.5)' : 'transparent',
+          textShadowOffset: { width: 0, height: 0 },
+          textShadowRadius: isFocused ? 8 : 0,
         }}>
           {isFocused ? icon.active : icon.inactive}
         </Text>
+
+        {/* Label */}
         <Text style={{
           fontFamily:    FontFamily.mono,
           fontSize:      7,
-          letterSpacing: 0.18,
+          letterSpacing: 0.22,
           textTransform: 'uppercase',
-          color:         isFocused ? Colors.brass : 'rgba(255,255,255,0.28)',
+          color:         isFocused ? Colors.brass : 'rgba(255,255,255,0.22)',
         }}>
           {label}
         </Text>
+
+        {/* Active indicator dot */}
+        <Animated.View style={[dotStyle, {
+          width:        20,
+          height:       1.5,
+          borderRadius: 1,
+          backgroundColor: Colors.brass,
+          marginTop:    1,
+          shadowColor:  Colors.brass,
+          shadowOffset: { width: 0, height: 0 },
+          shadowOpacity: 0.9,
+          shadowRadius: 4,
+        }]} />
       </Animated.View>
     </Pressable>
   )
@@ -88,20 +121,23 @@ export default function TabBar({ state, descriptors, navigation }: BottomTabBarP
 
   return (
     <View style={{
-      position:        'absolute',
-      bottom:          0,
-      left:            0,
-      right:           0,
-      paddingBottom:   insets.bottom,
+      position:  'absolute',
+      bottom:    0,
+      left:      0,
+      right:     0,
+      paddingBottom: insets.bottom,
     }}>
+      {/* Top separator line */}
+      <View style={{
+        height: 1,
+        backgroundColor: 'rgba(201,168,76,0.10)',
+      }} />
       <BlurView
-        intensity={32}
+        intensity={40}
         tint="dark"
         style={{
-          backgroundColor:  'rgba(5,5,8,0.88)',
-          borderTopWidth:   1,
-          borderTopColor:   Colors.glassBorder,
-          flexDirection:    'row',
+          backgroundColor: 'rgba(5,5,8,0.92)',
+          flexDirection:   'row',
         }}
       >
         {state.routes.map((route: { name: string; key: string }, index: number) => {
@@ -112,8 +148,14 @@ export default function TabBar({ state, descriptors, navigation }: BottomTabBarP
               route={route}
               isFocused={isFocused}
               onPress={() => {
-                const event = navigation.emit({ type: 'tabPress', target: route.key, canPreventDefault: true })
-                if (!isFocused && !event.defaultPrevented) navigation.navigate(route.name)
+                const event = navigation.emit({
+                  type: 'tabPress',
+                  target: route.key,
+                  canPreventDefault: true,
+                })
+                if (!isFocused && !event.defaultPrevented) {
+                  navigation.navigate(route.name)
+                }
               }}
               onLongPress={() => navigation.emit({ type: 'tabLongPress', target: route.key })}
             />

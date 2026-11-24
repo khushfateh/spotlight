@@ -41,7 +41,18 @@
         {
           "motionPermission": "SPOTLIGHT uses motion to animate the 3D saxophone."
         }
-      ]
+      ],
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/icon.png",
+          "color": "#050508",
+          "sounds": [],
+          "androidMode": "default",
+          "androidCollapsedTitle": "SPOTLIGHT"
+        }
+      ],
+      "expo-asset"
     ],
     "experiments": {
       "typedRoutes": true

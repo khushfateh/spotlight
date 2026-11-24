@@ -1,14 +1,25 @@
-// Discover — Phase 0 shell. Phase 1 adds the R3F piano scene behind this.
-
 import { useState } from 'react'
-import { View, TextInput, ScrollView, Pressable, Text } from 'react-native'
+import { View, Text, ScrollView, Pressable, Platform, RefreshControl } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withSpring,
+} from 'react-native-reanimated'
+import * as Haptics from 'expo-haptics'
 import { useRouter } from 'expo-router'
 import { Colors, FontFamily, FontSize, Spacing, Radius } from '@/lib/tokens'
+import PianoCanvas from '@/components/experience/PianoCanvas'
 import MonoLabel from '@/components/ui/MonoLabel'
-import SerifHeading from '@/components/ui/SerifHeading'
-import GlassCard from '@/components/ui/GlassCard'
+import ArtistRow from '@/components/ui/ArtistRow'
 import GoldButton from '@/components/ui/GoldButton'
+import PremiumInput from '@/components/ui/PremiumInput'
+import GoldDivider from '@/components/ui/GoldDivider'
+import RequestArtistModal from '@/components/sheets/RequestArtistModal'
+import { useMomentum } from '@/context/MomentumContext'
+import { CREATORS } from '@/lib/data/creators'
+import { logCreatorSearch } from '@/lib/services/signalService'
+import { useAuth } from '@/context/AuthContext'
 
 const LENSES = [
   { id: 'trending',  label: 'Trending',      color: '#fb923c' },
@@ -18,161 +29,237 @@ const LENSES = [
   { id: 'editors',   label: "Editor's Picks",color: '#a78bfa' },
 ]
 
-const MOCK_ARTISTS = [
-  { name: 'AP Dhillon',       ticker: 'APDHILLON',   score: 94, delta: 12 },
-  { name: 'Karan Aujla',      ticker: 'KARANAUJLA',  score: 91, delta: 9  },
-  { name: 'Hanumankind',      ticker: 'HANUMANKIND', score: 88, delta: 15 },
-  { name: 'Sabrina Carpenter',ticker: 'SABRINAC',    score: 87, delta: 7  },
-  { name: 'Doja Cat',         ticker: 'DOJACAT',     score: 85, delta: 4  },
-  { name: 'Tyler the Creator',ticker: 'TYLERTC',     score: 83, delta: 6  },
-  { name: 'Ice Spice',        ticker: 'ICESPICE',    score: 80, delta: 11 },
-  { name: 'Peso Pluma',       ticker: 'PESOPLUMA',   score: 79, delta: 8  },
-]
+function LensChip({
+  lens, active, onPress,
+}: { lens: typeof LENSES[0]; active: boolean; onPress: () => void }) {
+  const scale = useSharedValue(1)
+
+  const handlePress = () => {
+    scale.value = withSpring(0.9, { damping: 15, stiffness: 500 }, () => {
+      scale.value = withSpring(1, { damping: 12, stiffness: 350 })
+    })
+    if (Platform.OS !== 'web') Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)
+    onPress()
+  }
+
+  const chipStyle = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }))
+
+  return (
+    <Animated.View style={chipStyle}>
+      <Pressable
+        onPress={handlePress}
+        style={{
+          paddingVertical:   5,
+          paddingHorizontal: 12,
+          borderRadius:      Radius.sharp,
+          borderWidth:       1,
+          borderColor:       active ? lens.color : 'rgba(255,255,255,0.09)',
+          backgroundColor:   active ? `${lens.color}1a` : 'rgba(7,5,13,0.60)',
+        }}
+      >
+        <Text style={{
+          fontFamily:    FontFamily.mono,
+          fontSize:      9,
+          letterSpacing: 0.08,
+          textTransform: 'uppercase',
+          color:         active ? lens.color : 'rgba(255,255,255,0.32)',
+          textShadowColor:  active ? lens.color : 'transparent',
+          textShadowOffset: { width: 0, height: 0 },
+          textShadowRadius: active ? 6 : 0,
+        }}>
+          {lens.label}
+        </Text>
+      </Pressable>
+    </Animated.View>
+  )
+}
 
 export default function DiscoverScreen() {
-  const insets = useSafeAreaInsets()
-  const router = useRouter()
-  const [query,       setQuery]       = useState('')
-  const [activeLens,  setActiveLens]  = useState<string | null>(null)
+  const insets    = useSafeAreaInsets()
+  const router    = useRouter()
+  const { user }  = useAuth()
+  const { getScore } = useMomentum()
+  const [query,          setQuery]          = useState('')
+  const [activeLens,     setActiveLens]     = useState<string | null>(null)
+  const [requestVisible, setRequestVisible] = useState(false)
+  const [requestQuery,   setRequestQuery]   = useState('')
 
-  const filtered = query
-    ? MOCK_ARTISTS.filter(a => a.name.toLowerCase().includes(query.toLowerCase()))
-    : MOCK_ARTISTS
+  // Build discover feed with live scores
+  const ALL_ARTISTS = Object.entries(CREATORS).map(([ticker, c]) => {
+    const { score, delta } = getScore(ticker)
+    return { ticker, name: c.name, genre: c.genre, score, delta }
+  }).sort((a, b) => b.score - a.score)
+
+  const filtered = ALL_ARTISTS.filter(a => {
+    if (!query) return true
+    const q = query.toLowerCase()
+    return a.name.toLowerCase().includes(q) || a.ticker.toLowerCase().includes(q) || a.genre.toLowerCase().includes(q)
+  })
+
+  const openRequest = (q = '') => {
+    setRequestQuery(q)
+    setRequestVisible(true)
+    if (Platform.OS !== 'web') Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)
+  }
 
   return (
     <View style={{ flex: 1, backgroundColor: Colors.void }}>
 
-      {/* Phase 1: Piano R3F canvas behind this — fixed, z:-1 */}
-
-      {/* Header */}
-      <View style={{ paddingTop: insets.top + Spacing.md, paddingHorizontal: Spacing.lg, paddingBottom: Spacing.md }}>
-        <MonoLabel size="label" color={Colors.brassDim} style={{ marginBottom: 8 }}>
-          ◆ The Observatory · Cultural Discovery
-        </MonoLabel>
-        <SerifHeading size="heading" style={{ marginBottom: 4 }}>
-          Who&apos;s{' '}
-          <Text style={{ color: Colors.brass, fontFamily: FontFamily.serifItalic }}>next?</Text>
-        </SerifHeading>
-        <Text style={{ fontFamily: FontFamily.mono, fontSize: FontSize.caption, color: 'rgba(255,255,255,0.36)', letterSpacing: 0.02 }}>
-          Discover tomorrow&apos;s cultural icons before the world does.
-        </Text>
+      {/* Piano canvas — ambient bottom decoration */}
+      <View style={{ position: 'absolute', bottom: 80, left: 0, right: 0, zIndex: 0 }} pointerEvents="none">
+        <PianoCanvas />
       </View>
 
-      {/* Search */}
-      <View style={{ paddingHorizontal: Spacing.lg, marginBottom: Spacing.sm }}>
+      {/* Content */}
+      <View style={{ flex: 1, zIndex: 1 }}>
+        {/* Header */}
         <View style={{
-          flexDirection: 'row', alignItems: 'center',
-          backgroundColor: 'rgba(7,5,13,0.72)',
-          borderWidth: 1, borderColor: query ? Colors.glassFocus : Colors.glassBorder,
-          borderRadius: Radius.sharp,
-          paddingHorizontal: Spacing.md, paddingVertical: Spacing.sm + 2,
-          gap: Spacing.sm,
+          paddingTop: insets.top + Spacing.md,
+          paddingHorizontal: Spacing.lg,
+          paddingBottom: Spacing.sm,
         }}>
-          <Text style={{ color: Colors.brassDim, fontSize: 14 }}>⌕</Text>
-          <TextInput
+          <MonoLabel size="label" color={Colors.brassDim} style={{ marginBottom: 7, letterSpacing: 0.5 }}>
+            ◆ The Observatory · Cultural Discovery
+          </MonoLabel>
+          <Text style={{
+            fontFamily:    FontFamily.serif,
+            fontSize:      FontSize.heading,
+            color:         Colors.offWhite,
+            letterSpacing: 0.01,
+            marginBottom:  4,
+          }}>
+            Who's{' '}
+            <Text style={{ color: Colors.brass, fontFamily: FontFamily.serifItalic }}>
+              next?
+            </Text>
+          </Text>
+          <Text style={{
+            fontFamily:    FontFamily.mono,
+            fontSize:      FontSize.caption,
+            color:         'rgba(255,255,255,0.32)',
+            letterSpacing: 0.03,
+          }}>
+            Discover tomorrow's cultural icons before the world does.
+          </Text>
+        </View>
+
+        {/* Search */}
+        <View style={{ paddingHorizontal: Spacing.lg, marginBottom: Spacing.sm }}>
+          <PremiumInput
+            icon="⌕"
             value={query}
             onChangeText={setQuery}
+            onClear={() => setQuery('')}
             placeholder="Search creators, genres, tickers..."
-            placeholderTextColor="rgba(255,255,255,0.22)"
-            style={{
-              flex: 1,
-              fontFamily: FontFamily.mono, fontSize: FontSize.caption,
-              color: Colors.offWhite, letterSpacing: 0.02,
-            }}
           />
-          {query.length > 0 && (
-            <Pressable onPress={() => setQuery('')}>
-              <Text style={{ color: 'rgba(255,255,255,0.35)', fontSize: 16 }}>×</Text>
+          {/* Request nudge — appears when no results */}
+          {query.length > 1 && filtered.length === 0 && (
+            <Pressable
+              style={{ marginTop: 10, flexDirection: 'row', alignItems: 'center', gap: 6 }}
+              onPress={() => openRequest(query)}
+            >
+              <Text style={{ color: 'rgba(201,168,76,0.4)', fontSize: 12 }}>◇</Text>
+              <MonoLabel size="label" color={Colors.brass}>
+                Can't find "{query}"? Request them →
+              </MonoLabel>
             </Pressable>
           )}
         </View>
-        {/* Request nudge */}
-        {query.length > 2 && filtered.length === 0 && (
-          <Pressable style={{ marginTop: 8 }}>
-            <MonoLabel size="label" color={Colors.brass}>
-              Can&apos;t find "{query}"? Request them →
-            </MonoLabel>
-          </Pressable>
-        )}
-      </View>
 
-      {/* Lens chips */}
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={{ paddingHorizontal: Spacing.lg, gap: Spacing.sm, paddingBottom: Spacing.sm }}
-      >
-        {LENSES.map(lens => {
-          const active = activeLens === lens.id
-          return (
-            <Pressable
+        {/* Lens chips */}
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={{
+            paddingHorizontal: Spacing.lg,
+            gap: Spacing.sm,
+            paddingBottom: Spacing.sm,
+          }}
+        >
+          {LENSES.map(lens => (
+            <LensChip
               key={lens.id}
-              onPress={() => setActiveLens(active ? null : lens.id)}
+              lens={lens}
+              active={activeLens === lens.id}
+              onPress={() => setActiveLens(activeLens === lens.id ? null : lens.id)}
+            />
+          ))}
+        </ScrollView>
+
+        <GoldDivider style={{ marginHorizontal: Spacing.lg, marginBottom: 0 }} />
+
+        {/* Artist list */}
+        <ScrollView
+          style={{ flex: 1 }}
+          contentContainerStyle={{ paddingHorizontal: Spacing.lg, paddingBottom: 160 }}
+          showsVerticalScrollIndicator={false}
+        >
+          {filtered.length === 0 ? (
+            <View style={{ paddingTop: Spacing.section, alignItems: 'center', gap: Spacing.md }}>
+              <Text style={{
+                fontFamily: FontFamily.serif,
+                fontSize:   FontSize.title,
+                color:      'rgba(255,255,255,0.28)',
+                marginBottom: 4,
+                textAlign: 'center',
+              }}>
+                No results for "{query}"
+              </Text>
+              <GoldButton onPress={() => openRequest(query)} shimmer>
+                Request this artist →
+              </GoldButton>
+              <GoldButton onPress={() => setQuery('')} variant="outline">
+                Clear search
+              </GoldButton>
+            </View>
+          ) : (
+            filtered.map((artist, i) => (
+              <ArtistRow
+                key={artist.ticker}
+                rank={i + 1}
+                name={artist.name}
+                ticker={artist.ticker}
+                score={artist.score}
+                delta={artist.delta}
+                onPress={() => {
+                  if (query) logCreatorSearch(artist.ticker, query, user?.id)
+                  router.push(`/creator/${artist.ticker}`)
+                }}
+                delay={i * 40}
+              />
+            ))
+          )}
+
+          {/* Request CTA at bottom */}
+          {filtered.length > 0 && (
+            <Pressable
+              onPress={() => openRequest('')}
               style={{
-                paddingVertical: 5, paddingHorizontal: 12,
-                borderRadius: Radius.sharp,
-                borderWidth: 1,
-                borderColor: active ? lens.color : 'rgba(255,255,255,0.10)',
-                backgroundColor: active ? `${lens.color}22` : 'rgba(7,5,13,0.50)',
+                marginTop: Spacing.xl,
+                paddingVertical: Spacing.md,
+                flexDirection: 'row',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: 8,
+                borderTopWidth: 1,
+                borderTopColor: 'rgba(201,168,76,0.07)',
               }}
             >
-              <Text style={{
-                fontFamily: FontFamily.mono, fontSize: 10,
-                fontWeight: '600', letterSpacing: 0.04,
-                textTransform: 'uppercase',
-                color: active ? lens.color : 'rgba(255,255,255,0.38)',
-              }}>
-                {lens.label}
-              </Text>
+              <Text style={{ color: 'rgba(201,168,76,0.3)', fontSize: 14 }}>◇</Text>
+              <MonoLabel size="label" color={Colors.brassDim}>
+                Don't see your artist? Request them →
+              </MonoLabel>
             </Pressable>
-          )
-        })}
-      </ScrollView>
+          )}
+        </ScrollView>
+      </View>
 
-      {/* Artist list */}
-      <ScrollView
-        style={{ flex: 1 }}
-        contentContainerStyle={{ paddingHorizontal: Spacing.lg, paddingBottom: 120 }}
-        showsVerticalScrollIndicator={false}
-      >
-        {filtered.map((artist, i) => (
-          <Pressable
-            key={artist.ticker}
-            onPress={() => router.push(`/creator/${artist.ticker}`)}
-            style={{ marginBottom: Spacing.sm }}
-          >
-            <GlassCard goldBorder style={{ padding: Spacing.md }}>
-              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.md }}>
-                  <MonoLabel size="label" color="rgba(255,255,255,0.20)" style={{ width: 20 }}>
-                    {String(i + 1).padStart(2, '0')}
-                  </MonoLabel>
-                  <View style={{
-                    width: 40, height: 40, borderRadius: 20,
-                    backgroundColor: 'rgba(201,168,76,0.08)',
-                    borderWidth: 1, borderColor: Colors.glassBorder,
-                    alignItems: 'center', justifyContent: 'center',
-                  }}>
-                    <Text style={{ color: Colors.brass, fontSize: 14 }}>◈</Text>
-                  </View>
-                  <View>
-                    <Text style={{ fontFamily: FontFamily.serif, fontSize: FontSize.body, color: Colors.offWhite }}>
-                      {artist.name}
-                    </Text>
-                    <MonoLabel size="label" color="rgba(255,255,255,0.28)">{artist.ticker}</MonoLabel>
-                  </View>
-                </View>
-                <View style={{ alignItems: 'flex-end', gap: 2 }}>
-                  <Text style={{ fontFamily: FontFamily.mono, fontSize: FontSize.body, color: Colors.offWhite, fontWeight: '700' }}>
-                    {artist.score}
-                  </Text>
-                  <MonoLabel size="label" color={Colors.success}>+{artist.delta} pts</MonoLabel>
-                </View>
-              </View>
-            </GlassCard>
-          </Pressable>
-        ))}
-      </ScrollView>
+      {/* Request Artist Modal */}
+      <RequestArtistModal
+        visible={requestVisible}
+        onClose={() => setRequestVisible(false)}
+        initialQuery={requestQuery}
+      />
     </View>
   )
 }

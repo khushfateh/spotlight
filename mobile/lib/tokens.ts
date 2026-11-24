@@ -71,6 +71,13 @@ export const Shadow = {
     shadowRadius: 12,
     elevation: 8,
   },
+  goldStrong: {
+    shadowColor: Colors.brass,
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.55,
+    shadowRadius: 24,
+    elevation: 16,
+  },
   deep: {
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 16 },
@@ -78,4 +85,30 @@ export const Shadow = {
     shadowRadius: 32,
     elevation: 20,
   },
+} as const
+
+export const ZIndex = {
+  canvas:  0,
+  base:    1,
+  overlay: 10,
+  modal:   100,
+  toast:   200,
+} as const
+
+// Animation durations
+export const Duration = {
+  instant:  120,
+  fast:     220,
+  medium:   380,
+  slow:     600,
+  breathe:  4500,
+  float:    7000,
+} as const
+
+// Extra color helpers
+export const Gradient = {
+  brassVertical:   ['rgba(201,168,76,0.18)', 'rgba(201,168,76,0)'] as string[],
+  brassRadial:     ['rgba(201,168,76,0.28)', 'rgba(201,168,76,0)'] as string[],
+  voidFade:        ['transparent', '#050508'] as string[],
+  voidFadeReverse: ['#050508', 'transparent'] as string[],
 } as const
