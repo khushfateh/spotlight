@@ -90,6 +90,9 @@ export default function DiscoverScreen() {
     return { ticker, name: c.name, genre: c.genre, score, delta }
   }).sort((a, b) => b.score - a.score)
 
+  // Rising Fast (moved here from Home): biggest momentum gains right now
+  const RISING = [...ALL_ARTISTS].sort((a, b) => b.delta - a.delta).slice(0, 5)
+
   const filtered = ALL_ARTISTS.filter(a => {
     if (!query) return true
     const q = query.toLowerCase()
@@ -213,7 +216,39 @@ export default function DiscoverScreen() {
               </GoldButton>
             </View>
           ) : (
-            filtered.map((artist, i) => (
+            <>
+            {!query && (
+              <View style={{ marginTop: Spacing.lg }}>
+                <MonoLabel size="label" style={{ marginBottom: 5 }}>◆ Trending Now</MonoLabel>
+                <Text style={{
+                  fontFamily:    FontFamily.serif,
+                  fontSize:      FontSize.title,
+                  color:         Colors.offWhite,
+                  letterSpacing: 0.01,
+                  marginBottom:  Spacing.sm,
+                }}>
+                  Rising{' '}
+                  <Text style={{ color: Colors.brass, fontFamily: FontFamily.serifItalic }}>Fast</Text>
+                </Text>
+                {RISING.map((artist, i) => (
+                  <ArtistRow
+                    key={`rising-${artist.ticker}`}
+                    rank={i + 1}
+                    name={artist.name}
+                    ticker={artist.ticker}
+                    score={artist.score}
+                    delta={artist.delta}
+                    onPress={() => router.push(`/creator/${artist.ticker}`)}
+                    delay={i * 60}
+                  />
+                ))}
+                <GoldDivider style={{ marginTop: Spacing.lg, marginBottom: Spacing.md }} />
+                <MonoLabel size="label" color={Colors.brassDim} style={{ marginBottom: Spacing.xs }}>
+                  ◇ All Creators · Ranked by Momentum
+                </MonoLabel>
+              </View>
+            )}
+            {filtered.map((artist, i) => (
               <ArtistRow
                 key={artist.ticker}
                 rank={i + 1}
@@ -227,7 +262,8 @@ export default function DiscoverScreen() {
                 }}
                 delay={i * 40}
               />
-            ))
+            ))}
+            </>
           )}
 
           {/* Request CTA at bottom */}

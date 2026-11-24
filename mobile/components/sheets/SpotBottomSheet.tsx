@@ -533,6 +533,7 @@ export default function SpotBottomSheet({
                 }}
                 fullWidth
                 shimmer
+                effect="crack"
               >
                 {isRediscovery ? 'Open Vault Card  ◉' : 'Open Vault Card  ◈'}
               </GoldButton>

@@ -170,10 +170,10 @@ export default function ProfileScreen() {
         }}>
           Join SPOTLIGHT to build your cultural legacy{'\n'}and track your discovery rank.
         </Text>
-        <GoldButton onPress={() => router.push('/auth/signup')} shimmer style={{ marginBottom: 10, minWidth: 220 }}>
+        <GoldButton onPress={() => router.push('/auth/signup')} shimmer effect="crack" style={{ marginBottom: 10, minWidth: 220 }}>
           Join SPOTLIGHT ◈
         </GoldButton>
-        <GoldButton onPress={() => router.push('/auth/login')} variant="outline" style={{ minWidth: 220 }}>
+        <GoldButton onPress={() => router.push('/auth/login')} variant="outline" effect="crack" style={{ minWidth: 220 }}>
           Sign In
         </GoldButton>
       </View>

@@ -19,6 +19,7 @@ import { sceneState, saxLivePos } from './sceneState'
 import GoldDustEcosystem from './GoldDustEcosystem'
 import LivingUniverse from './LivingUniverse'
 import Atmosphere from './Atmosphere'
+import OrbitalCards from './OrbitalCards'
 
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const SAX_MODEL = require('../../../assets/models/saxophone.glb') as string
@@ -37,7 +38,15 @@ const FOV        = 46
 const CAM_START  = 15.0   // held back while the world is dark
 const CAM_REVEAL = 12.5   // after the push-in: sax ≈ half the screen height
 const SAX_SCREEN_Y = 0.30 // sax centre sits 30% from the top of the canvas
+const CAM_STORY  = 13.6   // eases back a touch in the story so the orbit has room
+const SAX_SCREEN_Y_STORY = 0.36
 const TAN_HALF_FOV = Math.tan((FOV / 2) * Math.PI / 180)
+
+/** 0 on the hero → 1 once the user has scrolled into the story (smoothstep) */
+function storyBlend() {
+  const t = Math.max(0, Math.min(1, sceneState.pageProgress / 0.7))
+  return t * t * (3 - 2 * t)
+}
 
 // ── Sax hero pose — same as web ─────────────────────────────────────────────
 const HERO_ROT_Y =  Math.PI * 0.30
@@ -51,7 +60,8 @@ function easeInOut(t: number) {
 }
 
 // ── Reveal state machine ────────────────────────────────────────────────────
-function RevealOrchestrator() {
+function RevealOrchestrator({ onComplete }: { onComplete?: () => void }) {
+  const fired = useRef(false)
   useFrame(({ clock }) => {
     const t = clock.getElapsedTime()
     sceneState.introT = t
@@ -71,6 +81,7 @@ function RevealOrchestrator() {
       if (s.revealProgress >= 1) {
         s.revealPhase = 3
         s.revealCompleteT = t
+        if (!fired.current) { fired.current = true; onComplete?.() }
       }
     }
   })
@@ -147,12 +158,14 @@ function CameraRig() {
   useFrame((state, dt) => {
     const cam = state.camera as THREE.PerspectiveCamera
     const t = state.clock.getElapsedTime()
-    const { revealPhase: phase, revealProgress: rp, scrollProgress: p } = sceneState
+    const { revealPhase: phase, revealProgress: rp } = sceneState
+    // 0 on the hero → 1 once the user is into the story (orbit visible)
+    const story = storyBlend()
 
     const targetZ = phase === 0 ? CAM_START
                   : phase === 1 ? CAM_START - 0.3
                   : phase === 2 ? (CAM_START - 0.3) - (CAM_START - 0.3 - CAM_REVEAL) * easeInOut(rp)
-                  : CAM_REVEAL + p * 1.2
+                  : CAM_REVEAL + (CAM_STORY - CAM_REVEAL) * story
     cam.position.z += (targetZ - cam.position.z) * (1 - Math.exp(-1.6 * dt))
 
     const bx = phase >= 3 ? Math.sin(t * 0.19) * 0.004 + Math.sin(t * 0.37) * 0.002 : 0
@@ -160,9 +173,10 @@ function CameraRig() {
     const tiltX = phase >= 3 ? sceneState.pointerX * 0.18 : 0
     const tiltY = phase >= 3 ? sceneState.pointerY * 0.14 : 0
 
-    // Frame the sax (at world origin) 30% from the top: drop the camera so the
-    // origin lands above centre. Depends on current distance.
-    const frameY = -(0.5 - SAX_SCREEN_Y) * 2 * cam.position.z * TAN_HALF_FOV
+    // Frame the sax (at world origin) 30% from the top on the hero, easing to
+    // 36% in the story so the whole orbit fits above the chapter text.
+    const screenY = SAX_SCREEN_Y + (SAX_SCREEN_Y_STORY - SAX_SCREEN_Y) * story
+    const frameY = -(0.5 - screenY) * 2 * cam.position.z * TAN_HALF_FOV
 
     cam.position.x += (tiltX + bx - cam.position.x) * (1 - Math.exp(-3 * dt))
     cam.position.y += (frameY + tiltY + by - cam.position.y) * (1 - Math.exp(-3 * dt))
@@ -329,9 +343,17 @@ interface Props {
   height: number
   /** pause rendering (e.g. when the Home tab isn't focused) */
   active?: boolean
+  /** an orbiting artist card was tapped */
+  onSelectArtist: (ticker: string) => void
+  /** front-right card changed / moved (drives the native name label) */
+  onFocusChange?: (index: number, strength: number, screen: { x: number; y: number }) => void
+  /** bump to put a selected card back into orbit (e.g. on returning to Home) */
+  resetKey: number
+  /** the saxophone's brass reveal has finished */
+  onRevealComplete?: () => void
 }
 
-export default function HomeScene3D({ width, height, active = true }: Props) {
+export default function HomeScene3D({ width, height, active = true, onSelectArtist, onFocusChange, resetKey, onRevealComplete }: Props) {
   // Fresh reveal every time the scene mounts
   useMemo(() => {
     sceneState.introT = 0
@@ -346,7 +368,10 @@ export default function HomeScene3D({ width, height, active = true }: Props) {
       <Canvas
         style={{ flex: 1 }}
         frameloop={active ? 'always' : 'never'}
-        camera={{ position: [0, initialCamY, CAM_START], fov: FOV, near: 0.1, far: 140 }}
+        // Explicit rotation stops R3F's default lookAt(0,0,0), which tilted the
+        // camera back toward the sax and cancelled the framing offset (sax sat
+        // mid-screen instead of 30% from the top).
+        camera={{ position: [0, initialCamY, CAM_START], rotation: [0, 0, 0], fov: FOV, near: 0.1, far: 140 }}
         gl={{ antialias: true }}
         onCreated={({ gl, scene }) => {
           gl.toneMapping = THREE.ACESFilmicToneMapping
@@ -356,7 +381,7 @@ export default function HomeScene3D({ width, height, active = true }: Props) {
       >
         <StudioEnvironment />
         <CinematicLighting />
-        <RevealOrchestrator />
+        <RevealOrchestrator onComplete={onRevealComplete} />
         <CameraRig />
 
         {/* Particles render immediately — they never wait on the model */}
@@ -367,6 +392,9 @@ export default function HomeScene3D({ width, height, active = true }: Props) {
         <Suspense fallback={null}>
           <SaxModel />
         </Suspense>
+
+        {/* Artist cards — hidden on the hero, spiral out once scrolling starts */}
+        <OrbitalCards onSelect={onSelectArtist} onFocusChange={onFocusChange} resetKey={resetKey} />
       </Canvas>
     </View>
   )

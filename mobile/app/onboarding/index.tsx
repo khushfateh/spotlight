@@ -203,7 +203,7 @@ export default function OnboardingScreen() {
             Your cultural legacy starts now.{'\n'}
             Spot artists before the world does.
           </Text>
-          <GoldButton onPress={handleEnterApp} shimmer style={{ minWidth: 220 }}>
+          <GoldButton onPress={handleEnterApp} shimmer effect="crack" style={{ minWidth: 220 }}>
             Enter SPOTLIGHT  ◈
           </GoldButton>
         </Animated.View>

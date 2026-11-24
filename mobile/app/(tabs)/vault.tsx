@@ -175,7 +175,7 @@ function EmptyVault({ onDiscover }: { onDiscover: () => void }) {
       }}>
         Every artist you spot gets a vault card — stamped with the exact moment you called it.
       </Text>
-      <GoldButton onPress={onDiscover} shimmer>Start Discovering →</GoldButton>
+      <GoldButton onPress={onDiscover} shimmer effect="crack">Start Discovering →</GoldButton>
     </Animated.View>
   )
 }
@@ -213,10 +213,10 @@ export default function VaultScreen() {
         }}>
           Sign in to see the artists you've spotted{'\n'}and your founding badges.
         </Text>
-        <GoldButton onPress={() => router.push('/auth/login')} shimmer style={{ marginBottom: 10, minWidth: 220 }}>
+        <GoldButton onPress={() => router.push('/auth/login')} shimmer effect="crack" style={{ marginBottom: 10, minWidth: 220 }}>
           Sign In
         </GoldButton>
-        <GoldButton onPress={() => router.push('/auth/signup')} variant="outline" style={{ minWidth: 220 }}>
+        <GoldButton onPress={() => router.push('/auth/signup')} variant="outline" effect="crack" style={{ minWidth: 220 }}>
           Join SPOTLIGHT ◈
         </GoldButton>
       </View>

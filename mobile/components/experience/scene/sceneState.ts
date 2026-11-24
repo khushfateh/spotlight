@@ -8,8 +8,13 @@
 import { PixelRatio } from 'react-native'
 
 export const sceneState = {
-  // 0–1 over the hero height
+  // 0–1 over the whole home story (hero → chapter 05)
   scrollProgress: 0,
+  // Pages scrolled (0 = hero, 1 = chapter 02 …). Drives the orbit + card reveal.
+  pageProgress: 0,
+
+  // Pending tap on the canvas, in canvas-local points (consumed by OrbitalCards)
+  tap: null as null | { x: number; y: number },
 
   // Seconds since the Canvas mounted (dust starts immediately)
   introT: 0,

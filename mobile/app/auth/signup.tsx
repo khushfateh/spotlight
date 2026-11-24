@@ -100,7 +100,7 @@ export default function SignupScreen() {
           }}>
             Check your email to confirm your account,{'\n'}then come back and start discovering.
           </Text>
-          <GoldButton onPress={() => router.replace('/(tabs)')} shimmer>
+          <GoldButton onPress={() => router.replace('/(tabs)')} shimmer effect="crack">
             Go to App →
           </GoldButton>
         </Animated.View>
