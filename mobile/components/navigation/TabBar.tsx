@@ -1,3 +1,4 @@
+import { useEffect } from 'react'
 import { View, Pressable, Text, Platform } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { BlurView } from 'expo-blur'
@@ -9,7 +10,7 @@ import Animated, {
   Extrapolation,
 } from 'react-native-reanimated'
 import * as Haptics from 'expo-haptics'
-import type { BottomTabBarProps } from '@react-navigation/bottom-tabs'
+
 import { Colors, FontFamily, FontSize } from '@/lib/tokens'
 
 const ICONS: Record<string, { active: string; inactive: string }> = {
@@ -42,12 +43,11 @@ function TabItem({
   const icon        = ICONS[route.name] ?? { active: '●', inactive: '○' }
   const label       = LABELS[route.name] ?? route.name
 
-  // Sync dot opacity when focus changes
-  if (isFocused && dotOpacity.value !== 1) {
-    dotOpacity.value = withSpring(1, { damping: 18, stiffness: 400 })
-  } else if (!isFocused && dotOpacity.value !== 0) {
-    dotOpacity.value = withSpring(0, { damping: 18, stiffness: 400 })
-  }
+  // Sync dot opacity when focus changes (in an effect — never write shared
+  // values during render)
+  useEffect(() => {
+    dotOpacity.value = withSpring(isFocused ? 1 : 0, { damping: 18, stiffness: 400 })
+  }, [isFocused, dotOpacity])
 
   const iconStyle = useAnimatedStyle(() => ({
     transform: [{ scale: scale.value }],
@@ -116,7 +116,19 @@ function TabItem({
   )
 }
 
-export default function TabBar({ state, descriptors, navigation }: BottomTabBarProps) {
+// expo-router (SDK 58) gives a custom tab bar `emitter` + `navigateToTab`
+// instead of the old React Navigation `navigation` prop. Support both so a tab
+// press can never throw again.
+type TabEvent = { defaultPrevented?: boolean } | undefined
+type Emitter = { emit: (e: { type: string; target?: string; canPreventDefault?: boolean }) => TabEvent }
+type TabBarProps = {
+  state: { index: number; routes: { name: string; key: string }[] }
+  emitter?: Emitter
+  navigateToTab?: (routeKey: string) => void
+  navigation?: Emitter & { navigate: (name: string) => void }
+}
+
+export default function TabBar({ state, emitter, navigateToTab, navigation }: TabBarProps) {
   const insets = useSafeAreaInsets()
 
   return (
@@ -148,16 +160,17 @@ export default function TabBar({ state, descriptors, navigation }: BottomTabBarP
               route={route}
               isFocused={isFocused}
               onPress={() => {
-                const event = navigation.emit({
+                const event = (emitter ?? navigation)?.emit({
                   type: 'tabPress',
                   target: route.key,
                   canPreventDefault: true,
                 })
-                if (!isFocused && !event.defaultPrevented) {
-                  navigation.navigate(route.name)
+                if (!isFocused && !event?.defaultPrevented) {
+                  if (navigateToTab) navigateToTab(route.key)
+                  else navigation?.navigate(route.name)
                 }
               }}
-              onLongPress={() => navigation.emit({ type: 'tabLongPress', target: route.key })}
+              onLongPress={() => { (emitter ?? navigation)?.emit({ type: 'tabLongPress', target: route.key }) }}
             />
           )
         })}

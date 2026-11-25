@@ -129,6 +129,8 @@ export default function RootLayout() {
               <Stack.Screen name="creator/[ticker]"   options={{ animation: 'slide_from_right' }} />
               <Stack.Screen name="profile/[username]" options={{ animation: 'slide_from_right' }} />
               <Stack.Screen name="notifications"      options={{ animation: 'slide_from_right' }} />
+              {/* Transparent: the Observatory keeps moving behind the cards */}
+              <Stack.Screen name="discover-mode"      options={{ presentation: 'transparentModal', animation: 'fade', contentStyle: { backgroundColor: 'transparent' } }} />
             </Stack>
           </AuthProvider>
         </MomentumProvider>
